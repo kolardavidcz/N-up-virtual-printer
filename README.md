@@ -42,12 +42,17 @@
 git clone https://github.com/your-username/NUpPrint.git
 cd NUpPrint
 
-# Build debug APK
-./gradlew assembleDebug
+### Building & Updating via USB Debugging (Windows)
 
-# Install via ADB
-adb install app/build/outputs/apk/debug/app-debug.apk
-```
+For 1-click update on connected USB devices:
+
+- **Double-click `update_app.bat`** from Windows File Explorer, OR
+- **Run `update_app.ps1` in PowerShell**:
+  ```powershell
+  .\update_app.ps1
+  ```
+
+This automatically compiles the latest APK, verifies ADB device connection over USB, installs/updates the app, and launches it on your device.
 
 ---
 
