@@ -60,7 +60,14 @@ if (Test-Path "C:\Users\kolar\.jdks\jbr-17.0.14") {
     $env:JAVA_HOME = "C:\Users\kolar\.jdks\jbr-17.0.14"
 }
 
-$BuildResult = & ".\gradlew.bat" assembleDebug
+$GradleBin = "gradle"
+if (Test-Path "C:\Users\kolar\.gradle\wrapper\dists\gradle-8.13-bin\5xuhj0ry160q40clulazy9h7d\gradle-8.13\bin\gradle.bat") {
+    $GradleBin = "C:\Users\kolar\.gradle\wrapper\dists\gradle-8.13-bin\5xuhj0ry160q40clulazy9h7d\gradle-8.13\bin\gradle.bat"
+} elseif (Test-Path ".\gradlew.bat") {
+    $GradleBin = ".\gradlew.bat"
+}
+
+$BuildResult = & $GradleBin assembleDebug
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
     Write-Host "[ERROR] Gradle build failed!" -ForegroundColor Red

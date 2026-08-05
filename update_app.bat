@@ -54,7 +54,16 @@ if exist "C:\Users\kolar\.jdks\jbr-17.0.14" (
     set "JAVA_HOME=C:\Users\kolar\.jdks\jbr-17.0.14"
 )
 
-call gradlew.bat assembleDebug
+set "GRADLE_BIN="
+if exist "C:\Users\kolar\.gradle\wrapper\dists\gradle-8.13-bin\5xuhj0ry160q40clulazy9h7d\gradle-8.13\bin\gradle.bat" (
+    set "GRADLE_BIN=C:\Users\kolar\.gradle\wrapper\dists\gradle-8.13-bin\5xuhj0ry160q40clulazy9h7d\gradle-8.13\bin\gradle.bat"
+) else if exist "gradlew.bat" (
+    set "GRADLE_BIN=gradlew.bat"
+) else (
+    set "GRADLE_BIN=gradle"
+)
+
+call "%GRADLE_BIN%" assembleDebug
 if !errorlevel! neq 0 (
     echo.
     echo [ERROR] Gradle build failed!
