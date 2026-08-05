@@ -1,5 +1,7 @@
 # N-Up Print for Android
 
+![N-Up Print Logo](logo.jpg)
+
 **N-Up Print** is an Android Print Service plugin that converts web pages, documents, and photos into vector-accurate N-up grid layouts (2×1, 1×2, 2×2, 2×3, 2×4, and custom X×Y configurations) directly from any app's print dialog.
 
 ---
