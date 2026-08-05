@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">N-Up Print</string>
+    <string name="print_service_label">N-Up PDF</string>
+    <string name="printer_name">Save as PDF (N-up)</string>
+</resources>

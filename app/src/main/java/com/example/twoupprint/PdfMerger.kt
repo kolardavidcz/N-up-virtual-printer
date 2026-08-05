@@ -1,0 +1,166 @@
+package com.example.twoupprint
+
+import android.content.Context
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.multipdf.LayerUtility
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.PDPage
+import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
+import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
+import com.tom_roush.pdfbox.util.Matrix
+import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
+
+/**
+ * Merges source PDF pages N-up into a true vector output PDF.
+ *
+ * Supports arbitrary grid layouts (cols × rows) in both portrait and landscape orientation.
+ * Text remains 100% selectable and fonts/shapes stay crisp — no bitmap rasterization.
+ */
+object PdfMerger {
+
+    private var initialized = false
+
+    fun init(context: Context) {
+        if (!initialized) {
+            PDFBoxResourceLoader.init(context.applicationContext)
+            initialized = true
+        }
+    }
+
+    /**
+     * Merges pages from [sourcePdfStream] into an N-up layout defined by [layout].
+     * Falls back to 2×1 landscape if no layout is specified.
+     */
+    fun mergeNUp(
+        sourcePdfStream: InputStream,
+        outputStream: OutputStream,
+        layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
+        onProgress: ((current: Int, total: Int) -> Unit)? = null
+    ) {
+        val srcDoc = PDDocument.load(sourcePdfStream)
+        val outDoc = PDDocument()
+        val layerUtility = LayerUtility(outDoc)
+
+        try {
+            val pageCount = srcDoc.numberOfPages
+            if (pageCount == 0) return
+
+            val cols = layout.cols
+            val rows = layout.rows
+            val pagesPerSheet = layout.pagesPerSheet
+
+            // Target sheet dimensions
+            val sheetRect = if (layout.landscape) {
+                PDRectangle(PDRectangle.A4.height, PDRectangle.A4.width)  // Landscape
+            } else {
+                PDRectangle(PDRectangle.A4.width, PDRectangle.A4.height)  // Portrait
+            }
+            val sheetW = sheetRect.width
+            val sheetH = sheetRect.height
+            val slotW = sheetW / cols.toFloat()
+            val slotH = sheetH / rows.toFloat()
+
+            var pageIdx = 0
+
+            while (pageIdx < pageCount) {
+                val outPage = PDPage(sheetRect)
+                outDoc.addPage(outPage)
+
+                val contentStream = PDPageContentStream(
+                    outDoc,
+                    outPage,
+                    PDPageContentStream.AppendMode.APPEND,
+                    true,
+                    true
+                )
+
+                // Fill slots left-to-right, top-to-bottom
+                for (row in 0 until rows) {
+                    for (col in 0 until cols) {
+                        if (pageIdx >= pageCount) break
+
+                        // PDF origin is bottom-left, so row 0 (top) has the highest Y
+                        val slotLeft = col * slotW
+                        val slotBottom = (rows - 1 - row) * slotH
+
+                        drawVectorPageInSlot(
+                            srcDoc, layerUtility, contentStream, pageIdx,
+                            slotLeft = slotLeft, slotBottom = slotBottom,
+                            slotWidth = slotW, slotHeight = slotH
+                        )
+                        onProgress?.invoke(pageIdx + 1, pageCount)
+                        pageIdx++
+                    }
+                }
+
+                contentStream.close()
+            }
+
+            outDoc.save(outputStream)
+        } finally {
+            outDoc.close()
+            srcDoc.close()
+        }
+    }
+
+    /**
+     * Convenience overload for file-based input/output.
+     */
+    fun mergeNUp(
+        sourcePdfFile: File,
+        outputPdfFile: File,
+        layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
+        onProgress: ((current: Int, total: Int) -> Unit)? = null
+    ) {
+        sourcePdfFile.inputStream().use { input ->
+            outputPdfFile.outputStream().use { output ->
+                mergeNUp(input, output, layout, onProgress)
+            }
+        }
+    }
+
+    /**
+     * Legacy API: 2-up side-by-side (2×1 landscape) for backward compatibility.
+     */
+    fun mergeTwoUp(
+        sourcePdfStream: InputStream,
+        outputStream: OutputStream,
+        onProgress: ((current: Int, total: Int) -> Unit)? = null
+    ) {
+        mergeNUp(sourcePdfStream, outputStream, LayoutRegistry.builtInLayouts.first(), onProgress)
+    }
+
+    private fun drawVectorPageInSlot(
+        srcDoc: PDDocument,
+        layerUtility: LayerUtility,
+        contentStream: PDPageContentStream,
+        pageIndex: Int,
+        slotLeft: Float,
+        slotBottom: Float,
+        slotWidth: Float,
+        slotHeight: Float
+    ) {
+        val form = layerUtility.importPageAsForm(srcDoc, pageIndex)
+        val srcPage = srcDoc.getPage(pageIndex)
+        val cropBox = srcPage.cropBox ?: srcPage.mediaBox
+
+        val srcW = cropBox.width
+        val srcH = cropBox.height
+
+        val scale = Math.min(slotWidth / srcW, slotHeight / srcH)
+
+        val destW = srcW * scale
+        val destH = srcH * scale
+
+        val tx = slotLeft + (slotWidth - destW) / 2f - cropBox.lowerLeftX * scale
+        val ty = slotBottom + (slotHeight - destH) / 2f - cropBox.lowerLeftY * scale
+
+        contentStream.saveGraphicsState()
+        contentStream.transform(Matrix(scale, 0f, 0f, scale, tx, ty))
+        contentStream.drawForm(form)
+        contentStream.restoreGraphicsState()
+    }
+}
+

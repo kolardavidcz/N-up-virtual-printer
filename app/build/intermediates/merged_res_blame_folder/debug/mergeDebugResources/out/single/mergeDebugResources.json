@@ -1,0 +1,46 @@
+[
+    {
+        "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\drawable_ic_layout_1x2.xml.flat",
+        "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\drawable\\ic_layout_1x2.xml"
+    },
+    {
+        "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\drawable_ic_layout_2x2.xml.flat",
+        "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\drawable\\ic_layout_2x2.xml"
+    },
+    {
+        "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\drawable_ic_layout_2x1.xml.flat",
+        "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\drawable\\ic_layout_2x1.xml"
+    },
+    {
+        "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\mipmap-anydpi-v26\\ic_launcher.xml"
+    },
+    {
+        "merged": "com.example.twoupprint.app-debug-31:/layout_activity_main.xml.flat",
+        "source": "com.example.twoupprint.app-main-33:/layout/activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\xml_printservice.xml.flat",
+        "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\xml\\printservice.xml"
+    },
+    {
+        "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\drawable_ic_layout_2x4.xml.flat",
+        "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\drawable\\ic_layout_2x4.xml"
+    },
+    {
+        "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\drawable_ic_launcher_foreground.xml.flat",
+        "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\drawable\\ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\drawable_ic_layout_2x3.xml.flat",
+        "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\drawable\\ic_layout_2x3.xml"
+    },
+    {
+        "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\xml_file_paths.xml.flat",
+        "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\xml\\file_paths.xml"
+    }
+]

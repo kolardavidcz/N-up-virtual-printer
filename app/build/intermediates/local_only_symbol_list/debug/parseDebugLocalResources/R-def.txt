@@ -1,0 +1,33 @@
+R_DEF: Internal format may change without notice
+local
+color accent_green
+color app_bg
+color ic_launcher_background
+color primary_sky
+color surface_dark
+color surface_hover
+drawable ic_launcher_foreground
+drawable ic_layout_1x2
+drawable ic_layout_2x1
+drawable ic_layout_2x2
+drawable ic_layout_2x3
+drawable ic_layout_2x4
+id batteryCard
+id batterySub
+id batteryTitle
+id btnAddLayout
+id btnBatteryAction
+id btnOpenSettings
+id btnResetLocation
+id btnSetLocation
+id btnTroubleshoot
+id layoutCardsContainer
+id pathText
+id promptSwitch
+layout activity_main
+mipmap ic_launcher
+string app_name
+string print_service_label
+string printer_name
+xml file_paths
+xml printservice
