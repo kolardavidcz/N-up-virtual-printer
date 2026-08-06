@@ -6,11 +6,23 @@
 
 ---
 
+## Download
+
+- **Latest Release**: [Download N-Up Print v1.0.0 APK](releases/nup-print-v1.0.0.apk)
+
+---
+
+## Screenshots
+
+![N-Up Print Settings UI](screenshots/screenshot_main.png)
+
+---
+
 ## Features
 
 - **True Vector PDF Output**: Merges pages into multi-up layouts while preserving 100% selectable text, crisp fonts, and resolution-independent vector shapes (no bitmap rasterization).
-- **Custom X:Y Grid Creator**: Add your own grid configurations (e.g. 3×3, 4×4, 1×3) on the fly.
-- **Dynamic System Print Icons**: Automatically generates white-on-transparent preview icons for both standard and custom X:Y layouts inside Android's system print dialog.
+- **Custom X:Y Grid Creator**: Add your own grid configurations (e.g. 3×3, 4×4, 1×3, 3×5) on the fly with smart default A4 orientation suggestions.
+- **Dynamic System Print Icons**: Automatically generates crisp preview icons for both standard and custom X:Y layouts inside Android's system print dialog.
 - **Independent Layout Toggles**: Enable or disable specific printer layouts in app settings to keep your print menu clutter-free.
 - **Automatic Title Extraction**: Automatically names output files based on web page titles or document labels (e.g., `Article Title_2x1.pdf`).
 - **Flexible Save Destination**: Save directly to a preselected folder or enable high-priority notification popups to choose a destination per print job.
@@ -21,26 +33,14 @@
 ## Tech Stack & Architecture
 
 - **Language**: Kotlin 2.0
-- **UI Framework**: Material Design 3 (Native Material components, dark theme)
-- **PDF Processing**: Apache PDFBox Android (`com.tom-roush:pdfbox-android:2.0.27.0`)
+- **UI Framework**: Native Material Design 3 (Dark Theme)
+- **PDF Engine**: Apache PDFBox Android (`com.tom-roush:pdfbox-android:2.0.27.0`)
 - **Android Print Framework**: `PrintService`, `PrinterDiscoverySession`, Storage Access Framework (`ACTION_CREATE_DOCUMENT`, `ACTION_OPEN_DOCUMENT_TREE`)
 - **Compatibility**: Android 8.0+ (API Level 26+)
 
 ---
 
 ## Build & Installation
-
-### Prerequisites
-- JDK 17
-- Android SDK (API Level 34)
-- Gradle 8.13+
-
-### Building from Source
-
-```bash
-# Clone the repository
-git clone https://github.com/your-username/NUpPrint.git
-cd NUpPrint
 
 ### Building & Updating via USB Debugging (Windows)
 
