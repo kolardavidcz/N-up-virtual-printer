@@ -280,9 +280,27 @@ class MainActivity : AppCompatActivity() {
 
         val orientationSwitch = MaterialSwitch(this).apply {
             text = "Landscape sheet orientation"
-            isChecked = true
             setPadding(0, 16, 0, 0)
         }
+
+        fun updateSuitableOrientation() {
+            val cols = colsInput.text.toString().toIntOrNull() ?: 3
+            val rows = rowsInput.text.toString().toIntOrNull() ?: 3
+            // Cols >= Rows -> Landscape is more suitable; Rows > Cols -> Portrait is more suitable
+            orientationSwitch.isChecked = (cols >= rows)
+        }
+
+        val textWatcher = object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                updateSuitableOrientation()
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        }
+
+        colsInput.addTextChangedListener(textWatcher)
+        rowsInput.addTextChangedListener(textWatcher)
+        updateSuitableOrientation()
 
         container.addView(TextView(this).apply { text = "Columns (X):"; setTextColor(Color.parseColor("#D0BCFF")) })
         container.addView(colsInput)
