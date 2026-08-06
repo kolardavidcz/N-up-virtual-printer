@@ -12,7 +12,7 @@ import android.printservice.PrinterDiscoverySession
 
 /**
  * Registers virtual printers for all enabled [PrintLayout] configurations,
- * dynamically rendering vector-accurate preview icons for any X:Y grid.
+ * dynamically rendering mini PDF document icons for any X:Y grid.
  */
 class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscoverySession() {
 
@@ -22,8 +22,15 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
     private fun buildPrinterInfo(mode: PrintLayout): PrinterInfo {
         val id: PrinterId = service.generatePrinterId(mode.printerId)
 
+        // Set A4 sheet orientation (Landscape vs Portrait) matching mode preference
+        val mediaSize = if (mode.landscape) {
+            PrintAttributes.MediaSize.ISO_A4.asLandscape()
+        } else {
+            PrintAttributes.MediaSize.ISO_A4.asPortrait()
+        }
+
         val capabilities = PrinterCapabilitiesInfo.Builder(id)
-            .addMediaSize(PrintAttributes.MediaSize.ISO_A4, true)
+            .addMediaSize(mediaSize, true)
             .addResolution(
                 PrintAttributes.Resolution("nup_res", "300dpi", 300, 300),
                 true
