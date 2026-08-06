@@ -190,9 +190,9 @@ class MainActivity : AppCompatActivity() {
             }
 
             val iconView = ImageView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(96, 96)
-                val bitmap = LayoutIconGenerator.generateIconBitmap(layout.cols, layout.rows, layout.landscape)
-                setImageBitmap(bitmap)
+                layoutParams = LinearLayout.LayoutParams(80, 80)
+                setImageResource(layout.iconResId)
+                setColorFilter(Color.parseColor("#D0BCFF"))
             }
 
             val textContainer = LinearLayout(this).apply {
