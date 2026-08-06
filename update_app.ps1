@@ -27,7 +27,7 @@ if (-not $AdbPath) {
 
 if (-not $AdbPath) {
     Write-Host "[ERROR] ADB not found! Please check Android SDK platform-tools." -ForegroundColor Red
-    Read-Host "Press Enter to exit"
+    Start-Sleep -Seconds 5
     exit 1
 }
 
@@ -46,7 +46,7 @@ if (-not $ConnectedDevices) {
     Write-Host " 2. Device is connected via USB cable."
     Write-Host " 3. You accepted the 'Allow USB Debugging' prompt on device screen."
     Write-Host ""
-    Read-Host "Press Enter to exit"
+    Start-Sleep -Seconds 5
     exit 1
 }
 
@@ -71,7 +71,7 @@ $BuildResult = & $GradleBin assembleDebug
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
     Write-Host "[ERROR] Gradle build failed!" -ForegroundColor Red
-    Read-Host "Press Enter to exit"
+    Start-Sleep -Seconds 5
     exit 1
 }
 
@@ -83,7 +83,7 @@ Write-Host "[4/4] Installing updated APK via USB ADB..." -ForegroundColor Yellow
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
     Write-Host "[ERROR] Installation failed!" -ForegroundColor Red
-    Read-Host "Press Enter to exit"
+    Start-Sleep -Seconds 5
     exit 1
 }
 
@@ -97,4 +97,6 @@ Write-Host "========================================================" -Foregroun
 Write-Host "  SUCCESS: N-Up Print successfully updated on device!" -ForegroundColor Green
 Write-Host "========================================================" -ForegroundColor Green
 Write-Host ""
-Read-Host "Press Enter to exit"
+Write-Host "Auto-closing window in 3 seconds..." -ForegroundColor Gray
+Start-Sleep -Seconds 3
+exit 0

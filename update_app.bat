@@ -24,7 +24,7 @@ if exist "%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe" (
 if "%ADB_PATH%"=="" (
     echo [ERROR] ADB not found! Please make sure Android SDK platform-tools are installed.
     echo.
-    pause
+    timeout /t 5
     exit /b 1
 )
 
@@ -41,7 +41,7 @@ if !errorlevel! neq 0 (
     echo  2. Device is connected via USB cable.
     echo  3. You accepted the "Allow USB Debugging" prompt on your device screen.
     echo.
-    pause
+    timeout /t 5
     exit /b 1
 )
 
@@ -68,7 +68,7 @@ if !errorlevel! neq 0 (
     echo.
     echo [ERROR] Gradle build failed!
     echo.
-    pause
+    timeout /t 5
     exit /b 1
 )
 
@@ -80,7 +80,7 @@ if !errorlevel! neq 0 (
     echo.
     echo [ERROR] Installation failed!
     echo.
-    pause
+    timeout /t 5
     exit /b 1
 )
 
@@ -94,4 +94,6 @@ echo ========================================================
 echo   SUCCESS: N-Up Print successfully updated on device!
 echo ========================================================
 echo.
-pause
+echo Auto-closing in 3 seconds...
+timeout /t 3 >nul
+exit /b 0
