@@ -12,16 +12,12 @@
         "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\drawable\\ic_layout_2x1.xml"
     },
     {
-        "merged": "com.example.twoupprint.app-debug-31:/mipmap-anydpi-v26_ic_launcher.xml.flat",
-        "source": "com.example.twoupprint.app-main-33:/mipmap-anydpi-v26/ic_launcher.xml"
+        "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\mipmap-anydpi-v26\\ic_launcher_round.xml"
     },
     {
-        "merged": "com.example.twoupprint.app-debug-31:/drawable_ic_layout_custom.xml.flat",
-        "source": "com.example.twoupprint.app-main-33:/drawable/ic_layout_custom.xml"
-    },
-    {
-        "merged": "com.example.twoupprint.app-debug-31:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
-        "source": "com.example.twoupprint.app-main-33:/mipmap-anydpi-v26/ic_launcher_round.xml"
+        "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\drawable_ic_layout_custom.xml.flat",
+        "source": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-main-33:\\drawable\\ic_layout_custom.xml"
     },
     {
         "merged": "C:\\Users\\kolar\\.gradle\\daemon\\8.13\\com.example.twoupprint.app-debug-31:\\xml_printservice.xml.flat",

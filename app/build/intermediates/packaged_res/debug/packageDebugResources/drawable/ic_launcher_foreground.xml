@@ -3,25 +3,61 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- N-Up Print Launcher Icon: Black + White 2x2 grid on transparent background -->
-    <!-- Outer sheet stroke -->
+    <!-- N-Up Print Logo: 4-Page P1, P2, P3, P4 Monocolor White + Black Icon on Transparent Background -->
+
+    <!-- Outer Rounded Frame -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M24,24 h60 v60 h-60 z M28,28 v52 h52 v-52 z" />
-    <!-- Top-Left slot -->
+        android:pathData="M22,22 h64 v64 h-64 z M26,26 v56 h56 v-56 z" />
+
+    <!-- Page 1 (P1) Top-Left -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M32,32 h20 v20 h-20 z" />
-    <!-- Top-Right slot -->
+        android:pathData="M30,30 h16 l6,6 v18 h-22 z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M46,30 v6 h6 z" />
+
+    <!-- Page 2 (P2) Top-Right -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M56,32 h20 v20 h-20 z" />
-    <!-- Bottom-Left slot -->
+        android:pathData="M56,30 h16 l6,6 v18 h-22 z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M72,30 v6 h6 z" />
+
+    <!-- Page 3 (P3) Bottom-Left -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M32,56 h20 v20 h-20 z" />
-    <!-- Bottom-Right slot -->
+        android:pathData="M30,56 h16 l6,6 v18 h-22 z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M46,56 v6 h6 z" />
+
+    <!-- Page 4 (P4) Bottom-Right -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M56,56 h20 v20 h-20 z" />
+        android:pathData="M56,56 h16 l6,6 v18 h-22 z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M72,56 v6 h6 z" />
+
+    <!-- Page Content Lines -->
+    <!-- P1 Lines -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M34,40 h14 v2 h-14 z M34,44 h14 v2 h-14 z M34,48 h8 v2 h-8 z" />
+    <!-- P2 Lines -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M60,40 h14 v2 h-14 z M60,44 h14 v2 h-14 z M60,48 h8 v2 h-8 z" />
+    <!-- P3 Lines -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M34,66 h14 v2 h-14 z M34,70 h14 v2 h-14 z M34,74 h8 v2 h-8 z" />
+    <!-- P4 Lines -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M60,66 h14 v2 h-14 z M60,70 h14 v2 h-14 z M60,74 h8 v2 h-8 z" />
+
 </vector>

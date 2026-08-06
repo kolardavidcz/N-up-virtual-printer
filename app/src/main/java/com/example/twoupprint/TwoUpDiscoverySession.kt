@@ -42,14 +42,28 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
             .setMinMargins(PrintAttributes.Margins(0, 0, 0, 0))
             .build()
 
-        return PrinterInfo.Builder(
+        val builder = PrinterInfo.Builder(
             id,
             mode.displayName,
             PrinterInfo.STATUS_IDLE
         )
             .setIconResourceId(mode.iconResId)
+            .setHasCustomPrinterIcon(true)
             .setCapabilities(capabilities)
-            .build()
+
+        return builder.build()
+    }
+
+    override fun onRequestCustomPrinterIcon(
+        printerId: PrinterId,
+        cancellationSignal: CancellationSignal,
+        callback: CustomPrinterIconCallback
+    ) {
+        val localId = printerId.localId
+        val layout = LayoutRegistry.findLayoutById(service, localId)
+        val bitmap = LayoutIconGenerator.generateIconBitmap(layout.cols, layout.rows, layout.landscape)
+        val icon = Icon.createWithBitmap(bitmap)
+        callback.onCustomPrinterIconLoaded(icon)
     }
 
     override fun onStartPrinterDiscovery(priorityList: MutableList<PrinterId>) {
