@@ -12,6 +12,7 @@ drawable ic_layout_2x1
 drawable ic_layout_2x2
 drawable ic_layout_2x3
 drawable ic_layout_2x4
+drawable ic_layout_custom
 id batteryCard
 id batterySub
 id batteryTitle
@@ -26,6 +27,7 @@ id pathText
 id promptSwitch
 layout activity_main
 mipmap ic_launcher
+mipmap ic_launcher_round
 string app_name
 string print_service_label
 string printer_name

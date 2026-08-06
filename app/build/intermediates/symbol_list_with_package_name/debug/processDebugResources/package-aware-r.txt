@@ -2916,6 +2916,7 @@ drawable ic_layout_2x1
 drawable ic_layout_2x2
 drawable ic_layout_2x3
 drawable ic_layout_2x4
+drawable ic_layout_custom
 drawable ic_m3_chip_check
 drawable ic_m3_chip_checked_circle
 drawable ic_m3_chip_close
@@ -3655,6 +3656,7 @@ layout select_dialog_multichoice_material
 layout select_dialog_singlechoice_material
 layout support_simple_spinner_dropdown_item
 mipmap ic_launcher
+mipmap ic_launcher_round
 plurals mtrl_badge_content_description
 string abc_action_bar_home_description
 string abc_action_bar_up_description

@@ -3,21 +3,25 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- N-Up 2x2 grid emblem centered with 18dp inset padding -->
+    <!-- N-Up Print Launcher Icon: Black + White 2x2 grid on transparent background -->
+    <!-- Outer sheet stroke -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,24 h60 v60 h-60 z M28,28 v52 h52 v-52 z" />
     <!-- Top-Left slot -->
     <path
-        android:fillColor="#38BDF8"
-        android:pathData="M32,32 h18 v18 h-18 z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M32,32 h20 v20 h-20 z" />
     <!-- Top-Right slot -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M58,32 h18 v18 h-18 z" />
+        android:pathData="M56,32 h20 v20 h-20 z" />
     <!-- Bottom-Left slot -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M32,58 h18 v18 h-18 z" />
+        android:pathData="M32,56 h20 v20 h-20 z" />
     <!-- Bottom-Right slot -->
     <path
-        android:fillColor="#38BDF8"
-        android:pathData="M58,58 h18 v18 h-18 z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M56,56 h20 v20 h-20 z" />
 </vector>

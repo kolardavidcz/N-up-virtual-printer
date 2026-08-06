@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Monocolor black + white custom N-Up grid icon -->
+    <!-- Outer sheet stroke -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M3,3 h18 v18 h-18 z M5,5 v14 h14 v-14 z" />
+    <!-- Inner 3x3 grid slots -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M6,6 h3 v3 h-3 z M10.5,6 h3 v3 h-3 z M15,6 h3 v3 h-3 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M6,10.5 h3 v3 h-3 z M10.5,10.5 h3 v3 h-3 z M15,10.5 h3 v3 h-3 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M6,15 h3 v3 h-3 z M10.5,15 h3 v3 h-3 z M15,15 h3 v3 h-3 z" />
+</vector>

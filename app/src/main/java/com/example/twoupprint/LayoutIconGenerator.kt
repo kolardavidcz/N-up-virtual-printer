@@ -7,8 +7,8 @@ import android.graphics.Paint
 import android.graphics.RectF
 
 /**
- * High-precision vector icon generator for standard and custom X:Y virtual printers.
- * Renders crisp, anti-aliased white-on-transparent sheet diagrams that scale gracefully from 2x1 up to 10x10.
+ * Renders crisp, monocolor black + white page layout icons on transparent backgrounds.
+ * High-definition (256x256) vector geometry matching ISO A4 proportions.
  */
 object LayoutIconGenerator {
 
@@ -18,9 +18,8 @@ object LayoutIconGenerator {
         canvas.drawColor(Color.TRANSPARENT)
 
         val margin = 16f
-        val a4Ratio = 1.414f // Standard ISO A4 aspect ratio
+        val a4Ratio = 1.414f
 
-        // Calculate sheet rectangle maintaining true A4 aspect ratio
         val sheetRect = if (landscape) {
             val availableH = size - margin * 2
             val maxW = size - margin * 2
@@ -47,7 +46,7 @@ object LayoutIconGenerator {
             }
         }
 
-        // Outer A4 Sheet Frame (Solid White 6px Stroke, Transparent Fill)
+        // Outer sheet frame: Solid White Stroke
         val sheetPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = 6f
@@ -58,7 +57,7 @@ object LayoutIconGenerator {
 
         canvas.drawRoundRect(sheetRect, 14f, 14f, sheetPaint)
 
-        // Dynamic Inner Padding & Gap calculation based on grid density
+        // Dynamic Inner Padding & Gap
         val innerPadding = (sheetRect.width() * 0.08f).coerceAtLeast(10f)
         val availableGridW = sheetRect.width() - (innerPadding * 2)
         val availableGridH = sheetRect.height() - (innerPadding * 2)
@@ -70,17 +69,16 @@ object LayoutIconGenerator {
 
         val cornerRadius = (cellW * 0.12f).coerceIn(2f, 8f)
 
-        // Sub-page slot fill (Solid White)
+        // Page slots: Solid White fill with fine Black outline
         val pageFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
             color = Color.WHITE
         }
 
-        // Sub-page slot stroke (for dense grids to maintain separation)
-        val pageStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val pageOutlinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = 2f
-            color = Color.WHITE
+            color = Color.BLACK
         }
 
         for (r in 0 until rows) {
@@ -92,7 +90,7 @@ object LayoutIconGenerator {
 
                 val pageRect = RectF(left, top, right, bottom)
                 canvas.drawRoundRect(pageRect, cornerRadius, cornerRadius, pageFillPaint)
-                canvas.drawRoundRect(pageRect, cornerRadius, cornerRadius, pageStrokePaint)
+                canvas.drawRoundRect(pageRect, cornerRadius, cornerRadius, pageOutlinePaint)
             }
         }
 

@@ -84,7 +84,7 @@ object LayoutRegistry {
                     cols == 2 && rows == 2 -> R.drawable.ic_layout_2x2
                     cols == 2 && rows == 3 -> R.drawable.ic_layout_2x3
                     cols == 2 && rows == 4 -> R.drawable.ic_layout_2x4
-                    else -> R.drawable.ic_layout_2x2
+                    else -> R.drawable.ic_layout_custom
                 }
 
                 list.add(PrintLayout(id, name, cols, rows, landscape, iconRes, isCustom = true))
