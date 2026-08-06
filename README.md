@@ -12,9 +12,11 @@
 
 ## Screenshots
 
-| Application Settings | System Print Spooler Integration |
-|---|---|
-| ![N-Up Print App UI](docs/screenshots/app_screanshoot.jpg) | ![System Print Spooler Virtual Printers](docs/screenshots/virtual_printers.jpg) |
+**Application**
+![N-Up Print App UI](docs/screenshots/app_screanshoot.jpg)
+
+**System Print Spooler Integration**
+![System Print Spooler Virtual Printers](docs/screenshots/virtual_printers.jpg)
 
 ---
 
