@@ -35,7 +35,12 @@ class TwoUpPrintService : PrintService() {
         }
 
         val localId = printJob.info.printerId?.localId
-        val layout = LayoutRegistry.findLayoutById(applicationContext, localId)
+        val baseLayout = LayoutRegistry.findLayoutById(applicationContext, localId)
+
+        // Respect the orientation requested by the user in the system print dialog (Portrait vs Landscape)
+        val mediaSize = printJob.info?.attributes?.mediaSize
+        val requestedIsLandscape = if (mediaSize != null) !mediaSize.isPortrait else baseLayout.landscape
+        val layout = baseLayout.copy(landscape = requestedIsLandscape)
 
         // Extract website / page title from print job metadata if available
         val docName = extractCleanDocumentName(printJob)

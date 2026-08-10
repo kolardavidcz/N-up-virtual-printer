@@ -215,20 +215,39 @@ class MainActivity : AppCompatActivity() {
 
             val orientationStr = if (layout.landscape) "Landscape" else "Portrait"
             val subView = TextView(this).apply {
-                text = "${layout.pagesPerSheet} pages per sheet • ${layout.cols}×${layout.rows} • $orientationStr"
+                text = "${layout.pagesPerSheet} pages per sheet • ${layout.cols}×${layout.rows}"
                 setTextColor(Color.parseColor("#CAC4D0"))
                 textSize = 13f
                 setPadding(0, 4, 0, 0)
             }
 
-            textContainer.addView(titleView)
-            textContainer.addView(subView)
+            val actionRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, 4, 0, 0)
+            }
+
+            val btnOrientation = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
+                val isLandscape = layout.landscape
+                text = if (isLandscape) "Default: Landscape" else "Default: Portrait"
+                setTextColor(Color.parseColor("#D0BCFF"))
+                textSize = 12f
+                insetTop = 0
+                insetBottom = 0
+                setOnClickListener {
+                    LayoutRegistry.setLayoutOrientation(this@MainActivity, layout.printerId, !isLandscape)
+                    updateUIState()
+                }
+            }
+            actionRow.addView(btnOrientation)
 
             if (layout.isCustom) {
                 val btnRemove = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
                     text = "Remove"
                     setTextColor(Color.parseColor("#F2B8B5"))
                     textSize = 12f
+                    insetTop = 0
+                    insetBottom = 0
                     setOnClickListener {
                         AlertDialog.Builder(this@MainActivity)
                             .setTitle("Remove Custom Layout")
@@ -241,8 +260,12 @@ class MainActivity : AppCompatActivity() {
                             .show()
                     }
                 }
-                textContainer.addView(btnRemove)
+                actionRow.addView(btnRemove)
             }
+
+            textContainer.addView(titleView)
+            textContainer.addView(subView)
+            textContainer.addView(actionRow)
 
             val enableSwitch = MaterialSwitch(this).apply {
                 isChecked = LayoutRegistry.isLayoutEnabled(this@MainActivity, layout.printerId)

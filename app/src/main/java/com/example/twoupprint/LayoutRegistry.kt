@@ -21,7 +21,8 @@ data class PrintLayout(
 }
 
 /**
- * Manages built-in and user-defined custom X:Y layouts with enable/disable support.
+ * Manages built-in and user-defined custom X:Y layouts with enable/disable
+ * and editable default orientation (Landscape vs. Portrait) support.
  */
 object LayoutRegistry {
 
@@ -38,7 +39,11 @@ object LayoutRegistry {
     )
 
     fun getAllLayouts(context: Context): List<PrintLayout> {
-        return builtInLayouts + getCustomLayouts(context)
+        val rawList = builtInLayouts + getCustomLayouts(context)
+        return rawList.map { layout ->
+            val effectiveLandscape = getLayoutOrientation(context, layout.printerId, layout.landscape)
+            layout.copy(landscape = effectiveLandscape)
+        }
     }
 
     fun isLayoutEnabled(context: Context, printerId: String): Boolean {
@@ -58,6 +63,16 @@ object LayoutRegistry {
         prefs.edit().putStringSet(KEY_DISABLED_LAYOUT_IDS, disabledSet).apply()
     }
 
+    fun getLayoutOrientation(context: Context, printerId: String, defaultLandscape: Boolean): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean("orientation_$printerId", defaultLandscape)
+    }
+
+    fun setLayoutOrientation(context: Context, printerId: String, landscape: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("orientation_$printerId", landscape).apply()
+    }
+
     fun getEnabledLayouts(context: Context): List<PrintLayout> {
         return getAllLayouts(context).filter { isLayoutEnabled(context, it.printerId) }
     }
@@ -73,9 +88,9 @@ object LayoutRegistry {
                 val obj = array.getJSONObject(i)
                 val cols = obj.getInt("cols")
                 val rows = obj.getInt("rows")
-                val landscape = obj.getBoolean("landscape")
+                val defaultLandscape = obj.optBoolean("landscape", cols >= rows)
                 val totalPages = cols * rows
-                val id = "custom_${cols}x${rows}_${if (landscape) "l" else "p"}"
+                val id = "custom_${cols}x${rows}_${if (defaultLandscape) "l" else "p"}"
                 val name = "${totalPages}-Up Custom (${cols}×${rows})"
 
                 val iconRes = when {
@@ -87,7 +102,7 @@ object LayoutRegistry {
                     else -> R.drawable.ic_layout_custom
                 }
 
-                list.add(PrintLayout(id, name, cols, rows, landscape, iconRes, isCustom = true))
+                list.add(PrintLayout(id, name, cols, rows, defaultLandscape, iconRes, isCustom = true))
             }
         } catch (_: Exception) { }
 
@@ -98,7 +113,7 @@ object LayoutRegistry {
         if (cols < 1 || rows < 1 || cols > 10 || rows > 10) return false
 
         val existing = getCustomLayouts(context).toMutableList()
-        if (existing.any { it.cols == cols && it.rows == rows && it.landscape == landscape }) {
+        if (existing.any { it.cols == cols && it.rows == rows }) {
             return false
         }
 
