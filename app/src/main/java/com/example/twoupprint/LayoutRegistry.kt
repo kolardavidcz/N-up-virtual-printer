@@ -41,14 +41,14 @@ object LayoutRegistry {
      * Default configurations:
      *   2×1  →  sub-page Portrait,  final sheet Landscape
      *   1×2  →  sub-page Landscape, final sheet Portrait
-     *   2×2  →  sub-page Landscape, final sheet Portrait
+     *   2×2  →  sub-page Landscape, final sheet Landscape
      *   2×3  →  sub-page Landscape, final sheet Portrait
      *   2×4  →  sub-page Landscape, final sheet Portrait
      */
     val builtInLayouts = listOf(
         PrintLayout("nup_2x1", "2-Up Side by Side (2×1)", 2, 1, landscape = true,  subPageLandscape = false, R.drawable.ic_layout_2x1),
         PrintLayout("nup_1x2", "2-Up Stacked (1×2)",      1, 2, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_1x2),
-        PrintLayout("nup_2x2", "4-Up Grid (2×2)",         2, 2, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x2),
+        PrintLayout("nup_2x2", "4-Up Grid (2×2)",         2, 2, landscape = true,  subPageLandscape = true,  R.drawable.ic_layout_2x2),
         PrintLayout("nup_2x3", "6-Up Grid (2×3)",         2, 3, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x3),
         PrintLayout("nup_2x4", "8-Up Grid (2×4)",         2, 4, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x4)
     )
