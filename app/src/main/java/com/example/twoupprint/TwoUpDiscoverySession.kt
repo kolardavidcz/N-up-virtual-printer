@@ -12,7 +12,8 @@ import android.printservice.PrinterDiscoverySession
 
 /**
  * Registers virtual printers for all enabled [PrintLayout] configurations,
- * dynamically rendering preview icons and supporting both Portrait and Landscape A4 choices.
+ * dynamically rendering preview icons and communicating default subpages orientation
+ * (Seet_v1 protocol communication) to the system print spooler.
  */
 class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscoverySession() {
 
@@ -22,13 +23,15 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
     private fun buildPrinterInfo(mode: PrintLayout): PrinterInfo {
         val id: PrinterId = service.generatePrinterId(mode.printerId)
 
-        val defaultSize = if (mode.landscape) {
+        // Communicating with Samsung Printer Spooler UI (Seet_v1 protocol communication):
+        // Use default subpages orientation (subPageLandscape) as default media size capability
+        val defaultSize = if (mode.subPageLandscape) {
             PrintAttributes.MediaSize.ISO_A4.asLandscape()
         } else {
             PrintAttributes.MediaSize.ISO_A4.asPortrait()
         }
 
-        val altSize = if (mode.landscape) {
+        val altSize = if (mode.subPageLandscape) {
             PrintAttributes.MediaSize.ISO_A4.asPortrait()
         } else {
             PrintAttributes.MediaSize.ISO_A4.asLandscape()

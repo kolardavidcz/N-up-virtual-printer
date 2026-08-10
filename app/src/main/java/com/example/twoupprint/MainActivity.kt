@@ -216,7 +216,7 @@ class MainActivity : AppCompatActivity() {
             val sheetStr = if (layout.landscape) "Landscape" else "Portrait"
             val subStr = if (layout.subPageLandscape) "Landscape" else "Portrait"
             val subView = TextView(this).apply {
-                text = "${layout.pagesPerSheet} pages/sheet • ${layout.cols}×${layout.rows} • Sheet: $sheetStr • Pages: $subStr"
+                text = "${layout.pagesPerSheet} pages/sheet • ${layout.cols}×${layout.rows} • Sheet: $sheetStr • Subpages: $subStr"
                 setTextColor(Color.parseColor("#CAC4D0"))
                 textSize = 12f
                 setPadding(0, 4, 0, 0)
@@ -244,7 +244,7 @@ class MainActivity : AppCompatActivity() {
 
             val btnSubPage = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
                 val isSubLandscape = layout.subPageLandscape
-                text = if (isSubLandscape) "Pages: Landscape" else "Pages: Portrait"
+                text = if (isSubLandscape) "Subpages: Landscape" else "Subpages: Portrait"
                 setTextColor(Color.parseColor("#CCC2DC"))
                 textSize = 12f
                 insetTop = 0

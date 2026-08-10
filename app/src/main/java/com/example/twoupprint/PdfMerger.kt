@@ -15,7 +15,8 @@ import java.io.OutputStream
 /**
  * Merges source PDF pages N-up into a true vector output PDF.
  *
- * Supports arbitrary grid layouts (cols × rows) in both portrait and landscape orientation.
+ * Supports arbitrary grid layouts (cols × rows) with independent
+ * sheet orientation (landscape / portrait) and subpages orientation.
  * Text remains 100% selectable and fonts/shapes stay crisp — no bitmap rasterization.
  */
 object PdfMerger {
@@ -49,13 +50,12 @@ object PdfMerger {
 
             val cols = layout.cols
             val rows = layout.rows
-            val pagesPerSheet = layout.pagesPerSheet
 
-            // Target sheet dimensions
+            // Sheet_v2 internal processing sheet dimensions
             val sheetRect = if (layout.landscape) {
-                PDRectangle(PDRectangle.A4.height, PDRectangle.A4.width)  // Landscape
+                PDRectangle(PDRectangle.A4.height, PDRectangle.A4.width)  // Landscape sheet
             } else {
-                PDRectangle(PDRectangle.A4.width, PDRectangle.A4.height)  // Portrait
+                PDRectangle(PDRectangle.A4.width, PDRectangle.A4.height)  // Portrait sheet
             }
             val sheetW = sheetRect.width
             val sheetH = sheetRect.height
@@ -88,7 +88,8 @@ object PdfMerger {
                         drawVectorPageInSlot(
                             srcDoc, layerUtility, contentStream, pageIdx,
                             slotLeft = slotLeft, slotBottom = slotBottom,
-                            slotWidth = slotW, slotHeight = slotH
+                            slotWidth = slotW, slotHeight = slotH,
+                            layout = layout
                         )
                         onProgress?.invoke(pageIdx + 1, pageCount)
                         pageIdx++
@@ -140,7 +141,8 @@ object PdfMerger {
         slotLeft: Float,
         slotBottom: Float,
         slotWidth: Float,
-        slotHeight: Float
+        slotHeight: Float,
+        layout: PrintLayout
     ) {
         val form = layerUtility.importPageAsForm(srcDoc, pageIndex)
         val srcPage = srcDoc.getPage(pageIndex)
@@ -149,18 +151,41 @@ object PdfMerger {
         val srcW = cropBox.width
         val srcH = cropBox.height
 
-        val scale = Math.min(slotWidth / srcW, slotHeight / srcH)
+        val srcIsLandscape = srcW > srcH
+        val targetIsLandscape = layout.subPageLandscape
 
-        val destW = srcW * scale
-        val destH = srcH * scale
-
-        val tx = slotLeft + (slotWidth - destW) / 2f - cropBox.lowerLeftX * scale
-        val ty = slotBottom + (slotHeight - destH) / 2f - cropBox.lowerLeftY * scale
+        val needsRotation = (srcIsLandscape != targetIsLandscape)
 
         contentStream.saveGraphicsState()
-        contentStream.transform(Matrix(scale, 0f, 0f, scale, tx, ty))
+
+        if (needsRotation) {
+            val rotatedW = srcH
+            val rotatedH = srcW
+            val scale = Math.min(slotWidth / rotatedW, slotHeight / rotatedH)
+
+            val destW = rotatedW * scale
+            val destH = rotatedH * scale
+
+            val tx = slotLeft + (slotWidth - destW) / 2f
+            val ty = slotBottom + (slotHeight - destH) / 2f
+
+            val e = tx + destW + scale * cropBox.lowerLeftY
+            val f = ty - scale * cropBox.lowerLeftX
+
+            contentStream.transform(Matrix(0f, scale, -scale, 0f, e, f))
+        } else {
+            val scale = Math.min(slotWidth / srcW, slotHeight / srcH)
+
+            val destW = srcW * scale
+            val destH = srcH * scale
+
+            val tx = slotLeft + (slotWidth - destW) / 2f - cropBox.lowerLeftX * scale
+            val ty = slotBottom + (slotHeight - destH) / 2f - cropBox.lowerLeftY * scale
+
+            contentStream.transform(Matrix(scale, 0f, 0f, scale, tx, ty))
+        }
+
         contentStream.drawForm(form)
         contentStream.restoreGraphicsState()
     }
 }
-

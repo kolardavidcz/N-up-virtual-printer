@@ -19,7 +19,7 @@ import android.graphics.RectF
 object LayoutIconGenerator {
 
     /**
-     * Overload that pulls sub-page orientation from the [PrintLayout] data class.
+     * Overload that pulls orientations from the [PrintLayout] data class.
      */
     fun generateIconBitmap(layout: PrintLayout, size: Int = 256): Bitmap {
         return generateIconBitmap(layout.cols, layout.rows, layout.landscape, layout.subPageLandscape, size)
@@ -62,12 +62,17 @@ object LayoutIconGenerator {
         val slotW = (availableGridW - (gap * (cols - 1))) / cols
         val slotH = (availableGridH - (gap * (rows - 1))) / rows
 
-        // Sub-page A4 aspect ratio within each slot
-        val subAspect = if (subPageLandscape) a4Ratio else (1f / a4Ratio)  // w/h ratio
+        // Sub-page A4 aspect ratio within each slot (w / h)
+        val subAspect = if (subPageLandscape) a4Ratio else (1f / a4Ratio)
 
         val pageFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
             color = Color.WHITE
+        }
+
+        val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#777777")
+            strokeCap = Paint.Cap.ROUND
         }
 
         for (r in 0 until rows) {
@@ -84,6 +89,25 @@ object LayoutIconGenerator {
                 val cornerRadius = (pageW * 0.10f).coerceIn(2f, 8f)
                 val pageRect = RectF(pageLeft, pageTop, pageLeft + pageW, pageTop + pageH)
                 canvas.drawRoundRect(pageRect, cornerRadius, cornerRadius, pageFillPaint)
+
+                // Draw subtle mini document lines if space permits
+                val pPadX = pageW * 0.20f
+                val pPadY = pageH * 0.25f
+                val availableLineH = pageH - pPadY * 2
+                val lineStroke = (pageW * 0.07f).coerceIn(1.5f, 4f)
+                linePaint.strokeWidth = lineStroke
+
+                if (availableLineH >= 8f && (pageW - pPadX * 2) >= 8f) {
+                    val line1Y = pageTop + pPadY + availableLineH * 0.25f
+                    val line2Y = pageTop + pPadY + availableLineH * 0.75f
+
+                    val lx1 = pageLeft + pPadX
+                    val lx2Full = pageLeft + pageW - pPadX
+                    val lx2Short = pageLeft + pPadX + (pageW - pPadX * 2) * 0.65f
+
+                    canvas.drawLine(lx1, line1Y, lx2Full, line1Y, linePaint)
+                    canvas.drawLine(lx1, line2Y, lx2Short, line2Y, linePaint)
+                }
             }
         }
 
@@ -101,16 +125,13 @@ object LayoutIconGenerator {
         val targetH: Float
 
         if (landscape) {
-            // Landscape: width > height
             targetW = maxW
             targetH = maxW / a4Ratio
         } else {
-            // Portrait: height > width
             targetH = maxH
             targetW = maxH / a4Ratio
         }
 
-        // Scale down if it exceeds bounds
         val scale = minOf(maxW / targetW, maxH / targetH, 1f)
         val finalW = targetW * scale
         val finalH = targetH * scale

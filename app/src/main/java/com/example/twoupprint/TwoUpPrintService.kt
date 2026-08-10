@@ -37,10 +37,12 @@ class TwoUpPrintService : PrintService() {
         val localId = printJob.info.printerId?.localId
         val baseLayout = LayoutRegistry.findLayoutById(applicationContext, localId)
 
-        // Respect the orientation requested by the user in the system print dialog (Portrait vs Landscape)
+        // Read orientation requested by the user in the system print dialog (subpages orientation / Seet_v1 protocol)
         val mediaSize = printJob.info?.attributes?.mediaSize
-        val requestedIsLandscape = if (mediaSize != null) !mediaSize.isPortrait else baseLayout.landscape
-        val layout = baseLayout.copy(landscape = requestedIsLandscape)
+        val userSelectedSubPageLandscape = if (mediaSize != null) !mediaSize.isPortrait else baseLayout.subPageLandscape
+
+        // Layout keeps configured sheet orientation (Sheet_v2 internal processing)
+        val layout = baseLayout.copy(subPageLandscape = userSelectedSubPageLandscape)
 
         // Extract website / page title from print job metadata if available
         val docName = extractCleanDocumentName(printJob)
@@ -118,4 +120,3 @@ class TwoUpPrintService : PrintService() {
         return cleaned
     }
 }
-
