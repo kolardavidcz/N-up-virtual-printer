@@ -3091,6 +3091,7 @@ id beginning
 id blocking
 id bottom
 id bounce
+id btnAbout
 id btnAddLayout
 id btnBatteryAction
 id btnClearOldPrinters

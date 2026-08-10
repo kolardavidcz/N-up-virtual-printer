@@ -49,7 +49,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnOpenSettings: View
     private lateinit var btnClearOldPrinters: View
     private lateinit var btnTroubleshoot: View
-    private lateinit var btnAbout: View
 
     private val directoryPicker =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -85,7 +84,6 @@ class MainActivity : AppCompatActivity() {
         btnOpenSettings = findViewById(R.id.btnOpenSettings)
         btnClearOldPrinters = findViewById(R.id.btnClearOldPrinters)
         btnTroubleshoot = findViewById(R.id.btnTroubleshoot)
-        btnAbout = findViewById(R.id.btnAbout)
 
         btnAddLayout.setOnClickListener {
             showAddCustomLayoutDialog()
@@ -129,10 +127,6 @@ class MainActivity : AppCompatActivity() {
 
         btnTroubleshoot.setOnClickListener {
             openPrintSpoolerInfo()
-        }
-
-        btnAbout.setOnClickListener {
-            showAboutDialog()
         }
 
         checkAndRequestPermissions()
@@ -399,42 +393,6 @@ class MainActivity : AppCompatActivity() {
                 openPrintSpoolerInfo()
             }
             .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showAboutDialog() {
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(48, 24, 48, 24)
-        }
-
-        val textMsg = TextView(this).apply {
-            text = "N-Up Print v1.0.0\nVirtual PDF Printer for Android & Samsung One UI\n\n" +
-                    "Features:\n" +
-                    "• Print 2-up, 4-up, 6-up, 8-up or custom X×Y grids\n" +
-                    "• 100% Vector PDF Output (selectable text & sharp fonts)\n" +
-                    "• Independent Sheet & Subpages orientation controls\n" +
-                    "• Custom save directory & instant prompt popups\n" +
-                    "• Samsung Print Service integration\n\n" +
-                    "Open Source Project on GitHub:\n" +
-                    "github.com/kolardavidcz/N-up-virtual-printer"
-            setTextColor(Color.parseColor("#E6E0E9"))
-            textSize = 14f
-            setLineSpacing(0f, 1.2f)
-        }
-
-        container.addView(textMsg)
-
-        AlertDialog.Builder(this)
-            .setTitle("About N-Up Print")
-            .setView(container)
-            .setPositiveButton("Open GitHub Repo") { _, _ ->
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/kolardavidcz/N-up-virtual-printer"))
-                    startActivity(intent)
-                } catch (_: Exception) { }
-            }
-            .setNegativeButton("Close", null)
             .show()
     }
 
