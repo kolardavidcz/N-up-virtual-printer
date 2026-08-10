@@ -22,7 +22,7 @@ Unlike standard print services that rasterize documents into low-resolution imag
 
 | Material 3 Settings & Virtual Printers | System Print Spooler Integration |
 |:---:|:---:|
-| ![N-Up Print App Settings](docs/screenshots/app_screanshoot.png | ![Samsung System Print Spooler Virtual Printers](docs/screenshots/virtual_printers.jpg) |
+| ![N-Up Print App Settings](docs/screenshots/app_screanshoot.png) | ![Samsung System Print Spooler Virtual Printers](docs/screenshots/virtual_printers.jpg) |
 
 ---
 
