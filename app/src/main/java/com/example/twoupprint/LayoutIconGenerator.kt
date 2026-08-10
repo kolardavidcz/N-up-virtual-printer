@@ -57,12 +57,16 @@ object LayoutIconGenerator {
         val slotW = (availW - gap * (cols - 1)) / cols
         val slotH = (availH - gap * (rows - 1)) / rows
 
-        // Sub-pages are always portrait A4 documents — fit them into the slot maintaining ratio
+        // Sub-pages aspect ratio depends on subpage default orientation
+        // Portrait sub-pages: taller than wide (1:√2)
+        // Landscape sub-pages: wider than tall (√2:1)
+        val subPageRatio = if (landscape) 1f / A4_RATIO else A4_RATIO  // height/width ratio
+
         var subW = slotW
-        var subH = slotW * A4_RATIO
+        var subH = slotW * subPageRatio
         if (subH > slotH) {
             subH = slotH
-            subW = slotH / A4_RATIO
+            subW = slotH / subPageRatio
         }
 
         val cornerR = (subW * 0.10f).coerceIn(2f, 7f)
