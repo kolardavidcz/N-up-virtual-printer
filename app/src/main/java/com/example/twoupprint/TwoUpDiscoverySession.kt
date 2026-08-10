@@ -67,7 +67,7 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
     ) {
         val localId = printerId.localId
         val layout = LayoutRegistry.findLayoutById(service, localId)
-        val bitmap = LayoutIconGenerator.generateIconBitmap(layout.cols, layout.rows, layout.landscape)
+        val bitmap = LayoutIconGenerator.generateIconBitmap(layout)
         val icon = Icon.createWithBitmap(bitmap)
         callback.onCustomPrinterIconLoaded(icon)
     }

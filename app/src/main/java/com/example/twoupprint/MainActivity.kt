@@ -191,7 +191,7 @@ class MainActivity : AppCompatActivity() {
 
             val iconView = ImageView(this).apply {
                 layoutParams = LinearLayout.LayoutParams(96, 96)
-                val bitmap = LayoutIconGenerator.generateIconBitmap(layout.cols, layout.rows, layout.landscape)
+                val bitmap = LayoutIconGenerator.generateIconBitmap(layout)
                 setImageBitmap(bitmap)
             }
 
@@ -213,11 +213,12 @@ class MainActivity : AppCompatActivity() {
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
             }
 
-            val orientationStr = if (layout.landscape) "Landscape" else "Portrait"
+            val sheetStr = if (layout.landscape) "Landscape" else "Portrait"
+            val subStr = if (layout.subPageLandscape) "Landscape" else "Portrait"
             val subView = TextView(this).apply {
-                text = "${layout.pagesPerSheet} pages per sheet • ${layout.cols}×${layout.rows}"
+                text = "${layout.pagesPerSheet} pages/sheet • ${layout.cols}×${layout.rows} • Sheet: $sheetStr • Pages: $subStr"
                 setTextColor(Color.parseColor("#CAC4D0"))
-                textSize = 13f
+                textSize = 12f
                 setPadding(0, 4, 0, 0)
             }
 
@@ -229,7 +230,7 @@ class MainActivity : AppCompatActivity() {
 
             val btnOrientation = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
                 val isLandscape = layout.landscape
-                text = if (isLandscape) "Subpage default: Landscape" else "Subpage default: Portrait"
+                text = if (isLandscape) "Sheet: Landscape" else "Sheet: Portrait"
                 setTextColor(Color.parseColor("#D0BCFF"))
                 textSize = 12f
                 insetTop = 0
@@ -301,16 +302,22 @@ class MainActivity : AppCompatActivity() {
             setText("3")
         }
 
-        val orientationSwitch = MaterialSwitch(this).apply {
-            text = "Landscape sheet orientation"
+        val sheetSwitch = MaterialSwitch(this).apply {
+            text = "Landscape output sheet"
             setPadding(0, 16, 0, 0)
+        }
+
+        val subPageSwitch = MaterialSwitch(this).apply {
+            text = "Landscape sub-pages"
+            setPadding(0, 8, 0, 0)
         }
 
         fun updateSuitableOrientation() {
             val cols = colsInput.text.toString().toIntOrNull() ?: 3
             val rows = rowsInput.text.toString().toIntOrNull() ?: 3
-            // Cols >= Rows -> Landscape is more suitable; Rows > Cols -> Portrait is more suitable
-            orientationSwitch.isChecked = (cols >= rows)
+            val (sheetLandscape, subLandscape) = LayoutRegistry.inferDefaults(cols, rows)
+            sheetSwitch.isChecked = sheetLandscape
+            subPageSwitch.isChecked = subLandscape
         }
 
         val textWatcher = object : android.text.TextWatcher {
@@ -329,7 +336,8 @@ class MainActivity : AppCompatActivity() {
         container.addView(colsInput)
         container.addView(TextView(this).apply { text = "Rows (Y):"; setTextColor(Color.parseColor("#D0BCFF")); setPadding(0, 16, 0, 0) })
         container.addView(rowsInput)
-        container.addView(orientationSwitch)
+        container.addView(sheetSwitch)
+        container.addView(subPageSwitch)
 
         AlertDialog.Builder(this)
             .setTitle("Add Custom Layout")
@@ -337,9 +345,10 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("Add Printer") { _, _ ->
                 val cols = colsInput.text.toString().toIntOrNull() ?: 2
                 val rows = rowsInput.text.toString().toIntOrNull() ?: 2
-                val landscape = orientationSwitch.isChecked
+                val landscape = sheetSwitch.isChecked
+                val subLandscape = subPageSwitch.isChecked
 
-                val added = LayoutRegistry.addCustomLayout(this, cols, rows, landscape)
+                val added = LayoutRegistry.addCustomLayout(this, cols, rows, landscape, subLandscape)
                 if (added) {
                     Toast.makeText(this, "Added ${cols}x${rows} printer layout", Toast.LENGTH_SHORT).show()
                     updateUIState()
