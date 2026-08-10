@@ -242,6 +242,20 @@ class MainActivity : AppCompatActivity() {
             }
             actionRow.addView(btnOrientation)
 
+            val btnSubPage = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
+                val isSubLandscape = layout.subPageLandscape
+                text = if (isSubLandscape) "Pages: Landscape" else "Pages: Portrait"
+                setTextColor(Color.parseColor("#CCC2DC"))
+                textSize = 12f
+                insetTop = 0
+                insetBottom = 0
+                setOnClickListener {
+                    LayoutRegistry.setSubPageOrientation(this@MainActivity, layout.printerId, !isSubLandscape)
+                    updateUIState()
+                }
+            }
+            actionRow.addView(btnSubPage)
+
             if (layout.isCustom) {
                 val btnRemove = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
                     text = "Remove"

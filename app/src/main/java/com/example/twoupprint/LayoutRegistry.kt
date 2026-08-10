@@ -57,7 +57,8 @@ object LayoutRegistry {
         val rawList = builtInLayouts + getCustomLayouts(context)
         return rawList.map { layout ->
             val effectiveLandscape = getLayoutOrientation(context, layout.printerId, layout.landscape)
-            layout.copy(landscape = effectiveLandscape)
+            val effectiveSubLandscape = getSubPageOrientation(context, layout.printerId, layout.subPageLandscape)
+            layout.copy(landscape = effectiveLandscape, subPageLandscape = effectiveSubLandscape)
         }
     }
 
@@ -86,6 +87,16 @@ object LayoutRegistry {
     fun setLayoutOrientation(context: Context, printerId: String, landscape: Boolean) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putBoolean("orientation_$printerId", landscape).apply()
+    }
+
+    fun getSubPageOrientation(context: Context, printerId: String, defaultLandscape: Boolean): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean("subpage_orientation_$printerId", defaultLandscape)
+    }
+
+    fun setSubPageOrientation(context: Context, printerId: String, landscape: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("subpage_orientation_$printerId", landscape).apply()
     }
 
     fun getEnabledLayouts(context: Context): List<PrintLayout> {
