@@ -22,7 +22,7 @@ Unlike standard print services that rasterize documents into low-resolution imag
 
 | Material 3 Settings & Virtual Printers | System Print Spooler Integration |
 |:---:|:---:|
-| ![N-Up Print App Settings](docs/screenshots/app_screanshoot.jpg) | ![Samsung System Print Spooler Virtual Printers](docs/screenshots/virtual_printers.jpg) |
+| ![N-Up Print App Settings](docs/screenshots/app_screanshoot.png | ![Samsung System Print Spooler Virtual Printers](docs/screenshots/virtual_printers.jpg) |
 
 ---
 
@@ -74,9 +74,3 @@ To automatically compile, install over USB ADB, and launch on your connected And
   ```
 
 *The scripts automatically close after 3 seconds upon successful update.*
-
----
-
-## 📜 License
-
-Distributed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
