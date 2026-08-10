@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var batterySub: TextView
     private lateinit var btnBatteryAction: MaterialButton
     private lateinit var btnOpenSettings: View
+    private lateinit var btnClearOldPrinters: View
     private lateinit var btnTroubleshoot: View
 
     private val directoryPicker =
@@ -81,6 +82,7 @@ class MainActivity : AppCompatActivity() {
         batterySub = findViewById(R.id.batterySub)
         btnBatteryAction = findViewById(R.id.btnBatteryAction)
         btnOpenSettings = findViewById(R.id.btnOpenSettings)
+        btnClearOldPrinters = findViewById(R.id.btnClearOldPrinters)
         btnTroubleshoot = findViewById(R.id.btnTroubleshoot)
 
         btnAddLayout.setOnClickListener {
@@ -117,6 +119,10 @@ class MainActivity : AppCompatActivity() {
 
         btnOpenSettings.setOnClickListener {
             openPrintSettings()
+        }
+
+        btnClearOldPrinters.setOnClickListener {
+            showClearOldPrintersDialog()
         }
 
         btnTroubleshoot.setOnClickListener {
@@ -266,8 +272,13 @@ class MainActivity : AppCompatActivity() {
                     setOnClickListener {
                         AlertDialog.Builder(this@MainActivity)
                             .setTitle("Remove Custom Layout")
-                            .setMessage("Delete ${layout.displayName}?")
-                            .setPositiveButton("Remove") { _, _ ->
+                            .setMessage("Delete ${layout.displayName}?\n\nTip: If this printer still appears in Samsung's menu after removing, clear Print Spooler data under System & Reliability.")
+                            .setPositiveButton("Remove & Open Spooler") { _, _ ->
+                                LayoutRegistry.removeCustomLayout(this@MainActivity, layout.printerId)
+                                updateUIState()
+                                openPrintSpoolerInfo()
+                            }
+                            .setNeutralButton("Remove Only") { _, _ ->
                                 LayoutRegistry.removeCustomLayout(this@MainActivity, layout.printerId)
                                 updateUIState()
                             }
@@ -369,6 +380,17 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     Toast.makeText(this, "Layout already exists or invalid values", Toast.LENGTH_SHORT).show()
                 }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showClearOldPrintersDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Clear Old / Phantom Printers")
+            .setMessage("Samsung Print Spooler caches previously created printer options in its app memory.\n\nTo remove phantom printers from Samsung's print menu:\n1. Tap 'Open Storage Settings'\n2. Tap 'Storage'\n3. Tap 'Clear Data' or 'Clear Cache'\n\nThis will instantly wipe deleted printers from Samsung's print list.")
+            .setPositiveButton("Open Storage Settings") { _, _ ->
+                openPrintSpoolerInfo()
             }
             .setNegativeButton("Cancel", null)
             .show()
