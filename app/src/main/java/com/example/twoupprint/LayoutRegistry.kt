@@ -31,11 +31,11 @@ object LayoutRegistry {
     private const val KEY_DISABLED_LAYOUT_IDS = "disabled_layout_ids_set"
 
     val builtInLayouts = listOf(
-        PrintLayout("nup_2x1", "2-Up Side by Side (2×1)", 2, 1, landscape = true, R.drawable.ic_layout_2x1),
-        PrintLayout("nup_1x2", "2-Up Stacked (1×2)", 1, 2, landscape = false, R.drawable.ic_layout_1x2),
+        PrintLayout("nup_2x1", "2-Up Side by Side (2×1)", 2, 1, landscape = false, R.drawable.ic_layout_2x1),
+        PrintLayout("nup_1x2", "2-Up Stacked (1×2)", 1, 2, landscape = true, R.drawable.ic_layout_1x2),
         PrintLayout("nup_2x2", "4-Up Grid (2×2)", 2, 2, landscape = true, R.drawable.ic_layout_2x2),
-        PrintLayout("nup_2x3", "6-Up Grid (2×3)", 2, 3, landscape = false, R.drawable.ic_layout_2x3),
-        PrintLayout("nup_2x4", "8-Up Grid (2×4)", 2, 4, landscape = false, R.drawable.ic_layout_2x4)
+        PrintLayout("nup_2x3", "6-Up Grid (2×3)", 2, 3, landscape = true, R.drawable.ic_layout_2x3),
+        PrintLayout("nup_2x4", "8-Up Grid (2×4)", 2, 4, landscape = true, R.drawable.ic_layout_2x4)
     )
 
     fun getAllLayouts(context: Context): List<PrintLayout> {

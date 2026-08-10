@@ -229,7 +229,7 @@ class MainActivity : AppCompatActivity() {
 
             val btnOrientation = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
                 val isLandscape = layout.landscape
-                text = if (isLandscape) "Default: Landscape" else "Default: Portrait"
+                text = if (isLandscape) "Subpage default: Landscape" else "Subpage default: Portrait"
                 setTextColor(Color.parseColor("#D0BCFF"))
                 textSize = 12f
                 insetTop = 0
