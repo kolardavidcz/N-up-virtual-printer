@@ -3093,6 +3093,7 @@ id bottom
 id bounce
 id btnAddLayout
 id btnBatteryAction
+id btnClearOldPrinters
 id btnOpenSettings
 id btnResetLocation
 id btnSetLocation

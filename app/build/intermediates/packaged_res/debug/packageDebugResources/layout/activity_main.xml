@@ -321,6 +321,47 @@
                         android:layout_height="1dp"
                         android:background="#49454F" />
 
+                    <!-- Clear Old / Phantom Printers Item -->
+                    <LinearLayout
+                        android:id="@+id/btnClearOldPrinters"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="20dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Clear Old / Phantom Printers"
+                                android:textColor="#E6E0E9"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Wipe cached deleted printers from Samsung print menu"
+                                android:textColor="#CAC4D0"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#49454F" />
+
                     <!-- Troubleshoot Item -->
                     <LinearLayout
                         android:id="@+id/btnTroubleshoot"

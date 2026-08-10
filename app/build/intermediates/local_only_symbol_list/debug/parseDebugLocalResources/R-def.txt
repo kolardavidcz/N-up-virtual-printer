@@ -18,6 +18,7 @@ id batterySub
 id batteryTitle
 id btnAddLayout
 id btnBatteryAction
+id btnClearOldPrinters
 id btnOpenSettings
 id btnResetLocation
 id btnSetLocation
