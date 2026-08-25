@@ -1,11 +1,8 @@
 package com.example.twoupprint
 
 import com.tom_roush.pdfbox.contentstream.operator.Operator
-import com.tom_roush.pdfbox.cos.COSArray
-import com.tom_roush.pdfbox.cos.COSBase
 import com.tom_roush.pdfbox.cos.COSDictionary
 import com.tom_roush.pdfbox.cos.COSFloat
-import com.tom_roush.pdfbox.cos.COSInteger
 import com.tom_roush.pdfbox.cos.COSName
 import com.tom_roush.pdfbox.cos.COSNumber
 import com.tom_roush.pdfbox.pdfparser.PDFStreamParser
@@ -15,40 +12,35 @@ import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.common.PDStream
 import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject
 import java.io.ByteArrayOutputStream
-import java.util.ArrayDeque
+import kotlin.math.abs
 
 /**
- * Context-Aware Semantic Vector Stream Transformer for maximum text contrast
- * with near-zero false positives (e.g., dark code blocks) and false negatives (e.g., faint math/notes).
+ * Targeted Gray-to-Black Font Booster.
  *
- * Distinguishes by exact PDF grammar:
- * - Text Objects (BT ... ET): Snapped to Solid Black on light backgrounds, or Pure White in dark code blocks.
- * - Vector Strokes (S, s): Math symbols, fractions, square roots, brackets boosted to Solid Black.
- * - Vector Fills (f, f*, re): Light/medium background shading wiped to Pure White (saving toner),
- *   dark banners/boxes snapped to Deep Black.
- * - ExtGState Alpha (/ca, /CA): Boosts opacity to 1.0 (fully opaque).
- * - Images (/XObject /Image): 100% untouched in original full color.
+ * Specifically boosts gray/faint text fonts into solid pitch black:
+ * - Only modifies text font colors inside text blocks (BT ... ET).
+ * - Grayscale fonts (0.01 <= gray < 0.95) -> Solid Black (0.0).
+ * - Neutral gray RGB fonts -> Solid Black (0.0 0.0 0.0).
+ * - Semi-transparent text opacity (/ca) -> 1.0 (fully opaque).
+ * - All background shapes, fills, borders, colored elements, and images remain 100% untouched.
  */
 object VectorTextBooster {
 
-    /**
-     * Boosts text, math formulas, and lines on [page] in [doc].
-     */
     fun boostPage(
         doc: PDDocument,
         page: PDPage,
         preserveImages: Boolean = true
     ) {
-        // 1. Boost Graphic State Alpha / Opacity (/Resources/ExtGState)
+        // 1. Boost text alpha opacity in ExtGState so semi-transparent text is fully opaque
         boostExtGStateAlpha(page)
 
-        // 2. Parse and rewrite page content stream tokens with Semantic Grammar State Machine
+        // 2. Parse and rewrite text tokens (only gray font to black)
         try {
             val parser = PDFStreamParser(page)
             parser.parse()
             val tokens = parser.tokens
 
-            val modifiedTokens = processSemanticTokens(tokens)
+            val modifiedTokens = processTextTokens(tokens)
 
             val byteOut = ByteArrayOutputStream()
             val writer = ContentStreamWriter(byteOut)
@@ -64,19 +56,9 @@ object VectorTextBooster {
         processFormXObjects(doc, page)
     }
 
-    private data class GraphicsState(
-        var nonStrokingLum: Float = 0.0f,
-        var strokingLum: Float = 0.0f,
-        var activeBgLum: Float = 1.0f
-    )
-
-    private fun processSemanticTokens(tokens: List<Any>): List<Any> {
+    private fun processTextTokens(tokens: List<Any>): List<Any> {
         val newTokens = ArrayList<Any>(tokens.size)
-        val stateStack = ArrayDeque<GraphicsState>()
-        var currentState = GraphicsState()
-
         var inTextObject = false
-        var activeBackgroundLuminance = 1.0f // Default white paper
 
         var i = 0
         while (i < tokens.size) {
@@ -86,7 +68,6 @@ object VectorTextBooster {
                 val opName = token.name
 
                 when (opName) {
-                    // --- Text Object Scope ---
                     "BT" -> {
                         inTextObject = true
                         newTokens.add(token)
@@ -96,145 +77,57 @@ object VectorTextBooster {
                         newTokens.add(token)
                     }
 
-                    // --- Graphics State Push / Pop ---
-                    "q" -> {
-                        stateStack.push(currentState.copy())
-                        newTokens.add(token)
-                    }
-                    "Q" -> {
-                        if (stateStack.isNotEmpty()) {
-                            currentState = stateStack.pop()
-                            activeBackgroundLuminance = currentState.activeBgLum
-                        }
-                        newTokens.add(token)
-                    }
-
-                    // --- Fill Shape Operations (re, f, f*, B, B*) ---
-                    "f", "f*" -> {
-                        // We just executed a background fill
-                        activeBackgroundLuminance = currentState.nonStrokingLum
-                        currentState.activeBgLum = activeBackgroundLuminance
-                        newTokens.add(token)
-                    }
-                    "B", "B*" -> {
-                        // Fill and Stroke together
-                        activeBackgroundLuminance = currentState.nonStrokingLum
-                        currentState.activeBgLum = activeBackgroundLuminance
-                        newTokens.add(token)
-                    }
-
-                    // --- Non-stroking & Stroking Grayscale (e.g. "0.4 g" or "0.4 G") ---
+                    // --- Grayscale font color ("gray g") ---
                     "g" -> {
-                        if (newTokens.isNotEmpty() && newTokens.last() is COSNumber) {
+                        if (inTextObject && newTokens.isNotEmpty() && newTokens.last() is COSNumber) {
                             val grayNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
-                            val origGray = grayNum.floatValue()
-                            val mappedGray = mapNonStrokingLuminance(origGray, inTextObject, activeBackgroundLuminance)
-                            currentState.nonStrokingLum = mappedGray
-                            newTokens.add(COSFloat(mappedGray))
-                        }
-                        newTokens.add(token)
-                    }
-                    "G" -> {
-                        if (newTokens.isNotEmpty() && newTokens.last() is COSNumber) {
-                            val grayNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
-                            val origGray = grayNum.floatValue()
-                            val mappedGray = mapStrokingLuminance(origGray)
-                            currentState.strokingLum = mappedGray
-                            newTokens.add(COSFloat(mappedGray))
-                        }
-                        newTokens.add(token)
-                    }
+                            val grayVal = grayNum.floatValue()
 
-                    // --- Non-stroking & Stroking RGB (e.g. "r g b rg" or "r g b RG") ---
-                    "rg" -> {
-                        if (newTokens.size >= 3 &&
-                            newTokens[newTokens.size - 1] is COSNumber &&
-                            newTokens[newTokens.size - 2] is COSNumber &&
-                            newTokens[newTokens.size - 3] is COSNumber
-                        ) {
-                            val bNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
-                            val gNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
-                            val rNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
-
-                            val r = rNum.floatValue()
-                            val g = gNum.floatValue()
-                            val b = bNum.floatValue()
-
-                            val lum = 0.299f * r + 0.587f * g + 0.114f * b
-                            val mappedLum = mapNonStrokingLuminance(lum, inTextObject, activeBackgroundLuminance)
-                            currentState.nonStrokingLum = mappedLum
-
-                            newTokens.add(COSFloat(mappedLum))
-                            newTokens.add(COSFloat(mappedLum))
-                            newTokens.add(COSFloat(mappedLum))
-                        }
-                        newTokens.add(token)
-                    }
-                    "RG" -> {
-                        if (newTokens.size >= 3 &&
-                            newTokens[newTokens.size - 1] is COSNumber &&
-                            newTokens[newTokens.size - 2] is COSNumber &&
-                            newTokens[newTokens.size - 3] is COSNumber
-                        ) {
-                            val bNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
-                            val gNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
-                            val rNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
-
-                            val r = rNum.floatValue()
-                            val g = gNum.floatValue()
-                            val b = bNum.floatValue()
-
-                            val lum = 0.299f * r + 0.587f * g + 0.114f * b
-                            val mappedLum = mapStrokingLuminance(lum)
-                            currentState.strokingLum = mappedLum
-
-                            newTokens.add(COSFloat(mappedLum))
-                            newTokens.add(COSFloat(mappedLum))
-                            newTokens.add(COSFloat(mappedLum))
-                        }
-                        newTokens.add(token)
-                    }
-
-                    // --- Non-stroking & Stroking CMYK (e.g. "c m y k k" or "c m y k K") ---
-                    "k" -> {
-                        if (newTokens.size >= 4 &&
-                            newTokens[newTokens.size - 1] is COSNumber &&
-                            newTokens[newTokens.size - 2] is COSNumber &&
-                            newTokens[newTokens.size - 3] is COSNumber &&
-                            newTokens[newTokens.size - 4] is COSNumber
-                        ) {
-                            val kNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
-                            val yNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
-                            val mNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
-                            val cNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
-
-                            val c = cNum.floatValue()
-                            val m = mNum.floatValue()
-                            val y = yNum.floatValue()
-                            val kVal = kNum.floatValue()
-
-                            val lum = 1.0f - kVal - (0.299f * c + 0.587f * m + 0.114f * y)
-                            val mappedLum = mapNonStrokingLuminance(lum, inTextObject, activeBackgroundLuminance)
-                            currentState.nonStrokingLum = mappedLum
-
-                            if (mappedLum == 0.0f) {
-                                // Solid Black in CMYK
+                            // If gray font (not pure white >= 0.95), boost to solid black
+                            if (grayVal in 0.01f..0.95f) {
                                 newTokens.add(COSFloat(0.0f))
-                                newTokens.add(COSFloat(0.0f))
-                                newTokens.add(COSFloat(0.0f))
-                                newTokens.add(COSFloat(1.0f))
                             } else {
-                                // Pure White in CMYK
-                                newTokens.add(COSFloat(0.0f))
-                                newTokens.add(COSFloat(0.0f))
-                                newTokens.add(COSFloat(0.0f))
-                                newTokens.add(COSFloat(0.0f))
+                                newTokens.add(grayNum)
                             }
                         }
                         newTokens.add(token)
                     }
-                    "K" -> {
-                        if (newTokens.size >= 4 &&
+
+                    // --- RGB font color ("r g b rg") ---
+                    "rg" -> {
+                        if (inTextObject && newTokens.size >= 3 &&
+                            newTokens[newTokens.size - 1] is COSNumber &&
+                            newTokens[newTokens.size - 2] is COSNumber &&
+                            newTokens[newTokens.size - 3] is COSNumber
+                        ) {
+                            val bNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
+                            val gNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
+                            val rNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
+
+                            val r = rNum.floatValue()
+                            val g = gNum.floatValue()
+                            val b = bNum.floatValue()
+
+                            val lum = 0.299f * r + 0.587f * g + 0.114f * b
+                            val isGrayish = abs(r - g) < 0.18f && abs(g - b) < 0.18f && abs(r - b) < 0.18f
+
+                            // If neutral gray font (not pure white >= 0.95), boost to solid black
+                            if (isGrayish && lum in 0.01f..0.95f) {
+                                newTokens.add(COSFloat(0.0f))
+                                newTokens.add(COSFloat(0.0f))
+                                newTokens.add(COSFloat(0.0f))
+                            } else {
+                                newTokens.add(rNum)
+                                newTokens.add(gNum)
+                                newTokens.add(bNum)
+                            }
+                        }
+                        newTokens.add(token)
+                    }
+
+                    // --- CMYK font color ("c m y k k") ---
+                    "k" -> {
+                        if (inTextObject && newTokens.size >= 4 &&
                             newTokens[newTokens.size - 1] is COSNumber &&
                             newTokens[newTokens.size - 2] is COSNumber &&
                             newTokens[newTokens.size - 3] is COSNumber &&
@@ -251,19 +144,18 @@ object VectorTextBooster {
                             val kVal = kNum.floatValue()
 
                             val lum = 1.0f - kVal - (0.299f * c + 0.587f * m + 0.114f * y)
-                            val mappedLum = mapStrokingLuminance(lum)
-                            currentState.strokingLum = mappedLum
+                            val isNeutral = abs(c - m) < 0.15f && abs(m - y) < 0.15f
 
-                            if (mappedLum == 0.0f) {
+                            if (isNeutral && lum in 0.01f..0.95f) {
                                 newTokens.add(COSFloat(0.0f))
                                 newTokens.add(COSFloat(0.0f))
                                 newTokens.add(COSFloat(0.0f))
-                                newTokens.add(COSFloat(1.0f))
+                                newTokens.add(COSFloat(1.0f)) // Solid Black in CMYK
                             } else {
-                                newTokens.add(COSFloat(0.0f))
-                                newTokens.add(COSFloat(0.0f))
-                                newTokens.add(COSFloat(0.0f))
-                                newTokens.add(COSFloat(0.0f))
+                                newTokens.add(cNum)
+                                newTokens.add(mNum)
+                                newTokens.add(yNum)
+                                newTokens.add(kNum)
                             }
                         }
                         newTokens.add(token)
@@ -282,47 +174,7 @@ object VectorTextBooster {
     }
 
     /**
-     * Maps non-stroking (fill) color based on whether we are inside text or a background shape:
-     * - Inside Text:
-     *   - Over Light Background (>= 0.50): Any text Y < 0.96 -> Solid Black (0.0).
-     *   - Over Dark Background (< 0.50): Light syntax text Y >= 0.20 -> Pure White (1.0).
-     * - Outside Text (Background Shapes/Fills):
-     *   - Light/Medium Fills (>= 0.48): Wiped to Pure White (1.0) to save ink.
-     *   - Dark Fills (< 0.48): Snapped to Solid Black (0.0).
-     */
-    private fun mapNonStrokingLuminance(
-        lum: Float,
-        inText: Boolean,
-        activeBgLum: Float
-    ): Float {
-        return if (inText) {
-            if (activeBgLum >= 0.50f) {
-                // Text over Light / White Background: Boost any non-white font to solid black
-                if (lum < 0.96f) 0.0f else 1.0f
-            } else {
-                // Text inside Dark Code Block / Terminal Box:
-                // If text is lighter than the dark background, snap to pure white
-                if (lum >= 0.20f) 1.0f else 0.0f
-            }
-        } else {
-            // Background fill / shape:
-            // Light/Medium fills (>= 0.48, like zebra stripes, gray cards) -> Pure White
-            // Dark boxes (< 0.48) -> Solid Deep Black
-            if (lum >= 0.48f) 1.0f else 0.0f
-        }
-    }
-
-    /**
-     * Maps stroking color (vector lines, square roots, fraction bars, coordinate axes, brackets):
-     * Almost never background; boost anything darker than pure white to solid black.
-     */
-    private fun mapStrokingLuminance(lum: Float): Float {
-        return if (lum < 0.92f) 0.0f else 1.0f
-    }
-
-    /**
-     * Inspects /Resources/ExtGState dictionaries and boosts semi-transparent alpha values
-     * (/ca for text/fill and /CA for stroke) to 1.0 (fully opaque).
+     * Inspects /Resources/ExtGState and boosts semi-transparent text alpha (/ca) to 1.0 (fully opaque).
      */
     private fun boostExtGStateAlpha(page: PDPage) {
         try {
@@ -332,16 +184,10 @@ object VectorTextBooster {
             for (key in extGStateDict.keySet()) {
                 val gsObj = extGStateDict.getDictionaryObject(key) as? COSDictionary ?: continue
 
-                // Non-stroking alpha (/ca)
+                // Non-stroking alpha (/ca) used for text fills
                 val ca = gsObj.getDictionaryObject(COSName.getPDFName("ca")) as? COSNumber
                 if (ca != null && ca.floatValue() in 0.05f..0.98f) {
                     gsObj.setItem(COSName.getPDFName("ca"), COSFloat(1.0f))
-                }
-
-                // Stroking alpha (/CA)
-                val caStroke = gsObj.getDictionaryObject(COSName.getPDFName("CA")) as? COSNumber
-                if (caStroke != null && caStroke.floatValue() in 0.05f..0.98f) {
-                    gsObj.setItem(COSName.getPDFName("CA"), COSFloat(1.0f))
                 }
             }
         } catch (_: Exception) { }
@@ -359,7 +205,7 @@ object VectorTextBooster {
                     val parser = PDFStreamParser(xObj)
                     parser.parse()
                     val tokens = parser.tokens
-                    val modifiedTokens = processSemanticTokens(tokens)
+                    val modifiedTokens = processTextTokens(tokens)
 
                     val byteOut = ByteArrayOutputStream()
                     val writer = ContentStreamWriter(byteOut)
