@@ -17,11 +17,15 @@ import java.io.InputStream
 import java.io.OutputStream
 
 /**
- * Merges source PDF pages N-up into a true vector or pure 1-bit Black & White output PDF.
+ * Merges source PDF pages N-up into a true vector, Smart High-Contrast, or pure 1-bit B&W output PDF.
  *
  * Supports arbitrary grid layouts (cols × rows) with independent
  * sheet orientation (landscape / portrait), subpages orientation,
- * and color processing modes (Color, Grayscale, Pure 1-bit B&W).
+ * and color processing modes:
+ * - SMART_HIGH_CONTRAST: Vector text & formula boosting with 100% selectable text + color images preserved
+ * - COLOR: Full color vector pass-through
+ * - GRAYSCALE: Smooth 8-bit photographic grayscale
+ * - PURE_BLACK_WHITE: Pure 1-bit binarization (0 and 1 only)
  */
 object PdfMerger {
 
@@ -49,11 +53,21 @@ object PdfMerger {
         val srcDoc = PDDocument.load(sourcePdfStream)
         val outDoc = PDDocument()
         val layerUtility = LayerUtility(outDoc)
-        val pdfRenderer = if (colorMode != ColorProcessingMode.COLOR) PDFRenderer(srcDoc) else null
+
+        val isVectorMode = (colorMode == ColorProcessingMode.COLOR || colorMode == ColorProcessingMode.SMART_HIGH_CONTRAST)
+        val pdfRenderer = if (!isVectorMode) PDFRenderer(srcDoc) else null
 
         try {
             val pageCount = srcDoc.numberOfPages
             if (pageCount == 0) return
+
+            // If Smart High-Contrast vector mode is active, boost text & formulas directly in srcDoc
+            if (colorMode == ColorProcessingMode.SMART_HIGH_CONTRAST) {
+                for (i in 0 until pageCount) {
+                    val page = srcDoc.getPage(i)
+                    VectorTextBooster.boostPage(srcDoc, page, preserveImages = true)
+                }
+            }
 
             val cols = layout.cols
             val rows = layout.rows
@@ -92,8 +106,8 @@ object PdfMerger {
                         val slotLeft = col * slotW
                         val slotBottom = (rows - 1 - row) * slotH
 
-                        if (colorMode == ColorProcessingMode.COLOR || pdfRenderer == null) {
-                            // Full vector pass-through mode
+                        if (isVectorMode || pdfRenderer == null) {
+                            // Full vector pass-through / Smart High Contrast vector mode
                             drawVectorPageInSlot(
                                 srcDoc, layerUtility, contentStream, pageIdx,
                                 slotLeft = slotLeft, slotBottom = slotBottom,
@@ -231,7 +245,7 @@ object PdfMerger {
         val processedBitmap = when (colorMode) {
             ColorProcessingMode.PURE_BLACK_WHITE -> BwBinarizer.binarize(renderedBitmap, bwAlgorithm)
             ColorProcessingMode.GRAYSCALE -> BwBinarizer.toGrayscale(renderedBitmap)
-            ColorProcessingMode.COLOR -> renderedBitmap
+            else -> renderedBitmap
         }
 
         if (processedBitmap != renderedBitmap) {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="accent_green">#34D399</color>
+    <color name="app_bg">#020617</color>
+    <color name="ic_launcher_background">#0F172A</color>
+    <color name="primary_sky">#38BDF8</color>
+    <color name="surface_dark">#1E293B</color>
+    <color name="surface_hover">#334155</color>
+    <string name="app_name">N-Up Print</string>
+    <string name="print_service_label">N-Up PDF</string>
+    <string name="printer_name">Save as PDF (N-up)</string>
+</resources>

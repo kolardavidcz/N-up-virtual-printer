@@ -44,6 +44,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var btnAddLayout: MaterialButton
     private lateinit var layoutCardsContainer: LinearLayout
+    private lateinit var btnModeSmartContrast: MaterialButton
     private lateinit var btnModeColor: MaterialButton
     private lateinit var btnModeGrayscale: MaterialButton
     private lateinit var btnModePureBw: MaterialButton
@@ -87,6 +88,7 @@ class MainActivity : AppCompatActivity() {
         btnAddLayout = findViewById(R.id.btnAddLayout)
         layoutCardsContainer = findViewById(R.id.layoutCardsContainer)
 
+        btnModeSmartContrast = findViewById(R.id.btnModeSmartContrast)
         btnModeColor = findViewById(R.id.btnModeColor)
         btnModeGrayscale = findViewById(R.id.btnModeGrayscale)
         btnModePureBw = findViewById(R.id.btnModePureBw)
@@ -112,6 +114,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Color Mode Selection Listeners
+        btnModeSmartContrast.setOnClickListener {
+            LayoutRegistry.setColorMode(this, ColorProcessingMode.SMART_HIGH_CONTRAST)
+            updateUIState()
+        }
         btnModeColor.setOnClickListener {
             LayoutRegistry.setColorMode(this, ColorProcessingMode.COLOR)
             updateUIState()
@@ -239,6 +245,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        applyStyle(btnModeSmartContrast, selectedMode == ColorProcessingMode.SMART_HIGH_CONTRAST)
         applyStyle(btnModeColor, selectedMode == ColorProcessingMode.COLOR)
         applyStyle(btnModeGrayscale, selectedMode == ColorProcessingMode.GRAYSCALE)
         applyStyle(btnModePureBw, selectedMode == ColorProcessingMode.PURE_BLACK_WHITE)

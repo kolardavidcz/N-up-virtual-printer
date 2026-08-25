@@ -3097,6 +3097,7 @@ id btnClearOldPrinters
 id btnModeColor
 id btnModeGrayscale
 id btnModePureBw
+id btnModeSmartContrast
 id btnOpenBwStudio
 id btnOpenSettings
 id btnResetLocation

@@ -125,28 +125,40 @@
                         android:orientation="horizontal">
 
                         <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnModeColor"
+                            android:id="@+id/btnModeSmartContrast"
                             style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="4dp"
-                            android:layout_weight="1"
+                            android:layout_weight="1.2"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:text="Smart Contrast"
+                            android:textSize="11sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnModeColor"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="2dp"
+                            android:layout_weight="0.9"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
                             android:text="Color"
-                            android:textSize="12sp" />
+                            android:textSize="11sp" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnModeGrayscale"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginHorizontal="4dp"
-                            android:layout_weight="1"
+                            android:layout_marginHorizontal="2dp"
+                            android:layout_weight="0.9"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
                             android:text="Grayscale"
-                            android:textSize="12sp" />
+                            android:textSize="11sp" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnModePureBw"
@@ -154,11 +166,11 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
-                            android:layout_weight="1"
+                            android:layout_weight="0.9"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
                             android:text="Pure 1-Bit"
-                            android:textSize="12sp" />
+                            android:textSize="11sp" />
                     </LinearLayout>
 
                     <TextView

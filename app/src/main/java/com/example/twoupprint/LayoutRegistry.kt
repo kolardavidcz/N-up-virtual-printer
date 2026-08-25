@@ -9,6 +9,7 @@ import org.json.JSONObject
  * Color processing mode for output documents.
  */
 enum class ColorProcessingMode(val displayName: String, val description: String) {
+    SMART_HIGH_CONTRAST("Smart High-Contrast", "Boosts faint text & math formulas to solid black (100% selectable text) while preserving colorful images"),
     COLOR("Color (Original)", "Full color original output with vector preservation"),
     GRAYSCALE("Grayscale (8-bit)", "Smooth photographic 256 shades of gray (0-255)"),
     PURE_BLACK_WHITE("Pure Black & White (1-bit)", "Strictly 0 and 1 (#000000 and #FFFFFF) with zero gray ink/toner")
