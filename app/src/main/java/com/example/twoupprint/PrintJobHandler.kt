@@ -24,7 +24,7 @@ import java.util.Locale
 
 /**
  * Runs off the main thread to process the PDF document.
- * Merges pages into a true vector PDF (selectable text, crisp vector shapes) and streams
+ * Merges pages into a true vector or pure 1-bit B&W PDF and streams
  * the result to Downloads/TwoUpPrint/ via MediaStore (Android 10+) or direct file I/O.
  */
 class PrintJobHandler(
@@ -33,7 +33,9 @@ class PrintJobHandler(
     private val documentFd: ParcelFileDescriptor,
     private val destinationUri: Uri?,
     private val layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
-    private val fileName: String = "nup_output.pdf"
+    private val fileName: String = "nup_output.pdf",
+    private val colorMode: ColorProcessingMode = ColorProcessingMode.COLOR,
+    private val bwAlgorithm: BwBinarizer.BwAlgorithm = BwBinarizer.BwAlgorithm.TEXT_BOOSTER
 ) : Thread("NUpPrintJob") {
 
     companion object {
@@ -60,8 +62,6 @@ class PrintJobHandler(
                     tempSource.outputStream().use { output -> input.copyTo(output) }
                 }
             }
-
-            // fileName is provided by TwoUpPrintService
 
             val outStream: OutputStream
             val resultUri: Uri
@@ -91,7 +91,7 @@ class PrintJobHandler(
                 // Mark as complete after writing
                 outStream.use { output ->
                     tempSource.inputStream().use { input ->
-                        PdfMerger.mergeNUp(input, output, layout) { current, total ->
+                        PdfMerger.mergeNUp(input, output, layout, colorMode, bwAlgorithm) { current, total ->
                             updateProgressNotification(current, total, false)
                         }
                     }
@@ -110,7 +110,7 @@ class PrintJobHandler(
                     }
                 }
                 showCompleteNotification(displayLocation, resultUri)
-                Log.i("TwoUpPrint", "2-up vector PDF written to $displayLocation")
+                Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (colorMode=$colorMode)")
                 return
             } else {
                 // Legacy: direct file I/O to Downloads
@@ -131,7 +131,7 @@ class PrintJobHandler(
 
             outStream.use { output ->
                 tempSource.inputStream().use { input ->
-                    PdfMerger.mergeNUp(input, output, layout) { current, total ->
+                    PdfMerger.mergeNUp(input, output, layout, colorMode, bwAlgorithm) { current, total ->
                         updateProgressNotification(current, total, false)
                     }
                 }
@@ -145,10 +145,10 @@ class PrintJobHandler(
             }
 
             showCompleteNotification(displayLocation, resultUri)
-            Log.i("TwoUpPrint", "2-up vector PDF written to $displayLocation")
+            Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (colorMode=$colorMode)")
         } catch (e: Exception) {
-            Log.e("TwoUpPrint", "Failed to produce 2-up PDF", e)
-            val errorMessage = e.message ?: "2-up merge failed"
+            Log.e("TwoUpPrint", "Failed to produce N-up PDF", e)
+            val errorMessage = e.message ?: "N-up merge failed"
             notificationManager.cancel(NOTIF_ID)
             mainHandler.post {
                 if (job.isStarted) {
@@ -165,7 +165,7 @@ class PrintJobHandler(
                 "N-Up Print Progress",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Shows progress while generating 2-up PDF files"
+                description = "Shows progress while generating N-up PDF files"
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -212,4 +212,3 @@ class PrintJobHandler(
         notificationManager.notify(NOTIF_ID, builder.build())
     }
 }
-

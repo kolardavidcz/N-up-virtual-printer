@@ -6,6 +6,15 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
+ * Color processing mode for output documents.
+ */
+enum class ColorProcessingMode(val displayName: String, val description: String) {
+    COLOR("Color (Original)", "Full color original output with vector preservation"),
+    GRAYSCALE("Grayscale (8-bit)", "Smooth photographic 256 shades of gray (0-255)"),
+    PURE_BLACK_WHITE("Pure Black & White (1-bit)", "Strictly 0 and 1 (#000000 and #FFFFFF) with zero gray ink/toner")
+}
+
+/**
  * Represents a single N-up page layout configuration (cols x rows).
  *
  * Two independent orientation axes:
@@ -29,13 +38,15 @@ data class PrintLayout(
 
 /**
  * Manages built-in and user-defined custom X:Y layouts with enable/disable,
- * editable default sheet orientation, and sub-page orientation support.
+ * editable default sheet orientation, sub-page orientation, and color processing modes.
  */
 object LayoutRegistry {
 
     private const val PREFS_NAME = "twoupprint_prefs"
     private const val KEY_CUSTOM_LAYOUTS = "custom_layouts_json"
     private const val KEY_DISABLED_LAYOUT_IDS = "disabled_layout_ids_set"
+    private const val KEY_COLOR_PROCESSING_MODE = "global_color_processing_mode"
+    private const val KEY_BW_ALGORITHM = "global_bw_algorithm"
 
     /**
      * Default configurations:
@@ -97,6 +108,38 @@ object LayoutRegistry {
     fun setSubPageOrientation(context: Context, printerId: String, landscape: Boolean) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putBoolean("subpage_orientation_$printerId", landscape).apply()
+    }
+
+    // --- Color Mode & Pure B&W Algorithm Settings ---
+
+    fun getColorMode(context: Context): ColorProcessingMode {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val name = prefs.getString(KEY_COLOR_PROCESSING_MODE, ColorProcessingMode.COLOR.name)
+        return try {
+            ColorProcessingMode.valueOf(name ?: ColorProcessingMode.COLOR.name)
+        } catch (_: Exception) {
+            ColorProcessingMode.COLOR
+        }
+    }
+
+    fun setColorMode(context: Context, mode: ColorProcessingMode) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_COLOR_PROCESSING_MODE, mode.name).apply()
+    }
+
+    fun getBwAlgorithm(context: Context): BwBinarizer.BwAlgorithm {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val name = prefs.getString(KEY_BW_ALGORITHM, BwBinarizer.BwAlgorithm.TEXT_BOOSTER.name)
+        return try {
+            BwBinarizer.BwAlgorithm.valueOf(name ?: BwBinarizer.BwAlgorithm.TEXT_BOOSTER.name)
+        } catch (_: Exception) {
+            BwBinarizer.BwAlgorithm.TEXT_BOOSTER
+        }
+    }
+
+    fun setBwAlgorithm(context: Context, algorithm: BwBinarizer.BwAlgorithm) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_BW_ALGORITHM, algorithm.name).apply()
     }
 
     fun getEnabledLayouts(context: Context): List<PrintLayout> {

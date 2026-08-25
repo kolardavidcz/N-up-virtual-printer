@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.print.PrintAttributes
 import android.printservice.PrintJob
 import android.printservice.PrintService
 import android.printservice.PrinterDiscoverySession
@@ -44,6 +45,17 @@ class TwoUpPrintService : PrintService() {
         // Layout keeps configured sheet orientation (Sheet_v2 internal processing)
         val layout = baseLayout.copy(subPageLandscape = userSelectedSubPageLandscape)
 
+        // Determine effective color mode & B&W algorithm
+        val configuredColorMode = LayoutRegistry.getColorMode(applicationContext)
+        val bwAlgorithm = LayoutRegistry.getBwAlgorithm(applicationContext)
+
+        val spoolerColorMode = printJob.info?.attributes?.colorMode
+        val effectiveColorMode = if (spoolerColorMode == PrintAttributes.COLOR_MODE_MONOCHROME && configuredColorMode == ColorProcessingMode.COLOR) {
+            ColorProcessingMode.PURE_BLACK_WHITE
+        } else {
+            configuredColorMode
+        }
+
         // Extract website / page title from print job metadata if available
         val docName = extractCleanDocumentName(printJob)
 
@@ -64,7 +76,9 @@ class TwoUpPrintService : PrintService() {
                 printJob,
                 documentData,
                 layout,
-                fileName
+                fileName,
+                effectiveColorMode,
+                bwAlgorithm
             )
             return
         }
@@ -88,7 +102,10 @@ class TwoUpPrintService : PrintService() {
         }
 
         // Start processing — saves to chosen directory or Downloads/TwoUpPrint/ fallback
-        PrintJobHandler(applicationContext, printJob, documentData, destinationUri, layout, fileName).start()
+        PrintJobHandler(
+            applicationContext, printJob, documentData, destinationUri,
+            layout, fileName, effectiveColorMode, bwAlgorithm
+        ).start()
     }
 
     private fun extractCleanDocumentName(printJob: PrintJob): String? {

@@ -27,6 +27,8 @@ object PendingPrintJobManager {
     private var activeFd: ParcelFileDescriptor? = null
     private var activeLayout: PrintLayout = LayoutRegistry.builtInLayouts.first()
     private var activeFileName: String = "nup_output.pdf"
+    private var activeColorMode: ColorProcessingMode = ColorProcessingMode.COLOR
+    private var activeBwAlgorithm: BwBinarizer.BwAlgorithm = BwBinarizer.BwAlgorithm.TEXT_BOOSTER
 
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val timeoutRunnable = Runnable {
@@ -42,7 +44,9 @@ object PendingPrintJobManager {
         printJob: PrintJob,
         documentFd: ParcelFileDescriptor,
         layout: PrintLayout,
-        fileName: String
+        fileName: String,
+        colorMode: ColorProcessingMode = ColorProcessingMode.COLOR,
+        bwAlgorithm: BwBinarizer.BwAlgorithm = BwBinarizer.BwAlgorithm.TEXT_BOOSTER
     ) {
         // Cancel previous pending job if any
         cancelPendingJob(context)
@@ -51,6 +55,8 @@ object PendingPrintJobManager {
         activeFd = documentFd
         activeLayout = layout
         activeFileName = fileName
+        activeColorMode = colorMode
+        activeBwAlgorithm = bwAlgorithm
 
         // Set 2 minute timeout
         timeoutHandler.postDelayed(timeoutRunnable, TIMEOUT_MS)
@@ -67,6 +73,8 @@ object PendingPrintJobManager {
         val fd = activeFd
         val layout = activeLayout
         val fileName = activeFileName
+        val colorMode = activeColorMode
+        val bwAlgorithm = activeBwAlgorithm
 
         activeJob = null
         activeFd = null
@@ -77,7 +85,10 @@ object PendingPrintJobManager {
         if (job == null || fd == null) return
 
         if (uri != null) {
-            PrintJobHandler(context.applicationContext, job, fd, uri, layout, fileName).start()
+            PrintJobHandler(
+                context.applicationContext, job, fd, uri,
+                layout, fileName, colorMode, bwAlgorithm
+            ).start()
         } else {
             if (job.isStarted) {
                 job.fail("Save location cancelled by user")
@@ -118,27 +129,27 @@ object PendingPrintJobManager {
             nm.createNotificationChannel(channel)
         }
 
-        val activityIntent = Intent(context, SaveDestinationActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            putExtra("file_name", activeFileName)
+        val promptIntent = Intent(context, SaveDestinationActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
         val pendingIntent = PendingIntent.getActivity(
             context,
-            NOTIF_ID,
-            activityIntent,
+            1001,
+            promptIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_sys_download)
-            .setContentTitle("Select Save Location")
-            .setContentText("Choose destination for ${activeFileName}")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("Choose Save Location")
+            .setContentText("Tap to select folder for $activeFileName")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setFullScreenIntent(pendingIntent, true)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .setOngoing(true)
 
         nm.notify(NOTIF_ID, builder.build())
     }
