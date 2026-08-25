@@ -1,8 +1,11 @@
 package com.example.twoupprint
 
 import com.tom_roush.pdfbox.contentstream.operator.Operator
+import com.tom_roush.pdfbox.cos.COSArray
+import com.tom_roush.pdfbox.cos.COSBase
 import com.tom_roush.pdfbox.cos.COSDictionary
 import com.tom_roush.pdfbox.cos.COSFloat
+import com.tom_roush.pdfbox.cos.COSInteger
 import com.tom_roush.pdfbox.cos.COSName
 import com.tom_roush.pdfbox.cos.COSNumber
 import com.tom_roush.pdfbox.pdfparser.PDFStreamParser
@@ -12,35 +15,40 @@ import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.common.PDStream
 import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject
 import java.io.ByteArrayOutputStream
-import kotlin.math.abs
 
 /**
- * Targeted Gray-to-Black Font Booster.
+ * Pure vector-level text and formula contrast enhancer.
  *
- * Specifically boosts gray/faint text fonts into solid pitch black:
- * - Only modifies text font colors inside text blocks (BT ... ET).
- * - Grayscale fonts (0.01 <= gray < 0.95) -> Solid Black (0.0).
- * - Neutral gray RGB fonts -> Solid Black (0.0 0.0 0.0).
- * - Semi-transparent text opacity (/ca) -> 1.0 (fully opaque).
- * - All background shapes, fills, borders, colored elements, and images remain 100% untouched.
+ * Directly tokenizes and rewrites PDF content streams without rasterization:
+ * - Faint gray text, low-contrast math formulas, and pencil notes are boosted to solid black.
+ * - Text remains 100% vector-sharp, selectable, copyable, and searchable.
+ * - Semi-transparent opacity (/ca and /CA in ExtGState) is boosted to 100% solid.
+ * - Embedded color images (/XObject /Image) are 100% preserved in original vibrant color
+ *   when [preserveImages] is true.
  */
 object VectorTextBooster {
 
+    private const val LUMINANCE_THRESHOLD = 0.85f // Darker than paper white -> Black
+
+    /**
+     * Boosts text, math formulas, and lines on [page] in [doc].
+     */
     fun boostPage(
         doc: PDDocument,
         page: PDPage,
-        preserveImages: Boolean = true
+        preserveImages: Boolean = true,
+        threshold: Float = LUMINANCE_THRESHOLD
     ) {
-        // 1. Boost text alpha opacity in ExtGState so semi-transparent text is fully opaque
+        // 1. Boost Graphic State Alpha / Opacity (/Resources/ExtGState)
         boostExtGStateAlpha(page)
 
-        // 2. Parse and rewrite text tokens (only gray font to black)
+        // 2. Parse and rewrite page content stream tokens
         try {
             val parser = PDFStreamParser(page)
             parser.parse()
             val tokens = parser.tokens
 
-            val modifiedTokens = processTextTokens(tokens)
+            val modifiedTokens = processTokens(tokens, threshold)
 
             val byteOut = ByteArrayOutputStream()
             val writer = ContentStreamWriter(byteOut)
@@ -49,18 +57,17 @@ object VectorTextBooster {
             val newStream = PDStream(doc, byteOut.toByteArray().inputStream())
             page.setContents(newStream)
         } catch (_: Exception) {
-            // Preserve original stream if non-standard encoding occurs
+            // If stream parser fails on non-standard encoding, preserve original content stream
         }
 
         // 3. Recursively process nested Form XObjects
-        processFormXObjects(doc, page)
+        processFormXObjects(doc, page, threshold)
     }
 
-    private fun processTextTokens(tokens: List<Any>): List<Any> {
+    private fun processTokens(tokens: List<Any>, threshold: Float): List<Any> {
         val newTokens = ArrayList<Any>(tokens.size)
-        var inTextObject = false
-
         var i = 0
+
         while (i < tokens.size) {
             val token = tokens[i]
 
@@ -68,34 +75,21 @@ object VectorTextBooster {
                 val opName = token.name
 
                 when (opName) {
-                    "BT" -> {
-                        inTextObject = true
-                        newTokens.add(token)
-                    }
-                    "ET" -> {
-                        inTextObject = false
-                        newTokens.add(token)
-                    }
-
-                    // --- Grayscale font color ("gray g") ---
-                    "g" -> {
-                        if (inTextObject && newTokens.isNotEmpty() && newTokens.last() is COSNumber) {
+                    // --- Non-stroking & Stroking Grayscale (e.g. "0.4 g" or "0.4 G") ---
+                    "g", "G" -> {
+                        if (newTokens.isNotEmpty() && newTokens.last() is COSNumber) {
                             val grayNum = newTokens.removeAt(newTokens.size - 1) as COSNumber
                             val grayVal = grayNum.floatValue()
 
-                            // If gray font (not pure white >= 0.95), boost to solid black
-                            if (grayVal in 0.01f..0.95f) {
-                                newTokens.add(COSFloat(0.0f))
-                            } else {
-                                newTokens.add(grayNum)
-                            }
+                            val newGray = if (grayVal < threshold) 0.0f else 1.0f
+                            newTokens.add(COSFloat(newGray))
                         }
                         newTokens.add(token)
                     }
 
-                    // --- RGB font color ("r g b rg") ---
-                    "rg" -> {
-                        if (inTextObject && newTokens.size >= 3 &&
+                    // --- Non-stroking & Stroking RGB (e.g. "0.2 0.4 0.8 rg" or "0.2 0.4 0.8 RG") ---
+                    "rg", "RG" -> {
+                        if (newTokens.size >= 3 &&
                             newTokens[newTokens.size - 1] is COSNumber &&
                             newTokens[newTokens.size - 2] is COSNumber &&
                             newTokens[newTokens.size - 3] is COSNumber
@@ -109,25 +103,25 @@ object VectorTextBooster {
                             val b = bNum.floatValue()
 
                             val lum = 0.299f * r + 0.587f * g + 0.114f * b
-                            val isGrayish = abs(r - g) < 0.18f && abs(g - b) < 0.18f && abs(r - b) < 0.18f
 
-                            // If neutral gray font (not pure white >= 0.95), boost to solid black
-                            if (isGrayish && lum in 0.01f..0.95f) {
+                            if (lum < threshold) {
+                                // Boost to solid pitch black
                                 newTokens.add(COSFloat(0.0f))
                                 newTokens.add(COSFloat(0.0f))
                                 newTokens.add(COSFloat(0.0f))
                             } else {
-                                newTokens.add(rNum)
-                                newTokens.add(gNum)
-                                newTokens.add(bNum)
+                                // Keep paper white
+                                newTokens.add(COSFloat(1.0f))
+                                newTokens.add(COSFloat(1.0f))
+                                newTokens.add(COSFloat(1.0f))
                             }
                         }
                         newTokens.add(token)
                     }
 
-                    // --- CMYK font color ("c m y k k") ---
-                    "k" -> {
-                        if (inTextObject && newTokens.size >= 4 &&
+                    // --- Non-stroking & Stroking CMYK (e.g. "0 0 0 0.5 k" or "0 0 0 0.5 K") ---
+                    "k", "K" -> {
+                        if (newTokens.size >= 4 &&
                             newTokens[newTokens.size - 1] is COSNumber &&
                             newTokens[newTokens.size - 2] is COSNumber &&
                             newTokens[newTokens.size - 3] is COSNumber &&
@@ -141,21 +135,20 @@ object VectorTextBooster {
                             val c = cNum.floatValue()
                             val m = mNum.floatValue()
                             val y = yNum.floatValue()
-                            val kVal = kNum.floatValue()
+                            val k = kNum.floatValue()
 
-                            val lum = 1.0f - kVal - (0.299f * c + 0.587f * m + 0.114f * y)
-                            val isNeutral = abs(c - m) < 0.15f && abs(m - y) < 0.15f
+                            val lum = 1.0f - k - (0.299f * c + 0.587f * m + 0.114f * y)
 
-                            if (isNeutral && lum in 0.01f..0.95f) {
+                            if (lum < threshold) {
                                 newTokens.add(COSFloat(0.0f))
                                 newTokens.add(COSFloat(0.0f))
                                 newTokens.add(COSFloat(0.0f))
-                                newTokens.add(COSFloat(1.0f)) // Solid Black in CMYK
+                                newTokens.add(COSFloat(1.0f)) // 100% Black in CMYK
                             } else {
-                                newTokens.add(cNum)
-                                newTokens.add(mNum)
-                                newTokens.add(yNum)
-                                newTokens.add(kNum)
+                                newTokens.add(COSFloat(0.0f))
+                                newTokens.add(COSFloat(0.0f))
+                                newTokens.add(COSFloat(0.0f))
+                                newTokens.add(COSFloat(0.0f)) // White
                             }
                         }
                         newTokens.add(token)
@@ -174,7 +167,8 @@ object VectorTextBooster {
     }
 
     /**
-     * Inspects /Resources/ExtGState and boosts semi-transparent text alpha (/ca) to 1.0 (fully opaque).
+     * Inspects /Resources/ExtGState dictionaries and boosts semi-transparent alpha values
+     * (/ca for text/fill and /CA for stroke) to 1.0 (fully opaque).
      */
     private fun boostExtGStateAlpha(page: PDPage) {
         try {
@@ -184,10 +178,16 @@ object VectorTextBooster {
             for (key in extGStateDict.keySet()) {
                 val gsObj = extGStateDict.getDictionaryObject(key) as? COSDictionary ?: continue
 
-                // Non-stroking alpha (/ca) used for text fills
+                // Non-stroking alpha (/ca)
                 val ca = gsObj.getDictionaryObject(COSName.getPDFName("ca")) as? COSNumber
-                if (ca != null && ca.floatValue() in 0.05f..0.98f) {
+                if (ca != null && ca.floatValue() in 0.10f..0.98f) {
                     gsObj.setItem(COSName.getPDFName("ca"), COSFloat(1.0f))
+                }
+
+                // Stroking alpha (/CA)
+                val caStroke = gsObj.getDictionaryObject(COSName.getPDFName("CA")) as? COSNumber
+                if (caStroke != null && caStroke.floatValue() in 0.10f..0.98f) {
+                    gsObj.setItem(COSName.getPDFName("CA"), COSFloat(1.0f))
                 }
             }
         } catch (_: Exception) { }
@@ -196,7 +196,7 @@ object VectorTextBooster {
     /**
      * Recursively processes sub-form XObjects in /Resources/XObject.
      */
-    private fun processFormXObjects(doc: PDDocument, page: PDPage) {
+    private fun processFormXObjects(doc: PDDocument, page: PDPage, threshold: Float) {
         try {
             val resources = page.resources ?: return
             for (name in resources.xObjectNames) {
@@ -205,7 +205,7 @@ object VectorTextBooster {
                     val parser = PDFStreamParser(xObj)
                     parser.parse()
                     val tokens = parser.tokens
-                    val modifiedTokens = processTextTokens(tokens)
+                    val modifiedTokens = processTokens(tokens, threshold)
 
                     val byteOut = ByteArrayOutputStream()
                     val writer = ContentStreamWriter(byteOut)
