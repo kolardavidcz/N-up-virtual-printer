@@ -1,6 +1,6 @@
 # N-Up Print for Android (Virtual Printer Service)
 
-[![Release](https://img.shields.io/badge/release-v1.1.0-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v1.1.0)
+[![Release](https://img.shields.io/badge/release-v1.1.1-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v1.1.1)
 [![API](https://img.shields.io/badge/API-26%2B-green.svg)](https://android-arsenal.com/api?level=26)
 [![License](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Samsung%20One%20UI-3DDC84.svg)](https://developer.android.com/about/versions/oreo)
@@ -13,8 +13,8 @@ Unlike standard print services that rasterize documents into low-resolution imag
 
 ## 📥 Download APK
 
-- **Latest Release (v1.1.0)**: [Download N-Up Print v1.1.0 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v1.1.0/nup-print-v1.1.0.apk)
-- **Local Mirror**: [`releases/nup-print-v1.1.0.apk`](releases/nup-print-v1.1.0.apk)
+- **Latest Release (v1.1.1)**: [Download N-Up Print v1.1.1 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v1.1.1/nup-print-v1.1.1.apk)
+- **Local Mirror**: [`releases/nup-print-v1.1.1.apk`](releases/nup-print-v1.1.1.apk)
 
 ---
 
@@ -29,6 +29,7 @@ Unlike standard print services that rasterize documents into low-resolution imag
 ## ✨ Features & Capabilities
 
 - 📄 **True Vector PDF N-Up Merging**: Combines 2, 4, 6, 8, or arbitrary N-up pages onto a single A4 sheet without rasterizing to bitmaps. Text is 100% selectable and vector paths remain sharp.
+- 🖋️ **High-Contrast Vector Text & Formula Booster**: Automatically enhances faint gray text, math symbols ($\sum, \int, \frac{a}{b}$), and pencil notes to solid crisp black while preserving 100% text selectability and vibrant color images.
 - 🎛️ **Dual Orientation Control (Sheet vs. Subpages)**:
   - **Sheet Orientation**: Configure output sheet layout (`Landscape` vs. `Portrait`).
   - **Subpages Orientation**: Configure source document page fitting (`Landscape` vs. `Portrait`) with automatic 90° vector rotation for optimal layout density.
