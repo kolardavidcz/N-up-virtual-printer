@@ -13,10 +13,7 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
-import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
 import android.widget.EditText
-import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -26,32 +23,23 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.widget.NestedScrollView
 import androidx.documentfile.provider.DocumentFile
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.materialswitch.MaterialSwitch
 
 /**
- * Native Material 3 MainActivity with spacious UI hierarchy:
- * - Independent layout printer enable/disable toggles
- * - Dynamic custom X:Y layout creator
- * - Color processing modes (Color, Grayscale, Pure 1-bit B&W)
- * - Interactive B&W Algorithm Studio showcase
- * - Zero emojis, spacious layout structure, and clean typography
+ * Native Material 3 MainActivity:
+ * - Virtual printer layouts with independent sheet and subpage orientations
+ * - Custom X:Y layout creator
+ * - "Add contrast for text" toggle (100% selectable text + color images preserved)
+ * - Output destination settings & system reliability
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var btnAddLayout: MaterialButton
     private lateinit var layoutCardsContainer: LinearLayout
-    private lateinit var btnModeSmartContrast: MaterialButton
-    private lateinit var btnModeColor: MaterialButton
-    private lateinit var btnModeGrayscale: MaterialButton
-    private lateinit var btnModePureBw: MaterialButton
-    private lateinit var tvColorModeDesc: TextView
-    private lateinit var bwAlgoContainer: LinearLayout
-    private lateinit var tvBwAlgoName: TextView
-    private lateinit var btnOpenBwStudio: MaterialButton
+    private lateinit var switchTextContrast: MaterialSwitch
     private lateinit var pathText: TextView
     private lateinit var btnSetLocation: MaterialButton
     private lateinit var btnResetLocation: MaterialButton
@@ -87,15 +75,7 @@ class MainActivity : AppCompatActivity() {
 
         btnAddLayout = findViewById(R.id.btnAddLayout)
         layoutCardsContainer = findViewById(R.id.layoutCardsContainer)
-
-        btnModeSmartContrast = findViewById(R.id.btnModeSmartContrast)
-        btnModeColor = findViewById(R.id.btnModeColor)
-        btnModeGrayscale = findViewById(R.id.btnModeGrayscale)
-        btnModePureBw = findViewById(R.id.btnModePureBw)
-        tvColorModeDesc = findViewById(R.id.tvColorModeDesc)
-        bwAlgoContainer = findViewById(R.id.bwAlgoContainer)
-        tvBwAlgoName = findViewById(R.id.tvBwAlgoName)
-        btnOpenBwStudio = findViewById(R.id.btnOpenBwStudio)
+        switchTextContrast = findViewById(R.id.switchTextContrast)
 
         pathText = findViewById(R.id.pathText)
         btnSetLocation = findViewById(R.id.btnSetLocation)
@@ -113,26 +93,10 @@ class MainActivity : AppCompatActivity() {
             showAddCustomLayoutDialog()
         }
 
-        // Color Mode Selection Listeners
-        btnModeSmartContrast.setOnClickListener {
-            LayoutRegistry.setColorMode(this, ColorProcessingMode.SMART_HIGH_CONTRAST)
-            updateUIState()
-        }
-        btnModeColor.setOnClickListener {
-            LayoutRegistry.setColorMode(this, ColorProcessingMode.COLOR)
-            updateUIState()
-        }
-        btnModeGrayscale.setOnClickListener {
-            LayoutRegistry.setColorMode(this, ColorProcessingMode.GRAYSCALE)
-            updateUIState()
-        }
-        btnModePureBw.setOnClickListener {
-            LayoutRegistry.setColorMode(this, ColorProcessingMode.PURE_BLACK_WHITE)
-            updateUIState()
-        }
-
-        btnOpenBwStudio.setOnClickListener {
-            showBwStudioDialog()
+        // Text Contrast Switch Listener
+        switchTextContrast.isChecked = LayoutRegistry.isTextContrastEnabled(this)
+        switchTextContrast.setOnCheckedChangeListener { _, isChecked ->
+            LayoutRegistry.setTextContrastEnabled(this, isChecked)
         }
 
         btnSetLocation.setOnClickListener {
@@ -195,15 +159,8 @@ class MainActivity : AppCompatActivity() {
             pathText.text = "Downloads/TwoUpPrint/ (default)"
         }
 
-        // Color Processing Mode State
-        val colorMode = LayoutRegistry.getColorMode(this)
-        val bwAlgorithm = LayoutRegistry.getBwAlgorithm(this)
-
-        updateColorModeButtons(colorMode)
-        tvColorModeDesc.text = colorMode.description
-        tvBwAlgoName.text = bwAlgorithm.displayName
-
-        bwAlgoContainer.visibility = if (colorMode == ColorProcessingMode.PURE_BLACK_WHITE) View.VISIBLE else View.GONE
+        // Text Contrast State
+        switchTextContrast.isChecked = LayoutRegistry.isTextContrastEnabled(this)
 
         // Battery status
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -224,31 +181,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         renderLayoutCards()
-    }
-
-    private fun updateColorModeButtons(selectedMode: ColorProcessingMode) {
-        val selectedBg = Color.parseColor("#D0BCFF")
-        val selectedText = Color.parseColor("#381E72")
-        val unselectedText = Color.parseColor("#E6E0E9")
-        val unselectedStroke = Color.parseColor("#49454F")
-
-        fun applyStyle(button: MaterialButton, isSelected: Boolean) {
-            if (isSelected) {
-                button.setBackgroundColor(selectedBg)
-                button.setTextColor(selectedText)
-                button.strokeWidth = 0
-            } else {
-                button.setBackgroundColor(Color.TRANSPARENT)
-                button.setTextColor(unselectedText)
-                button.strokeColor = android.content.res.ColorStateList.valueOf(unselectedStroke)
-                button.strokeWidth = (1 * resources.displayMetrics.density).toInt()
-            }
-        }
-
-        applyStyle(btnModeSmartContrast, selectedMode == ColorProcessingMode.SMART_HIGH_CONTRAST)
-        applyStyle(btnModeColor, selectedMode == ColorProcessingMode.COLOR)
-        applyStyle(btnModeGrayscale, selectedMode == ColorProcessingMode.GRAYSCALE)
-        applyStyle(btnModePureBw, selectedMode == ColorProcessingMode.PURE_BLACK_WHITE)
     }
 
     private fun renderLayoutCards() {
@@ -463,212 +395,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showBwStudioDialog() {
-        var currentSample = BwBinarizer.SampleType.DOCUMENT_TEXT
-        var currentAlgorithm = LayoutRegistry.getBwAlgorithm(this)
-
-        val dialogView = NestedScrollView(this).apply {
-            val root = LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(32, 24, 32, 24)
-            }
-
-            val tvHeader = TextView(context).apply {
-                text = "B&W Algorithm Studio"
-                setTextColor(Color.parseColor("#E6E0E9"))
-                textSize = 18f
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
-            }
-            val tvSub = TextView(context).apply {
-                text = "Live preview of pure 1-bit binarization algorithms"
-                setTextColor(Color.parseColor("#CAC4D0"))
-                textSize = 13f
-                setPadding(0, 4, 0, 16)
-            }
-            root.addView(tvHeader)
-            root.addView(tvSub)
-
-            // Sample Selector (Horizontal Scroll Chips)
-            val sampleScroll = HorizontalScrollView(context).apply {
-                isHorizontalScrollBarEnabled = false
-            }
-            val sampleRow = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-            }
-
-            val sampleButtons = mutableListOf<MaterialButton>()
-            val ivColorPreview = ImageView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    (160 * resources.displayMetrics.density).toInt()
-                )
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                setBackgroundColor(Color.parseColor("#1C1B1F"))
-            }
-
-            val ivBwPreview = ImageView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    (160 * resources.displayMetrics.density).toInt()
-                )
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                setBackgroundColor(Color.parseColor("#1C1B1F"))
-            }
-
-            val tvAlgoDesc = TextView(context).apply {
-                setTextColor(Color.parseColor("#D0BCFF"))
-                textSize = 13f
-                setPadding(16, 12, 16, 12)
-                setBackgroundColor(Color.parseColor("#2B2930"))
-            }
-
-            fun refreshStudioPreviews() {
-                val colorSample = BwBinarizer.generateSampleBitmap(currentSample)
-                val bwOutput = BwBinarizer.binarize(colorSample, currentAlgorithm)
-
-                ivColorPreview.setImageBitmap(colorSample)
-                ivBwPreview.setImageBitmap(bwOutput)
-                tvAlgoDesc.text = currentAlgorithm.description
-            }
-
-            for (st in BwBinarizer.SampleType.values()) {
-                val btnSample = MaterialButton(context, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
-                    text = st.displayName
-                    textSize = 12f
-                    insetTop = 0
-                    insetBottom = 0
-                    setOnClickListener {
-                        currentSample = st
-                        for (b in sampleButtons) {
-                            val isSel = (b.text == st.displayName)
-                            b.setTextColor(if (isSel) Color.parseColor("#D0BCFF") else Color.parseColor("#CAC4D0"))
-                            b.typeface = if (isSel) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
-                        }
-                        refreshStudioPreviews()
-                    }
-                }
-                if (st == currentSample) {
-                    btnSample.setTextColor(Color.parseColor("#D0BCFF"))
-                    btnSample.typeface = android.graphics.Typeface.DEFAULT_BOLD
-                } else {
-                    btnSample.setTextColor(Color.parseColor("#CAC4D0"))
-                }
-                sampleButtons.add(btnSample)
-                sampleRow.addView(btnSample)
-            }
-            sampleScroll.addView(sampleRow)
-            root.addView(sampleScroll)
-
-            // Side-by-side or stacked preview container
-            val previewCard = MaterialCardView(context).apply {
-                setCardBackgroundColor(Color.parseColor("#211F26"))
-                radius = 16f * resources.displayMetrics.density
-                strokeColor = Color.parseColor("#49454F")
-                strokeWidth = (1 * resources.displayMetrics.density).toInt()
-                cardElevation = 0f
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { setMargins(0, 16, 0, 16) }
-            }
-
-            val cardInner = LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(16, 16, 16, 16)
-            }
-
-            cardInner.addView(TextView(context).apply {
-                text = "ORIGINAL COLOR SAMPLE"
-                setTextColor(Color.parseColor("#CAC4D0"))
-                textSize = 11f
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
-                letterSpacing = 0.08f
-            })
-            cardInner.addView(ivColorPreview)
-
-            cardInner.addView(View(context).apply {
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply {
-                    setMargins(0, 12, 0, 12)
-                }
-                setBackgroundColor(Color.parseColor("#49454F"))
-            })
-
-            cardInner.addView(TextView(context).apply {
-                text = "PURE 1-BIT BLACK & WHITE (0 & 1)"
-                setTextColor(Color.parseColor("#D0BCFF"))
-                textSize = 11f
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
-                letterSpacing = 0.08f
-            })
-            cardInner.addView(ivBwPreview)
-
-            previewCard.addView(cardInner)
-            root.addView(previewCard)
-
-            // Algorithm Selector Dropdown / Row
-            root.addView(TextView(context).apply {
-                text = "SELECT ALGORITHM"
-                setTextColor(Color.parseColor("#D0BCFF"))
-                textSize = 12f
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
-                letterSpacing = 0.08f
-                setPadding(0, 8, 0, 8)
-            })
-
-            val algoScroll = HorizontalScrollView(context).apply {
-                isHorizontalScrollBarEnabled = false
-            }
-            val algoRow = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-            }
-            val algoButtons = mutableListOf<MaterialButton>()
-
-            for (algo in BwBinarizer.BwAlgorithm.values()) {
-                val btnAlgo = MaterialButton(context, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
-                    text = algo.displayName
-                    textSize = 12f
-                    insetTop = 0
-                    insetBottom = 0
-                    setOnClickListener {
-                        currentAlgorithm = algo
-                        for (b in algoButtons) {
-                            val isSel = (b.text == algo.displayName)
-                            b.setTextColor(if (isSel) Color.parseColor("#D0BCFF") else Color.parseColor("#CAC4D0"))
-                            b.typeface = if (isSel) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
-                        }
-                        refreshStudioPreviews()
-                    }
-                }
-                if (algo == currentAlgorithm) {
-                    btnAlgo.setTextColor(Color.parseColor("#D0BCFF"))
-                    btnAlgo.typeface = android.graphics.Typeface.DEFAULT_BOLD
-                } else {
-                    btnAlgo.setTextColor(Color.parseColor("#CAC4D0"))
-                }
-                algoButtons.add(btnAlgo)
-                algoRow.addView(btnAlgo)
-            }
-            algoScroll.addView(algoRow)
-            root.addView(algoScroll)
-
-            root.addView(tvAlgoDesc)
-
-            addView(root)
-            refreshStudioPreviews()
-        }
-
-        AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setPositiveButton("Set as Default") { _, _ ->
-                LayoutRegistry.setBwAlgorithm(this, currentAlgorithm)
-                LayoutRegistry.setColorMode(this, ColorProcessingMode.PURE_BLACK_WHITE)
-                Toast.makeText(this, "Set ${currentAlgorithm.displayName} as default B&W engine", Toast.LENGTH_SHORT).show()
-                updateUIState()
-            }
-            .setNegativeButton("Close", null)
             .show()
     }
 

@@ -8,24 +8,17 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
-import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
-import com.tom_roush.pdfbox.rendering.ImageType
-import com.tom_roush.pdfbox.rendering.PDFRenderer
 import com.tom_roush.pdfbox.util.Matrix
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 
 /**
- * Merges source PDF pages N-up into a true vector, Smart High-Contrast, or pure 1-bit B&W output PDF.
+ * Merges source PDF pages N-up into a true vector output PDF.
  *
  * Supports arbitrary grid layouts (cols × rows) with independent
  * sheet orientation (landscape / portrait), subpages orientation,
- * and color processing modes:
- * - SMART_HIGH_CONTRAST: Vector text & formula boosting with 100% selectable text + color images preserved
- * - COLOR: Full color vector pass-through
- * - GRAYSCALE: Smooth 8-bit photographic grayscale
- * - PURE_BLACK_WHITE: Pure 1-bit binarization (0 and 1 only)
+ * and text contrast boosting (100% selectable text + colorful images preserved).
  */
 object PdfMerger {
 
@@ -39,30 +32,27 @@ object PdfMerger {
     }
 
     /**
-     * Merges pages from [sourcePdfStream] into an N-up layout defined by [layout]
-     * using the specified [colorMode] and [bwAlgorithm].
+     * Merges pages from [sourcePdfStream] into an N-up layout defined by [layout].
+     * When [addTextContrast] is true, boosts faint gray text, low-opacity formulas,
+     * and pencil notes to solid black while preserving selectable text and color images.
      */
     fun mergeNUp(
         sourcePdfStream: InputStream,
         outputStream: OutputStream,
         layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
-        colorMode: ColorProcessingMode = ColorProcessingMode.COLOR,
-        bwAlgorithm: BwBinarizer.BwAlgorithm = BwBinarizer.BwAlgorithm.TEXT_BOOSTER,
+        addTextContrast: Boolean = true,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         val srcDoc = PDDocument.load(sourcePdfStream)
         val outDoc = PDDocument()
         val layerUtility = LayerUtility(outDoc)
 
-        val isVectorMode = (colorMode == ColorProcessingMode.COLOR || colorMode == ColorProcessingMode.SMART_HIGH_CONTRAST)
-        val pdfRenderer = if (!isVectorMode) PDFRenderer(srcDoc) else null
-
         try {
             val pageCount = srcDoc.numberOfPages
             if (pageCount == 0) return
 
-            // If Smart High-Contrast vector mode is active, boost text & formulas directly in srcDoc
-            if (colorMode == ColorProcessingMode.SMART_HIGH_CONTRAST) {
+            // If text contrast enhancement is enabled, boost text & formulas directly in vector stream
+            if (addTextContrast) {
                 for (i in 0 until pageCount) {
                     val page = srcDoc.getPage(i)
                     VectorTextBooster.boostPage(srcDoc, page, preserveImages = true)
@@ -72,7 +62,7 @@ object PdfMerger {
             val cols = layout.cols
             val rows = layout.rows
 
-            // Sheet_v2 internal processing sheet dimensions
+            // Sheet dimensions for output
             val sheetRect = if (layout.landscape) {
                 PDRectangle(PDRectangle.A4.height, PDRectangle.A4.width)  // Landscape sheet
             } else {
@@ -106,25 +96,12 @@ object PdfMerger {
                         val slotLeft = col * slotW
                         val slotBottom = (rows - 1 - row) * slotH
 
-                        if (isVectorMode || pdfRenderer == null) {
-                            // Full vector pass-through / Smart High Contrast vector mode
-                            drawVectorPageInSlot(
-                                srcDoc, layerUtility, contentStream, pageIdx,
-                                slotLeft = slotLeft, slotBottom = slotBottom,
-                                slotWidth = slotW, slotHeight = slotH,
-                                layout = layout
-                            )
-                        } else {
-                            // Pure 1-bit B&W or 8-bit Grayscale rasterization mode
-                            drawBinarizedPageInSlot(
-                                outDoc, pdfRenderer, contentStream, pageIdx,
-                                slotLeft = slotLeft, slotBottom = slotBottom,
-                                slotWidth = slotW, slotHeight = slotH,
-                                layout = layout,
-                                colorMode = colorMode,
-                                bwAlgorithm = bwAlgorithm
-                            )
-                        }
+                        drawVectorPageInSlot(
+                            srcDoc, layerUtility, contentStream, pageIdx,
+                            slotLeft = slotLeft, slotBottom = slotBottom,
+                            slotWidth = slotW, slotHeight = slotH,
+                            layout = layout
+                        )
 
                         onProgress?.invoke(pageIdx + 1, pageCount)
                         pageIdx++
@@ -148,13 +125,12 @@ object PdfMerger {
         sourcePdfFile: File,
         outputPdfFile: File,
         layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
-        colorMode: ColorProcessingMode = ColorProcessingMode.COLOR,
-        bwAlgorithm: BwBinarizer.BwAlgorithm = BwBinarizer.BwAlgorithm.TEXT_BOOSTER,
+        addTextContrast: Boolean = true,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         sourcePdfFile.inputStream().use { input ->
             outputPdfFile.outputStream().use { output ->
-                mergeNUp(input, output, layout, colorMode, bwAlgorithm, onProgress)
+                mergeNUp(input, output, layout, addTextContrast, onProgress)
             }
         }
     }
@@ -224,68 +200,5 @@ object PdfMerger {
 
         contentStream.drawForm(form)
         contentStream.restoreGraphicsState()
-    }
-
-    private fun drawBinarizedPageInSlot(
-        outDoc: PDDocument,
-        pdfRenderer: PDFRenderer,
-        contentStream: PDPageContentStream,
-        pageIndex: Int,
-        slotLeft: Float,
-        slotBottom: Float,
-        slotWidth: Float,
-        slotHeight: Float,
-        layout: PrintLayout,
-        colorMode: ColorProcessingMode,
-        bwAlgorithm: BwBinarizer.BwAlgorithm
-    ) {
-        // Render source page at high print resolution (200 DPI for fast & crisp 1-bit output)
-        val renderedBitmap = pdfRenderer.renderImageWithDPI(pageIndex, 200f, ImageType.RGB)
-
-        val processedBitmap = when (colorMode) {
-            ColorProcessingMode.PURE_BLACK_WHITE -> BwBinarizer.binarize(renderedBitmap, bwAlgorithm)
-            ColorProcessingMode.GRAYSCALE -> BwBinarizer.toGrayscale(renderedBitmap)
-            else -> renderedBitmap
-        }
-
-        if (processedBitmap != renderedBitmap) {
-            renderedBitmap.recycle()
-        }
-
-        val srcW = processedBitmap.width.toFloat()
-        val srcH = processedBitmap.height.toFloat()
-
-        val srcIsLandscape = srcW > srcH
-        val targetIsLandscape = layout.subPageLandscape
-        val needsRotation = (srcIsLandscape != targetIsLandscape)
-
-        val finalBitmap = if (needsRotation) {
-            val matrix = android.graphics.Matrix().apply { postRotate(270f) }
-            val rotated = Bitmap.createBitmap(
-                processedBitmap, 0, 0,
-                processedBitmap.width, processedBitmap.height,
-                matrix, true
-            )
-            if (rotated != processedBitmap) {
-                processedBitmap.recycle()
-            }
-            rotated
-        } else {
-            processedBitmap
-        }
-
-        val imgW = finalBitmap.width.toFloat()
-        val imgH = finalBitmap.height.toFloat()
-
-        val scale = Math.min(slotWidth / imgW, slotHeight / imgH)
-        val destW = imgW * scale
-        val destH = imgH * scale
-
-        val tx = slotLeft + (slotWidth - destW) / 2f
-        val ty = slotBottom + (slotHeight - destH) / 2f
-
-        val pdImage = LosslessFactory.createFromImage(outDoc, finalBitmap)
-        contentStream.drawImage(pdImage, tx, ty, destW, destH)
-        finalBitmap.recycle()
     }
 }

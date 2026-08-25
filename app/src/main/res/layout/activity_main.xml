@@ -29,7 +29,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Configure virtual printer layouts, color modes, and save destinations"
+            android:text="Configure virtual printer layouts, text contrast, and save destinations"
             android:textColor="#CAC4D0"
             android:textSize="14sp" />
     </LinearLayout>
@@ -81,14 +81,14 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
 
-            <!-- Section 2: Color & Pure Black-and-White Engine -->
+            <!-- Section 2: Text Contrast & Enhancement -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="28dp"
                 android:layout_marginBottom="12dp"
                 android:letterSpacing="0.08"
-                android:text="COLOR &amp; BLACK-AND-WHITE ENGINE"
+                android:text="TEXT CONTRAST &amp; ENHANCEMENT"
                 android:textColor="#D0BCFF"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -109,130 +109,40 @@
                     android:orientation="vertical"
                     android:padding="20dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Color Processing Mode"
-                        android:textColor="#E6E0E9"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <!-- Color Mode Selector Buttons -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnModeSmartContrast"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="4dp"
-                            android:layout_weight="1.2"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:text="Smart Contrast"
-                            android:textSize="11sp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnModeColor"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginHorizontal="2dp"
-                            android:layout_weight="0.9"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:text="Color"
-                            android:textSize="11sp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnModeGrayscale"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginHorizontal="2dp"
-                            android:layout_weight="0.9"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:text="Grayscale"
-                            android:textSize="11sp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnModePureBw"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:layout_weight="0.9"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:text="Pure 1-Bit"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tvColorModeDesc"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:text="Full color original output with vector preservation"
-                        android:textColor="#CAC4D0"
-                        android:textSize="13sp" />
-
-                    <!-- B&W Studio / Algorithm Selector Container -->
-                    <LinearLayout
-                        android:id="@+id/bwAlgoContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical">
-
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="1dp"
-                            android:layout_marginVertical="16dp"
-                            android:background="#49454F" />
-
                         <LinearLayout
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:layout_weight="1"
+                            android:orientation="vertical">
 
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="B&amp;W Algorithm"
-                                    android:textColor="#E6E0E9"
-                                    android:textSize="14sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:id="@+id/tvBwAlgoName"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="2dp"
-                                    android:text="Text Booster (High Contrast)"
-                                    android:textColor="#D0BCFF"
-                                    android:textSize="13sp" />
-                            </LinearLayout>
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnOpenBwStudio"
-                                style="@style/Widget.Material3.Button.TonalButton"
+                            <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="B&amp;W Studio"
-                                app:icon="@android:drawable/ic_menu_view" />
+                                android:text="Add contrast for text"
+                                android:textColor="#E6E0E9"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Boosts faint gray text, math formulas, and notes to solid crisp black (100% selectable text) while preserving colorful images"
+                                android:textColor="#CAC4D0"
+                                android:textSize="13sp" />
                         </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchTextContrast"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp" />
                     </LinearLayout>
 
                 </LinearLayout>

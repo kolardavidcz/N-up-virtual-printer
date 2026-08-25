@@ -27,8 +27,7 @@ object PendingPrintJobManager {
     private var activeFd: ParcelFileDescriptor? = null
     private var activeLayout: PrintLayout = LayoutRegistry.builtInLayouts.first()
     private var activeFileName: String = "nup_output.pdf"
-    private var activeColorMode: ColorProcessingMode = ColorProcessingMode.COLOR
-    private var activeBwAlgorithm: BwBinarizer.BwAlgorithm = BwBinarizer.BwAlgorithm.TEXT_BOOSTER
+    private var activeAddTextContrast: Boolean = true
 
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val timeoutRunnable = Runnable {
@@ -45,8 +44,7 @@ object PendingPrintJobManager {
         documentFd: ParcelFileDescriptor,
         layout: PrintLayout,
         fileName: String,
-        colorMode: ColorProcessingMode = ColorProcessingMode.COLOR,
-        bwAlgorithm: BwBinarizer.BwAlgorithm = BwBinarizer.BwAlgorithm.TEXT_BOOSTER
+        addTextContrast: Boolean = true
     ) {
         // Cancel previous pending job if any
         cancelPendingJob(context)
@@ -55,8 +53,7 @@ object PendingPrintJobManager {
         activeFd = documentFd
         activeLayout = layout
         activeFileName = fileName
-        activeColorMode = colorMode
-        activeBwAlgorithm = bwAlgorithm
+        activeAddTextContrast = addTextContrast
 
         // Set 2 minute timeout
         timeoutHandler.postDelayed(timeoutRunnable, TIMEOUT_MS)
@@ -73,8 +70,7 @@ object PendingPrintJobManager {
         val fd = activeFd
         val layout = activeLayout
         val fileName = activeFileName
-        val colorMode = activeColorMode
-        val bwAlgorithm = activeBwAlgorithm
+        val addTextContrast = activeAddTextContrast
 
         activeJob = null
         activeFd = null
@@ -87,7 +83,7 @@ object PendingPrintJobManager {
         if (uri != null) {
             PrintJobHandler(
                 context.applicationContext, job, fd, uri,
-                layout, fileName, colorMode, bwAlgorithm
+                layout, fileName, addTextContrast
             ).start()
         } else {
             if (job.isStarted) {

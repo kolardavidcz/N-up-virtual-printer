@@ -18,13 +18,10 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import java.io.File
 import java.io.OutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * Runs off the main thread to process the PDF document.
- * Merges pages into a true vector or pure 1-bit B&W PDF and streams
+ * Merges pages into a true vector PDF and streams
  * the result to Downloads/TwoUpPrint/ via MediaStore (Android 10+) or direct file I/O.
  */
 class PrintJobHandler(
@@ -34,8 +31,7 @@ class PrintJobHandler(
     private val destinationUri: Uri?,
     private val layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
     private val fileName: String = "nup_output.pdf",
-    private val colorMode: ColorProcessingMode = ColorProcessingMode.COLOR,
-    private val bwAlgorithm: BwBinarizer.BwAlgorithm = BwBinarizer.BwAlgorithm.TEXT_BOOSTER
+    private val addTextContrast: Boolean = true
 ) : Thread("NUpPrintJob") {
 
     companion object {
@@ -91,7 +87,7 @@ class PrintJobHandler(
                 // Mark as complete after writing
                 outStream.use { output ->
                     tempSource.inputStream().use { input ->
-                        PdfMerger.mergeNUp(input, output, layout, colorMode, bwAlgorithm) { current, total ->
+                        PdfMerger.mergeNUp(input, output, layout, addTextContrast) { current, total ->
                             updateProgressNotification(current, total, false)
                         }
                     }
@@ -110,7 +106,7 @@ class PrintJobHandler(
                     }
                 }
                 showCompleteNotification(displayLocation, resultUri)
-                Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (colorMode=$colorMode)")
+                Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (addTextContrast=$addTextContrast)")
                 return
             } else {
                 // Legacy: direct file I/O to Downloads
@@ -131,7 +127,7 @@ class PrintJobHandler(
 
             outStream.use { output ->
                 tempSource.inputStream().use { input ->
-                    PdfMerger.mergeNUp(input, output, layout, colorMode, bwAlgorithm) { current, total ->
+                    PdfMerger.mergeNUp(input, output, layout, addTextContrast) { current, total ->
                         updateProgressNotification(current, total, false)
                     }
                 }
@@ -145,7 +141,7 @@ class PrintJobHandler(
             }
 
             showCompleteNotification(displayLocation, resultUri)
-            Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (colorMode=$colorMode)")
+            Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (addTextContrast=$addTextContrast)")
         } catch (e: Exception) {
             Log.e("TwoUpPrint", "Failed to produce N-up PDF", e)
             val errorMessage = e.message ?: "N-up merge failed"

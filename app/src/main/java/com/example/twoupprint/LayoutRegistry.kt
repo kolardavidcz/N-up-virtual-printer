@@ -9,8 +9,8 @@ import org.json.JSONObject
  * Color processing mode for output documents.
  */
 enum class ColorProcessingMode(val displayName: String, val description: String) {
-    SMART_HIGH_CONTRAST("Smart High-Contrast", "Boosts faint text & math formulas to solid black (100% selectable text) while preserving colorful images"),
     COLOR("Color (Original)", "Full color original output with vector preservation"),
+    SMART_HIGH_CONTRAST("Smart High-Contrast", "Boosts faint text & math formulas to solid black (100% selectable text) while preserving colorful images"),
     GRAYSCALE("Grayscale (8-bit)", "Smooth photographic 256 shades of gray (0-255)"),
     PURE_BLACK_WHITE("Pure Black & White (1-bit)", "Strictly 0 and 1 (#000000 and #FFFFFF) with zero gray ink/toner")
 }
@@ -39,13 +39,14 @@ data class PrintLayout(
 
 /**
  * Manages built-in and user-defined custom X:Y layouts with enable/disable,
- * editable default sheet orientation, sub-page orientation, and color processing modes.
+ * editable default sheet orientation, sub-page orientation, and text contrast settings.
  */
 object LayoutRegistry {
 
     private const val PREFS_NAME = "twoupprint_prefs"
     private const val KEY_CUSTOM_LAYOUTS = "custom_layouts_json"
     private const val KEY_DISABLED_LAYOUT_IDS = "disabled_layout_ids_set"
+    private const val KEY_ADD_TEXT_CONTRAST = "add_text_contrast"
     private const val KEY_COLOR_PROCESSING_MODE = "global_color_processing_mode"
     private const val KEY_BW_ALGORITHM = "global_bw_algorithm"
 
@@ -111,7 +112,17 @@ object LayoutRegistry {
         prefs.edit().putBoolean("subpage_orientation_$printerId", landscape).apply()
     }
 
-    // --- Color Mode & Pure B&W Algorithm Settings ---
+    // --- "Add contrast for text" setting ---
+
+    fun isTextContrastEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_ADD_TEXT_CONTRAST, true) // default true
+    }
+
+    fun setTextContrastEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_ADD_TEXT_CONTRAST, enabled).apply()
+    }
 
     fun getColorMode(context: Context): ColorProcessingMode {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
