@@ -1,7 +1,9 @@
 package com.example.twoupprint
 
+import android.util.Log
 import com.tom_roush.pdfbox.cos.COSArray
 import com.tom_roush.pdfbox.cos.COSInteger
+import com.tom_roush.pdfbox.cos.COSName
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
@@ -11,7 +13,6 @@ import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import com.tom_roush.pdfbox.text.TextPosition
-import java.io.StringWriter
 import java.util.regex.Pattern
 
 /**
@@ -23,8 +24,11 @@ import java.util.regex.Pattern
  */
 object PdfLinkEngine {
 
+    private const val TAG = "PdfLinkEngine"
+
+    // Comprehensive URL pattern matching full URLs, www.* domains, and common TLD domains
     private val URL_PATTERN = Pattern.compile(
-        """(?i)\b(?:https?://|www\.)[^\s<>"{}|\\^`\[\]]+\b"""
+        """(?i)\b(?:https?://|www\.|[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|org|net|edu|gov|cz|sk|eu|io|ai|de|uk|info|dev|app|me|co|cz))\b(?:/[^\s<>"{}|\\^`\[\]]*)?"""
     )
     private val EMAIL_PATTERN = Pattern.compile(
         """\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"""
@@ -33,7 +37,7 @@ object PdfLinkEngine {
     /**
      * Extracts existing link annotations and discovers plain-text URLs on [srcPage],
      * transforms their bounding boxes to fit into [slotLeft, slotBottom, slotWidth, slotHeight],
-     * and attaches the live clickable [PDAnnotationLink] objects to [outPage].
+     * and attaches live clickable [PDAnnotationLink] objects to [outPage].
      */
     fun processAndTransferLinks(
         srcDoc: PDDocument,
@@ -53,6 +57,8 @@ object PdfLinkEngine {
             outPage.annotations = it
         }
 
+        var linkCount = 0
+
         // -------------------------------------------------------------
         // Layer 1: Transfer & Transform Existing PDF Link Annotations
         // -------------------------------------------------------------
@@ -70,28 +76,39 @@ object PdfLinkEngine {
                             layout
                         )
 
-                        val newLink = PDAnnotationLink().apply {
-                            rectangle = transformedRect
-                            action = annot.action
-                            destination = annot.destination
+                        val targetAction = annot.action
+                        val targetDest = annot.destination
 
-                            // Invisible border (zero width)
-                            borderStyle = PDBorderStyleDictionary().apply {
-                                width = 0f
+                        if (targetAction != null || targetDest != null) {
+                            val newLink = PDAnnotationLink().apply {
+                                rectangle = transformedRect
+                                action = targetAction
+                                destination = targetDest
+                                page = outPage
+                                isPrinted = true
+                                highlightMode = PDAnnotationLink.HIGHLIGHT_MODE_INVERT
+
+                                borderStyle = PDBorderStyleDictionary().apply {
+                                    width = 0f
+                                }
+                                val border = COSArray().apply {
+                                    add(COSInteger.ZERO)
+                                    add(COSInteger.ZERO)
+                                    add(COSInteger.ZERO)
+                                }
+                                cosObject.setItem(COSName.BORDER, border)
+                                cosObject.setItem(COSName.BS, borderStyle.cosObject)
                             }
-                            val border = COSArray().apply {
-                                add(COSInteger.ZERO)
-                                add(COSInteger.ZERO)
-                                add(COSInteger.ZERO)
-                            }
-                            cosObject.setItem("Border", border)
+
+                            outAnnotations.add(newLink)
+                            linkCount++
                         }
-
-                        outAnnotations.add(newLink)
                     }
                 }
             }
-        } catch (_: Exception) { }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error transferring existing link annotations: ${e.message}")
+        }
 
         // -------------------------------------------------------------
         // Layer 2: Auto-Detect Plain-Text URLs & Linkify
@@ -102,12 +119,14 @@ object PdfLinkEngine {
                 // Avoid duplicating already annotated links
                 if (isOverlappingExisting(srcRect, existingLinkRects)) continue
 
-                val normalizedUrl = if (rawUrl.startsWith("www.", ignoreCase = true)) {
-                    "https://$rawUrl"
+                val normalizedUrl = if (rawUrl.startsWith("http://", ignoreCase = true) ||
+                    rawUrl.startsWith("https://", ignoreCase = true)
+                ) {
+                    rawUrl
                 } else if (rawUrl.contains("@") && !rawUrl.startsWith("mailto:", ignoreCase = true)) {
                     "mailto:$rawUrl"
                 } else {
-                    rawUrl
+                    "https://$rawUrl"
                 }
 
                 val transformedRect = transformRect(
@@ -121,6 +140,10 @@ object PdfLinkEngine {
                     action = PDActionURI().apply {
                         uri = normalizedUrl
                     }
+                    page = outPage
+                    isPrinted = true
+                    highlightMode = PDAnnotationLink.HIGHLIGHT_MODE_INVERT
+
                     borderStyle = PDBorderStyleDictionary().apply {
                         width = 0f
                     }
@@ -129,12 +152,21 @@ object PdfLinkEngine {
                         add(COSInteger.ZERO)
                         add(COSInteger.ZERO)
                     }
-                    cosObject.setItem("Border", border)
+                    cosObject.setItem(COSName.BORDER, border)
+                    cosObject.setItem(COSName.BS, borderStyle.cosObject)
                 }
 
                 outAnnotations.add(newLink)
+                existingLinkRects.add(srcRect)
+                linkCount++
             }
-        } catch (_: Exception) { }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error discovering plain-text URLs: ${e.message}")
+        }
+
+        if (linkCount > 0) {
+            Log.i(TAG, "Added $linkCount clickable links to sheet for page $pageIndex")
+        }
     }
 
     /**
@@ -187,7 +219,12 @@ object PdfLinkEngine {
             val minY = Math.min(yA, yB)
             val maxY = Math.max(yA, yB)
 
-            return PDRectangle(minX, minY, maxX - minX, maxY - minY)
+            return PDRectangle().apply {
+                lowerLeftX = minX
+                lowerLeftY = minY
+                upperRightX = maxX
+                upperRightY = maxY
+            }
         } else {
             // Standard fitting without rotation matching Matrix(s, 0f, 0f, s, tx, ty)
             val scale = Math.min(slotWidth / srcW, slotHeight / srcH)
@@ -203,7 +240,12 @@ object PdfLinkEngine {
             val minY = y1 * scale + ty
             val maxY = y2 * scale + ty
 
-            return PDRectangle(minX, minY, maxX - minX, maxY - minY)
+            return PDRectangle().apply {
+                lowerLeftX = minX
+                lowerLeftY = minY
+                upperRightX = maxX
+                upperRightY = maxY
+            }
         }
     }
 
@@ -267,11 +309,11 @@ object PdfLinkEngine {
                 var maxY = -Float.MAX_VALUE
 
                 for (tp in positions) {
-                    val x = tp.xDirAdj
-                    // PDFTextStripper reports y from top-down; convert to PDF bottom-up coordinate
-                    val y = pageCrop.height - tp.yDirAdj
+                    val x = pageCrop.lowerLeftX + tp.xDirAdj
+                    // In PDFBox, tp.yDirAdj is measured from the top of the cropBox
+                    val y = pageCrop.upperRightY - tp.yDirAdj
                     val w = tp.widthDirAdj
-                    val h = tp.heightDir
+                    val h = Math.max(tp.heightDir, tp.fontSizeInPt)
 
                     if (x < minX) minX = x
                     if (x + w > maxX) maxX = x + w
@@ -280,7 +322,15 @@ object PdfLinkEngine {
                 }
 
                 if (minX >= maxX || minY >= maxY) return null
-                return PDRectangle(minX, minY, maxX - minX, maxY - minY)
+
+                // Add 1.5pt touch target padding
+                val pad = 1.5f
+                return PDRectangle().apply {
+                    lowerLeftX = minX - pad
+                    lowerLeftY = minY - pad
+                    upperRightX = maxX + pad
+                    upperRightY = maxY + pad
+                }
             }
         }
 
