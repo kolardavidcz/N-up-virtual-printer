@@ -103,6 +103,20 @@ object PdfMerger {
                             layout = layout
                         )
 
+                        // Transfer and transform hyperlinks with exact N-up coordinates
+                        val srcPage = srcDoc.getPage(pageIdx)
+                        PdfLinkEngine.processAndTransferLinks(
+                            srcDoc = srcDoc,
+                            srcPage = srcPage,
+                            pageIndex = pageIdx,
+                            outPage = outPage,
+                            slotLeft = slotLeft,
+                            slotBottom = slotBottom,
+                            slotWidth = slotW,
+                            slotHeight = slotH,
+                            layout = layout
+                        )
+
                         onProgress?.invoke(pageIdx + 1, pageCount)
                         pageIdx++
                     }
