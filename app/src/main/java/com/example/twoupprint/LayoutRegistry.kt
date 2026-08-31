@@ -124,6 +124,18 @@ object LayoutRegistry {
         prefs.edit().putBoolean(KEY_ADD_TEXT_CONTRAST, enabled).apply()
     }
 
+    // --- "Make URLs and links clickable" setting ---
+
+    fun isLinksEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean("enable_clickable_links", true) // default true
+    }
+
+    fun setLinksEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("enable_clickable_links", enabled).apply()
+    }
+
     fun getColorMode(context: Context): ColorProcessingMode {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val name = prefs.getString(KEY_COLOR_PROCESSING_MODE, ColorProcessingMode.COLOR.name)

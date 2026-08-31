@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnAddLayout: MaterialButton
     private lateinit var layoutCardsContainer: LinearLayout
     private lateinit var switchTextContrast: MaterialSwitch
+    private lateinit var switchEnableLinks: MaterialSwitch
     private lateinit var pathText: TextView
     private lateinit var btnSetLocation: MaterialButton
     private lateinit var btnResetLocation: MaterialButton
@@ -97,6 +98,13 @@ class MainActivity : AppCompatActivity() {
         switchTextContrast.isChecked = LayoutRegistry.isTextContrastEnabled(this)
         switchTextContrast.setOnCheckedChangeListener { _, isChecked ->
             LayoutRegistry.setTextContrastEnabled(this, isChecked)
+        }
+
+        // Clickable Links Switch Listener
+        switchEnableLinks = findViewById(R.id.switchEnableLinks)
+        switchEnableLinks.isChecked = LayoutRegistry.isLinksEnabled(this)
+        switchEnableLinks.setOnCheckedChangeListener { _, isChecked ->
+            LayoutRegistry.setLinksEnabled(this, isChecked)
         }
 
         btnSetLocation.setOnClickListener {

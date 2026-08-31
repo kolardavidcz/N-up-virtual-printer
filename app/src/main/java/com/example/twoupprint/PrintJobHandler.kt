@@ -31,7 +31,8 @@ class PrintJobHandler(
     private val destinationUri: Uri?,
     private val layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
     private val fileName: String = "nup_output.pdf",
-    private val addTextContrast: Boolean = true
+    private val addTextContrast: Boolean = true,
+    private val enableLinks: Boolean = true
 ) : Thread("NUpPrintJob") {
 
     companion object {
@@ -87,7 +88,7 @@ class PrintJobHandler(
                 // Mark as complete after writing
                 outStream.use { output ->
                     tempSource.inputStream().use { input ->
-                        PdfMerger.mergeNUp(input, output, layout, addTextContrast) { current, total ->
+                        PdfMerger.mergeNUp(input, output, layout, addTextContrast, enableLinks) { current, total ->
                             updateProgressNotification(current, total, false)
                         }
                     }
@@ -106,7 +107,7 @@ class PrintJobHandler(
                     }
                 }
                 showCompleteNotification(displayLocation, resultUri)
-                Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (addTextContrast=$addTextContrast)")
+                Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (addTextContrast=$addTextContrast, enableLinks=$enableLinks)")
                 return
             } else {
                 // Legacy: direct file I/O to Downloads
@@ -127,7 +128,7 @@ class PrintJobHandler(
 
             outStream.use { output ->
                 tempSource.inputStream().use { input ->
-                    PdfMerger.mergeNUp(input, output, layout, addTextContrast) { current, total ->
+                    PdfMerger.mergeNUp(input, output, layout, addTextContrast, enableLinks) { current, total ->
                         updateProgressNotification(current, total, false)
                     }
                 }

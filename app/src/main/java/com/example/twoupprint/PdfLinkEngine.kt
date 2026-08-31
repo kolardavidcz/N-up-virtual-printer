@@ -26,9 +26,9 @@ object PdfLinkEngine {
 
     private const val TAG = "PdfLinkEngine"
 
-    // Comprehensive URL pattern matching full URLs, www.* domains, and common TLD domains
+    // Comprehensive URL pattern matching full URLs, www.* domains, and standard TLD domains
     private val URL_PATTERN = Pattern.compile(
-        """(?i)\b(?:https?://|www\.|[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|org|net|edu|gov|cz|sk|eu|io|ai|de|uk|info|dev|app|me|co|cz))\b(?:/[^\s<>"{}|\\^`\[\]]*)?"""
+        """(?i)\b(?:https?://[^\s<>"{}|\\^`\[\]]+|www\.[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:/[^\s<>"{}|\\^`\[\]]*)?|[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|org|net|edu|gov|cz|sk|eu|io|ai|de|uk|info|dev|app|me|co|pl|at|ch|nl|be|it|fr|es|se|no|fi|dk|hu|ro|bg|hr|si|rs|gr|ua|ca|us|mx|br|ar|cl|au|nz|jp|cn|kr|in|sg|hk|tw|xyz|tech|online|site|store|blog|link|live|space|wiki|fm|tv|cc|to|gg|page|cloud|design|studio|digital|media)(?:/[^\s<>"{}|\\^`\[\]]*)?)"""
     )
     private val EMAIL_PATTERN = Pattern.compile(
         """\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"""
@@ -170,6 +170,47 @@ object PdfLinkEngine {
     }
 
     /**
+     * Cleans trailing punctuation, quotes, and unbalanced parentheses/brackets from matched URLs.
+     * Returns Triple(cleanedUrl, adjustedStart, adjustedEnd) or null if invalid.
+     */
+    private fun cleanUrlMatch(matchedText: String, start: Int, end: Int): Triple<String, Int, Int>? {
+        var url = matchedText
+        var s = start
+        var e = end
+
+        // 1. Trim leading punctuation / quotes / brackets
+        while (url.isNotEmpty() && (url.startsWith("(") || url.startsWith("[") || url.startsWith("{") ||
+                    url.startsWith("\"") || url.startsWith("'") || url.startsWith("<") || url.startsWith("«"))) {
+            url = url.substring(1)
+            s++
+        }
+
+        // 2. Trim trailing punctuation / quotes / unbalanced brackets
+        val trailingPunctuation = charArrayOf('.', ',', ';', ':', '!', '?', '"', '\'', '>', '»', ']', '}')
+        while (url.isNotEmpty()) {
+            val lastChar = url.last()
+            if (lastChar in trailingPunctuation) {
+                url = url.dropLast(1)
+                e--
+            } else if (lastChar == ')') {
+                val openCount = url.count { it == '(' }
+                val closeCount = url.count { it == ')' }
+                if (closeCount > openCount) {
+                    url = url.dropLast(1)
+                    e--
+                } else {
+                    break
+                }
+            } else {
+                break
+            }
+        }
+
+        if (url.length < 3 || s >= e) return null
+        return Triple(url, s, e)
+    }
+
+    /**
      * Transforms a source rectangle [x1, y1, x2, y2] to the destination N-up slot.
      */
     private fun transformRect(
@@ -268,30 +309,36 @@ object PdfLinkEngine {
             override fun writeString(text: String, textPositions: List<TextPosition>) {
                 val urlMatcher = URL_PATTERN.matcher(text)
                 while (urlMatcher.find()) {
-                    val start = urlMatcher.start()
-                    val end = urlMatcher.end()
+                    val rawStart = urlMatcher.start()
+                    val rawEnd = urlMatcher.end()
                     val matchedUrl = urlMatcher.group()
 
-                    if (start < textPositions.size && end <= textPositions.size) {
+                    val cleaned = cleanUrlMatch(matchedUrl, rawStart, rawEnd) ?: continue
+                    val (url, start, end) = cleaned
+
+                    if (start < textPositions.size && end <= textPositions.size && start < end) {
                         val subList = textPositions.subList(start, end)
                         val box = calculateBoundingBox(subList, cropBox)
                         if (box != null) {
-                            results.add(Pair(matchedUrl, box))
+                            results.add(Pair(url, box))
                         }
                     }
                 }
 
                 val emailMatcher = EMAIL_PATTERN.matcher(text)
                 while (emailMatcher.find()) {
-                    val start = emailMatcher.start()
-                    val end = emailMatcher.end()
+                    val rawStart = emailMatcher.start()
+                    val rawEnd = emailMatcher.end()
                     val matchedEmail = emailMatcher.group()
 
-                    if (start < textPositions.size && end <= textPositions.size) {
+                    val cleaned = cleanUrlMatch(matchedEmail, rawStart, rawEnd) ?: continue
+                    val (email, start, end) = cleaned
+
+                    if (start < textPositions.size && end <= textPositions.size && start < end) {
                         val subList = textPositions.subList(start, end)
                         val box = calculateBoundingBox(subList, cropBox)
                         if (box != null) {
-                            results.add(Pair(matchedEmail, box))
+                            results.add(Pair(email, box))
                         }
                     }
                 }

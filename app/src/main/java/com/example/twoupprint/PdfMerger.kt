@@ -41,6 +41,7 @@ object PdfMerger {
         outputStream: OutputStream,
         layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
         addTextContrast: Boolean = true,
+        enableLinks: Boolean = true,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         val srcDoc = PDDocument.load(sourcePdfStream)
@@ -103,19 +104,21 @@ object PdfMerger {
                             layout = layout
                         )
 
-                        // Transfer and transform hyperlinks with exact N-up coordinates
-                        val srcPage = srcDoc.getPage(pageIdx)
-                        PdfLinkEngine.processAndTransferLinks(
-                            srcDoc = srcDoc,
-                            srcPage = srcPage,
-                            pageIndex = pageIdx,
-                            outPage = outPage,
-                            slotLeft = slotLeft,
-                            slotBottom = slotBottom,
-                            slotWidth = slotW,
-                            slotHeight = slotH,
-                            layout = layout
-                        )
+                        // Transfer and transform hyperlinks with exact N-up coordinates if enabled
+                        if (enableLinks) {
+                            val srcPage = srcDoc.getPage(pageIdx)
+                            PdfLinkEngine.processAndTransferLinks(
+                                srcDoc = srcDoc,
+                                srcPage = srcPage,
+                                pageIndex = pageIdx,
+                                outPage = outPage,
+                                slotLeft = slotLeft,
+                                slotBottom = slotBottom,
+                                slotWidth = slotW,
+                                slotHeight = slotH,
+                                layout = layout
+                            )
+                        }
 
                         onProgress?.invoke(pageIdx + 1, pageCount)
                         pageIdx++
@@ -140,11 +143,12 @@ object PdfMerger {
         outputPdfFile: File,
         layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
         addTextContrast: Boolean = true,
+        enableLinks: Boolean = true,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         sourcePdfFile.inputStream().use { input ->
             outputPdfFile.outputStream().use { output ->
-                mergeNUp(input, output, layout, addTextContrast, onProgress)
+                mergeNUp(input, output, layout, addTextContrast, enableLinks, onProgress)
             }
         }
     }

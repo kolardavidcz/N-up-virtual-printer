@@ -44,8 +44,9 @@ class TwoUpPrintService : PrintService() {
         // Layout keeps configured sheet orientation (Sheet_v2 internal processing)
         val layout = baseLayout.copy(subPageLandscape = userSelectedSubPageLandscape)
 
-        // Determine if text contrast enhancement is enabled
+        // Determine if text contrast enhancement and clickable links are enabled
         val addTextContrast = LayoutRegistry.isTextContrastEnabled(applicationContext)
+        val enableLinks = LayoutRegistry.isLinksEnabled(applicationContext)
 
         // Extract website / page title from print job metadata if available
         val docName = extractCleanDocumentName(printJob)
@@ -68,7 +69,8 @@ class TwoUpPrintService : PrintService() {
                 documentData,
                 layout,
                 fileName,
-                addTextContrast
+                addTextContrast,
+                enableLinks
             )
             return
         }
@@ -94,7 +96,7 @@ class TwoUpPrintService : PrintService() {
         // Start processing — saves to chosen directory or Downloads/TwoUpPrint/ fallback
         PrintJobHandler(
             applicationContext, printJob, documentData, destinationUri,
-            layout, fileName, addTextContrast
+            layout, fileName, addTextContrast, enableLinks
         ).start()
     }
 

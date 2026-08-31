@@ -26,6 +26,7 @@ id btnTroubleshoot
 id layoutCardsContainer
 id pathText
 id promptSwitch
+id switchEnableLinks
 id switchTextContrast
 layout activity_main
 mipmap ic_launcher

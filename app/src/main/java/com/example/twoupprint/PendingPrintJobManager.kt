@@ -28,6 +28,7 @@ object PendingPrintJobManager {
     private var activeLayout: PrintLayout = LayoutRegistry.builtInLayouts.first()
     private var activeFileName: String = "nup_output.pdf"
     private var activeAddTextContrast: Boolean = true
+    private var activeEnableLinks: Boolean = true
 
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val timeoutRunnable = Runnable {
@@ -44,7 +45,8 @@ object PendingPrintJobManager {
         documentFd: ParcelFileDescriptor,
         layout: PrintLayout,
         fileName: String,
-        addTextContrast: Boolean = true
+        addTextContrast: Boolean = true,
+        enableLinks: Boolean = true
     ) {
         // Cancel previous pending job if any
         cancelPendingJob(context)
@@ -54,6 +56,7 @@ object PendingPrintJobManager {
         activeLayout = layout
         activeFileName = fileName
         activeAddTextContrast = addTextContrast
+        activeEnableLinks = enableLinks
 
         // Set 2 minute timeout
         timeoutHandler.postDelayed(timeoutRunnable, TIMEOUT_MS)
@@ -71,6 +74,7 @@ object PendingPrintJobManager {
         val layout = activeLayout
         val fileName = activeFileName
         val addTextContrast = activeAddTextContrast
+        val enableLinks = activeEnableLinks
 
         activeJob = null
         activeFd = null
@@ -83,7 +87,7 @@ object PendingPrintJobManager {
         if (uri != null) {
             PrintJobHandler(
                 context.applicationContext, job, fd, uri,
-                layout, fileName, addTextContrast
+                layout, fileName, addTextContrast, enableLinks
             ).start()
         } else {
             if (job.isStarted) {

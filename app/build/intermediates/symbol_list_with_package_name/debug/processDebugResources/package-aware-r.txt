@@ -3399,6 +3399,7 @@ id stop
 id stretch
 id submenuarrow
 id submit_area
+id switchEnableLinks
 id switchTextContrast
 id tabMode
 id tag_accessibility_actions

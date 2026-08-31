@@ -88,7 +88,7 @@
                 android:layout_marginTop="28dp"
                 android:layout_marginBottom="12dp"
                 android:letterSpacing="0.08"
-                android:text="TEXT CONTRAST &amp; ENHANCEMENT"
+                android:text="TEXT &amp; LINK ENHANCEMENTS"
                 android:textColor="#D0BCFF"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -140,6 +140,49 @@
 
                         <com.google.android.material.materialswitch.MaterialSwitch
                             android:id="@+id/switchTextContrast"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="16dp"
+                        android:background="#36343B" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Make URLs and links clickable"
+                                android:textColor="#E6E0E9"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Preserves hyperlinks and auto-detects URLs in text. Note: Scanning text and calculating link coordinates slightly increases processing time."
+                                android:textColor="#CAC4D0"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchEnableLinks"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="16dp" />
