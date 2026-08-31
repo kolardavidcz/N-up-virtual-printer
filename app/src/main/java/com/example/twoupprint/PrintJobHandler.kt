@@ -31,8 +31,8 @@ class PrintJobHandler(
     private val destinationUri: Uri?,
     private val layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
     private val fileName: String = "nup_output.pdf",
-    private val addTextContrast: Boolean = true,
-    private val enableLinks: Boolean = true
+    private val addTextContrast: Boolean = false,
+    private val enableLinks: Boolean = false
 ) : Thread("NUpPrintJob") {
 
     companion object {

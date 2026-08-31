@@ -116,7 +116,7 @@ object LayoutRegistry {
 
     fun isTextContrastEnabled(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getBoolean(KEY_ADD_TEXT_CONTRAST, true) // default true
+        return prefs.getBoolean(KEY_ADD_TEXT_CONTRAST, false) // default false
     }
 
     fun setTextContrastEnabled(context: Context, enabled: Boolean) {
@@ -128,7 +128,7 @@ object LayoutRegistry {
 
     fun isLinksEnabled(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getBoolean("enable_clickable_links", true) // default true
+        return prefs.getBoolean("enable_clickable_links", false) // default false
     }
 
     fun setLinksEnabled(context: Context, enabled: Boolean) {

@@ -40,8 +40,8 @@ object PdfMerger {
         sourcePdfStream: InputStream,
         outputStream: OutputStream,
         layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
-        addTextContrast: Boolean = true,
-        enableLinks: Boolean = true,
+        addTextContrast: Boolean = false,
+        enableLinks: Boolean = false,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         val srcDoc = PDDocument.load(sourcePdfStream)
@@ -142,8 +142,8 @@ object PdfMerger {
         sourcePdfFile: File,
         outputPdfFile: File,
         layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
-        addTextContrast: Boolean = true,
-        enableLinks: Boolean = true,
+        addTextContrast: Boolean = false,
+        enableLinks: Boolean = false,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         sourcePdfFile.inputStream().use { input ->
