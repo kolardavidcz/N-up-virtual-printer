@@ -136,6 +136,30 @@ object LayoutRegistry {
         prefs.edit().putBoolean("enable_clickable_links", enabled).apply()
     }
 
+    // --- "Adaptive Best Fit for presentations" setting ---
+
+    fun isBestFitEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean("enable_best_fit", true) // default true for optimal presentation fit
+    }
+
+    fun setBestFitEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("enable_best_fit", enabled).apply()
+    }
+
+    // --- "Page & Slot Margins" setting (0 mm, 3 mm, 6 mm) ---
+
+    fun getMarginMm(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt("page_margin_mm", 0) // default 0 mm (edge-to-edge)
+    }
+
+    fun setMarginMm(context: Context, marginMm: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt("page_margin_mm", marginMm).apply()
+    }
+
     fun getColorMode(context: Context): ColorProcessingMode {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val name = prefs.getString(KEY_COLOR_PROCESSING_MODE, ColorProcessingMode.COLOR.name)

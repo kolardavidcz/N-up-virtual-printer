@@ -32,7 +32,9 @@ class PrintJobHandler(
     private val layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
     private val fileName: String = "nup_output.pdf",
     private val addTextContrast: Boolean = false,
-    private val enableLinks: Boolean = false
+    private val enableLinks: Boolean = false,
+    private val bestFit: Boolean = true,
+    private val marginMm: Int = 0
 ) : Thread("NUpPrintJob") {
 
     companion object {
@@ -88,7 +90,7 @@ class PrintJobHandler(
                 // Mark as complete after writing
                 outStream.use { output ->
                     tempSource.inputStream().use { input ->
-                        PdfMerger.mergeNUp(input, output, layout, addTextContrast, enableLinks) { current, total ->
+                        PdfMerger.mergeNUp(input, output, layout, addTextContrast, enableLinks, bestFit, marginMm) { current, total ->
                             updateProgressNotification(current, total, false)
                         }
                     }
@@ -107,7 +109,7 @@ class PrintJobHandler(
                     }
                 }
                 showCompleteNotification(displayLocation, resultUri)
-                Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (addTextContrast=$addTextContrast, enableLinks=$enableLinks)")
+                Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (addTextContrast=$addTextContrast, enableLinks=$enableLinks, bestFit=$bestFit, marginMm=$marginMm)")
                 return
             } else {
                 // Legacy: direct file I/O to Downloads
@@ -128,7 +130,7 @@ class PrintJobHandler(
 
             outStream.use { output ->
                 tempSource.inputStream().use { input ->
-                    PdfMerger.mergeNUp(input, output, layout, addTextContrast, enableLinks) { current, total ->
+                    PdfMerger.mergeNUp(input, output, layout, addTextContrast, enableLinks, bestFit, marginMm) { current, total ->
                         updateProgressNotification(current, total, false)
                     }
                 }

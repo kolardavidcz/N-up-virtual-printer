@@ -1,6 +1,6 @@
 # N-Up Print for Android (Virtual Printer Service)
 
-[![Release](https://img.shields.io/badge/release-v1.2.0-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v1.2.0)
+[![Release](https://img.shields.io/badge/release-v1.3.0-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v1.3.0)
 [![API](https://img.shields.io/badge/API-26%2B-green.svg)](https://android-arsenal.com/api?level=26)
 [![License](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Samsung%20One%20UI-3DDC84.svg)](https://developer.android.com/about/versions/oreo)
@@ -13,8 +13,8 @@ Unlike standard print services that rasterize documents into low-resolution imag
 
 ## 📥 Download APK
 
-- **Latest Release (v1.2.0)**: [Download N-Up Print v1.2.0 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v1.2.0/nup-print-v1.2.0.apk)
-- **Local Mirror**: [`releases/nup-print-v1.2.0.apk`](releases/nup-print-v1.2.0.apk)
+- **Latest Release (v1.3.0)**: [Download N-Up Print v1.3.0 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v1.3.0/nup-print-v1.3.0.apk)
+- **Local Mirror**: [`releases/nup-print-v1.3.0.apk`](releases/nup-print-v1.3.0.apk)
 
 ---
 
@@ -28,15 +28,18 @@ Unlike standard print services that rasterize documents into low-resolution imag
 
 ## ✨ Features & Capabilities
 
-- 📄 **True Vector PDF N-Up Merging**: Combines 2, 4, 6, 8, or arbitrary N-up pages onto a single A4 sheet without rasterizing to bitmaps. Text is 100% selectable and vector paths remain sharp.
-- 🖋️ **High-Contrast Vector Text & Formula Booster**: Automatically enhances faint gray text, math symbols ($\sum, \int, \frac{a}{b}$), and pencil notes to solid crisp black while preserving 100% text selectability and vibrant color images.
+- 📄 **True Vector PDF N-Up Merging**: Combines 2, 4, 6, 8, or arbitrary N-up pages onto a single sheet without rasterizing to bitmaps. Text is 100% selectable and vector paths remain sharp.
+- 📐 **Adaptive "Best Fit" for Presentations (16:9 & 4:3)**: Automatically sizes the output PDF sheet to match the exact combined aspect ratio of presentation slides in 4-up (2×2) or N-up grids, completely eliminating empty white/black letterboxing bars.
+- 📏 **Visual Page & Slot Margins (0 mm, 3 mm, 6 mm)**: Interactive margin spacing with a live UI preview card in the app. Protects slide headers, footers, and page numbers from being clipped by physical printer hardware margins.
+- 📑 **Dedicated 16:9 & 4:3 Paper Sizes**: Registers `16:9 Presentation` and `4:3 Presentation` media sizes directly in the Android / Samsung Print Spooler paper size picker.
+- 🔗 **Clickable Hyperlinks & Auto-URL Detection**: Preserves existing PDF hyperlinks and auto-detects plain text URLs with exact transformed bounding boxes and balanced punctuation trimming.
+- 🖋️ **High-Contrast Vector Text & Formula Booster**: Enhances faint gray text, math formulas, and notes to solid black while preserving 100% text selectability and color images.
 - 🎛️ **Dual Orientation Control (Sheet vs. Subpages)**:
   - **Sheet Orientation**: Configure output sheet layout (`Landscape` vs. `Portrait`).
   - **Subpages Orientation**: Configure source document page fitting (`Landscape` vs. `Portrait`) with automatic 90° vector rotation for optimal layout density.
-- 🎯 **Forced System Print Spooler Capabilities**: Restricts registered media size capabilities to exact defaults, preventing Samsung Print Spooler from misconfiguring default print dialog orientations.
-- 🎨 **Realistic Showcase Preview Icons**: Virtual printers display white-on-transparent grid diagram icons featuring exact A4 subpage aspect ratios (`1:√2`) and subtle mini document preview lines.
+- 🎨 **Realistic Showcase Preview Icons**: Virtual printers display white-on-transparent grid diagram icons featuring exact subpage aspect ratios.
 - 🧹 **1-Tap Phantom Printer Cleanup**: Built-in troubleshooting utility to clear cached deleted printers from Samsung Print Spooler (`com.samsung.android.printspooler`) app memory.
-- 🧩 **Custom X:Y Grid Layout Creator**: Create custom grid layouts (e.g., 3×3, 4×4, 3×5) with automatic A4 orientation suggestions.
+- 🧩 **Custom X:Y Grid Layout Creator**: Create custom grid layouts (e.g., 3×3, 4×4, 3×5) with automatic orientation suggestions.
 - 📁 **Flexible Save Destinations**: Automatically save PDFs to `Downloads/TwoUpPrint/`, pick a custom Storage Access Framework (SAF) folder tree, or enable high-priority notification popups per print job.
 - 🏷️ **Smart Document Naming**: Automatically extracts web page titles or document labels to produce clean file names (e.g., `Article Title_2x1.pdf`).
 - ⚡ **Samsung One UI Battery Reliability**: Battery optimization exemption helper ensures the background print discovery service stays alive and active.

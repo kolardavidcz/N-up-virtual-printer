@@ -41,6 +41,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var layoutCardsContainer: LinearLayout
     private lateinit var switchTextContrast: MaterialSwitch
     private lateinit var switchEnableLinks: MaterialSwitch
+    private lateinit var switchBestFit: MaterialSwitch
+    private lateinit var marginPreviewView: MarginPreviewView
+    private lateinit var toggleGroupMargins: com.google.android.material.button.MaterialButtonToggleGroup
+    private lateinit var btnMargin0: MaterialButton
+    private lateinit var btnMargin3: MaterialButton
+    private lateinit var btnMargin6: MaterialButton
+    private lateinit var marginDescriptionText: TextView
     private lateinit var pathText: TextView
     private lateinit var btnSetLocation: MaterialButton
     private lateinit var btnResetLocation: MaterialButton
@@ -105,6 +112,36 @@ class MainActivity : AppCompatActivity() {
         switchEnableLinks.isChecked = LayoutRegistry.isLinksEnabled(this)
         switchEnableLinks.setOnCheckedChangeListener { _, isChecked ->
             LayoutRegistry.setLinksEnabled(this, isChecked)
+        }
+
+        // Slide Fit & Margins
+        switchBestFit = findViewById(R.id.switchBestFit)
+        marginPreviewView = findViewById(R.id.marginPreviewView)
+        toggleGroupMargins = findViewById(R.id.toggleGroupMargins)
+        btnMargin0 = findViewById(R.id.btnMargin0)
+        btnMargin3 = findViewById(R.id.btnMargin3)
+        btnMargin6 = findViewById(R.id.btnMargin6)
+        marginDescriptionText = findViewById(R.id.marginDescriptionText)
+
+        switchBestFit.isChecked = LayoutRegistry.isBestFitEnabled(this)
+        switchBestFit.setOnCheckedChangeListener { _, isChecked ->
+            LayoutRegistry.setBestFitEnabled(this, isChecked)
+        }
+
+        val currentMargin = LayoutRegistry.getMarginMm(this)
+        updateMarginSelectionUI(currentMargin)
+
+        toggleGroupMargins.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                val mm = when (checkedId) {
+                    R.id.btnMargin0 -> 0
+                    R.id.btnMargin3 -> 3
+                    R.id.btnMargin6 -> 6
+                    else -> 0
+                }
+                LayoutRegistry.setMarginMm(this, mm)
+                updateMarginSelectionUI(mm)
+            }
         }
 
         btnSetLocation.setOnClickListener {
@@ -427,6 +464,28 @@ class MainActivity : AppCompatActivity() {
             try {
                 startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
             } catch (_: Exception) { }
+        }
+    }
+
+    private fun updateMarginSelectionUI(mm: Int) {
+        marginPreviewView.setMarginMm(mm)
+        when (mm) {
+            0 -> {
+                toggleGroupMargins.check(R.id.btnMargin0)
+                marginDescriptionText.text = "Edge-to-edge (0 mm) — Maximum area"
+            }
+            3 -> {
+                toggleGroupMargins.check(R.id.btnMargin3)
+                marginDescriptionText.text = "Compact (3 mm) — Safe printer margin"
+            }
+            6 -> {
+                toggleGroupMargins.check(R.id.btnMargin6)
+                marginDescriptionText.text = "Comfort (6 mm) — Generous spacing for notes"
+            }
+            else -> {
+                toggleGroupMargins.check(R.id.btnMargin0)
+                marginDescriptionText.text = "Edge-to-edge (0 mm)"
+            }
         }
     }
 

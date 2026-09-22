@@ -3094,6 +3094,9 @@ id bounce
 id btnAddLayout
 id btnBatteryAction
 id btnClearOldPrinters
+id btnMargin0
+id btnMargin3
+id btnMargin6
 id btnOpenSettings
 id btnResetLocation
 id btnSetLocation
@@ -3224,6 +3227,8 @@ id linear
 id listMode
 id list_item
 id m3_side_sheet
+id marginDescriptionText
+id marginPreviewView
 id marquee
 id masked
 id match_parent
@@ -3399,6 +3404,7 @@ id stop
 id stretch
 id submenuarrow
 id submit_area
+id switchBestFit
 id switchEnableLinks
 id switchTextContrast
 id tabMode
@@ -3436,6 +3442,7 @@ id title
 id titleDividerNoCustom
 id title_template
 id toggle
+id toggleGroupMargins
 id top
 id topPanel
 id touch_outside
