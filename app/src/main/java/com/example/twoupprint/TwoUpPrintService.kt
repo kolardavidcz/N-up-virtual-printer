@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.print.PrintAttributes
 import android.printservice.PrintJob
 import android.printservice.PrintService
 import android.printservice.PrinterDiscoverySession
@@ -37,20 +38,35 @@ class TwoUpPrintService : PrintService() {
         val localId = printJob.info.printerId?.localId
         val baseLayout = LayoutRegistry.findLayoutById(applicationContext, localId)
 
-        // Read orientation requested by the user in the system print dialog (subpages orientation / Seet_v1 protocol)
+        // Read media size and orientation requested by the user in the system print dialog
         val mediaSize = printJob.info?.attributes?.mediaSize
+
+        // Explicit paper size detection:
+        val isExplicitMatchSize = mediaSize?.id == "MEDIA_MATCH_SIZE"
+        val isExplicitA4 = mediaSize?.id == PrintAttributes.MediaSize.ISO_A4.id
+
+        // When ISO A4 is explicitly selected by the user, honor standard A4 dimensions (bestFit = false).
+        // Otherwise, use Match Document Size or user preference.
+        val bestFit = if (isExplicitA4) false else (isExplicitMatchSize || LayoutRegistry.isBestFitEnabled(applicationContext))
+
+        // When A4 is explicitly chosen, sheet orientation follows the chosen orientation (Portrait by default)
+        val sheetLandscape = if (isExplicitA4) {
+            mediaSize?.isPortrait == false
+        } else {
+            baseLayout.landscape
+        }
+
         val userSelectedSubPageLandscape = if (mediaSize != null) !mediaSize.isPortrait else baseLayout.subPageLandscape
 
         // Layout keeps configured sheet orientation (Sheet_v2 internal processing)
-        val layout = baseLayout.copy(subPageLandscape = userSelectedSubPageLandscape)
+        val layout = baseLayout.copy(
+            landscape = sheetLandscape,
+            subPageLandscape = userSelectedSubPageLandscape
+        )
 
         // Determine if text contrast enhancement and clickable links are enabled
         val addTextContrast = LayoutRegistry.isTextContrastEnabled(applicationContext)
         val enableLinks = LayoutRegistry.isLinksEnabled(applicationContext)
-
-        // Determine Best Fit and Margin settings
-        val isExplicitMatchSize = mediaSize?.id == "MEDIA_MATCH_SIZE"
-        val bestFit = isExplicitMatchSize || LayoutRegistry.isBestFitEnabled(applicationContext)
 
         val marginTopMm = LayoutRegistry.getMarginTopMm(applicationContext)
         val marginBottomMm = LayoutRegistry.getMarginBottomMm(applicationContext)

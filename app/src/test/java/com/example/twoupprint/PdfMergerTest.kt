@@ -215,4 +215,42 @@ class PdfMergerTest {
 
         outDoc.close()
     }
+
+    @Test
+    fun testFixedA4PortraitWhenBestFitDisabled() {
+        val srcBytes = createTestPresentation(4, 960f, 540f)
+        val outStream = ByteArrayOutputStream()
+
+        val layout = PrintLayout(
+            printerId = "grid_2x2",
+            displayName = "4-Up Grid (2x2)",
+            cols = 2,
+            rows = 2,
+            landscape = false, // Sheet Portrait
+            subPageLandscape = false
+        )
+
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(srcBytes),
+            outputStream = outStream,
+            layout = layout,
+            addTextContrast = false,
+            enableLinks = false,
+            bestFit = false,
+            marginMm = 0
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        assertEquals(1, outDoc.numberOfPages)
+
+        val outPage = outDoc.getPage(0)
+        val w = outPage.mediaBox.width
+        val h = outPage.mediaBox.height
+
+        // Should strictly be A4 Portrait: 595.28 x 841.89 pt
+        assertEquals(PDRectangle.A4.width, w, 0.5f)
+        assertEquals(PDRectangle.A4.height, h, 0.5f)
+
+        outDoc.close()
+    }
 }

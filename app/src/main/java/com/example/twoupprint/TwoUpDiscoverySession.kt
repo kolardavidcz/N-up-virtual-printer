@@ -23,26 +23,22 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
     private fun buildPrinterInfo(mode: PrintLayout): PrinterInfo {
         val id: PrinterId = service.generatePrinterId(mode.printerId)
 
-        // Communicating with Samsung Printer Spooler UI (Seet_v1 protocol communication):
-        // Force default subpages orientation (subPageLandscape) as the ONLY advertised media size capability.
-        val defaultSize = if (mode.subPageLandscape) {
-            PrintAttributes.MediaSize.ISO_A4.asLandscape()
-        } else {
-            PrintAttributes.MediaSize.ISO_A4.asPortrait()
-        }
+        // 1. "Match Document Size" option in Samsung print dialog:
+        // Set as default paper size and default Landscape (11693 x 8268 mils)
+        // so presentations (16:9, 4:3) open ready to print without letterboxing.
+        val sizeMatchSize = PrintAttributes.MediaSize(
+            "MEDIA_MATCH_SIZE",
+            "Match Document Size (Auto N-Up)",
+            11693,
+            8268
+        )
 
-        // "Match Document Size" option in Samsung print dialog:
-        // Advertised capability acts as a carrier, while the engine sizes the destination
-        // sheet to the exact M x N layout matching the real presentation slide size.
-        val sizeMatchSize = if (mode.subPageLandscape) {
-            PrintAttributes.MediaSize("MEDIA_MATCH_SIZE", "Match Document Size (Auto N-Up)", 11693, 8268)
-        } else {
-            PrintAttributes.MediaSize("MEDIA_MATCH_SIZE", "Match Document Size (Auto N-Up)", 8268, 11693)
-        }
+        // 2. ISO A4 kept as standard Portrait (8268 x 11693 mils).
+        val sizeA4Portrait = PrintAttributes.MediaSize.ISO_A4.asPortrait()
 
         val capabilities = PrinterCapabilitiesInfo.Builder(id)
-            .addMediaSize(defaultSize, true)
-            .addMediaSize(sizeMatchSize, false)
+            .addMediaSize(sizeMatchSize, true)   // Default paper size: Match Document Size (Landscape)
+            .addMediaSize(sizeA4Portrait, false) // Alternative paper size: ISO A4 (Portrait)
             .addResolution(
                 PrintAttributes.Resolution("nup_res", "300dpi", 300, 300),
                 true
