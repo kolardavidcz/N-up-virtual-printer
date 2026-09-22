@@ -43,7 +43,10 @@ object PdfMerger {
         addTextContrast: Boolean = false,
         enableLinks: Boolean = false,
         bestFit: Boolean = true,
-        marginMm: Int = 0,
+        marginTopMm: Int = 0,
+        marginBottomMm: Int = 0,
+        marginLeftMm: Int = 0,
+        marginRightMm: Int = 0,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         val srcDoc = PDDocument.load(sourcePdfStream)
@@ -65,19 +68,30 @@ object PdfMerger {
             val cols = layout.cols
             val rows = layout.rows
 
-            // Margin in PDF points (72 points per inch, 25.4 mm per inch)
-            val marginPt = marginMm * (72f / 25.4f)
+            // Margins in PDF points (72 points per inch, 25.4 mm per inch)
+            val mmToPt = 72f / 25.4f
+            val marginTopPt = marginTopMm * mmToPt
+            val marginBottomPt = marginBottomMm * mmToPt
+            val marginLeftPt = marginLeftMm * mmToPt
+            val marginRightPt = marginRightMm * mmToPt
+
+            val gutterX = ((marginLeftPt + marginRightPt) / 2f).coerceAtLeast(0f)
+            val gutterY = ((marginTopPt + marginBottomPt) / 2f).coerceAtLeast(0f)
 
             // Sheet dimensions for output (adaptive Best Fit or fixed A4)
-            val sheetRect = calculateSheetRectangle(srcDoc, layout, bestFit, marginPt)
+            val sheetRect = calculateSheetRectangle(
+                srcDoc, layout, bestFit,
+                marginTopPt, marginBottomPt, marginLeftPt, marginRightPt,
+                gutterX, gutterY
+            )
             val sheetW = sheetRect.width
             val sheetH = sheetRect.height
 
-            val printableW = Math.max(10f, sheetW - 2 * marginPt)
-            val printableH = Math.max(10f, sheetH - 2 * marginPt)
+            val printableW = Math.max(10f, sheetW - marginLeftPt - marginRightPt)
+            val printableH = Math.max(10f, sheetH - marginTopPt - marginBottomPt)
 
-            val slotW = (printableW - (cols - 1) * marginPt) / cols.toFloat()
-            val slotH = (printableH - (rows - 1) * marginPt) / rows.toFloat()
+            val slotW = (printableW - (cols - 1) * gutterX) / cols.toFloat()
+            val slotH = (printableH - (rows - 1) * gutterY) / rows.toFloat()
 
             var pageIdx = 0
 
@@ -99,8 +113,8 @@ object PdfMerger {
                         if (pageIdx >= pageCount) break
 
                         // PDF origin is bottom-left, so row 0 (top) has the highest Y
-                        val slotLeft = marginPt + col * (slotW + marginPt)
-                        val slotBottom = marginPt + (rows - 1 - row) * (slotH + marginPt)
+                        val slotLeft = marginLeftPt + col * (slotW + gutterX)
+                        val slotBottom = marginBottomPt + (rows - 1 - row) * (slotH + gutterY)
 
                         drawVectorPageInSlot(
                             srcDoc, layerUtility, contentStream, pageIdx,
@@ -141,6 +155,30 @@ object PdfMerger {
     }
 
     /**
+     * Backward-compatible overload for symmetric margins.
+     */
+    fun mergeNUp(
+        sourcePdfStream: InputStream,
+        outputStream: OutputStream,
+        layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
+        addTextContrast: Boolean = false,
+        enableLinks: Boolean = false,
+        bestFit: Boolean = true,
+        marginMm: Int = 0,
+        onProgress: ((current: Int, total: Int) -> Unit)? = null
+    ) {
+        mergeNUp(
+            sourcePdfStream, outputStream, layout,
+            addTextContrast, enableLinks, bestFit,
+            marginTopMm = marginMm,
+            marginBottomMm = marginMm,
+            marginLeftMm = marginMm,
+            marginRightMm = marginMm,
+            onProgress = onProgress
+        )
+    }
+
+    /**
      * Dynamically calculates output sheet dimensions:
      * - If [bestFit] is true: adapts sheet aspect ratio to match the combined grid ratio of
      *   the source slides (e.g. 16:9, 4:3), completely eliminating letterbox white bars.
@@ -150,7 +188,12 @@ object PdfMerger {
         srcDoc: PDDocument,
         layout: PrintLayout,
         bestFit: Boolean,
-        marginPt: Float
+        marginTopPt: Float,
+        marginBottomPt: Float,
+        marginLeftPt: Float,
+        marginRightPt: Float,
+        gutterX: Float,
+        gutterY: Float
     ): PDRectangle {
         val a4Long = PDRectangle.A4.height // 841.8898f
         val a4Short = PDRectangle.A4.width // 595.27563f
@@ -191,22 +234,22 @@ object PdfMerger {
             return if (layout.landscape) PDRectangle(a4Long, a4Short) else PDRectangle(a4Short, a4Long)
         }
 
-        // Adaptive Best Fit: Size sheet so (slotW / slotH) == subRatio after subtracting margins
+        // Adaptive Best Fit: Size sheet so (slotW / slotH) == subRatio after subtracting margins & gutters
         return if (layout.landscape) {
             val baseW = a4Long
-            val printableW = Math.max(10f, baseW - 2 * marginPt)
-            val netW = printableW - (cols - 1) * marginPt
+            val printableW = Math.max(10f, baseW - marginLeftPt - marginRightPt)
+            val netW = printableW - (cols - 1) * gutterX
             val netH = netW / gridRatio
-            val printableH = netH + (rows - 1) * marginPt
-            val sheetH = printableH + 2 * marginPt
+            val printableH = netH + (rows - 1) * gutterY
+            val sheetH = printableH + marginTopPt + marginBottomPt
             PDRectangle(baseW, sheetH)
         } else {
             val baseH = a4Long
-            val printableH = Math.max(10f, baseH - 2 * marginPt)
-            val netH = printableH - (rows - 1) * marginPt
+            val printableH = Math.max(10f, baseH - marginTopPt - marginBottomPt)
+            val netH = printableH - (rows - 1) * gutterY
             val netW = netH * gridRatio
-            val printableW = netW + (cols - 1) * marginPt
-            val sheetW = printableW + 2 * marginPt
+            val printableW = netW + (cols - 1) * gutterX
+            val sheetW = printableW + marginLeftPt + marginRightPt
             PDRectangle(sheetW, baseH)
         }
     }
@@ -221,14 +264,45 @@ object PdfMerger {
         addTextContrast: Boolean = false,
         enableLinks: Boolean = false,
         bestFit: Boolean = true,
-        marginMm: Int = 0,
+        marginTopMm: Int = 0,
+        marginBottomMm: Int = 0,
+        marginLeftMm: Int = 0,
+        marginRightMm: Int = 0,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         sourcePdfFile.inputStream().use { input ->
             outputPdfFile.outputStream().use { output ->
-                mergeNUp(input, output, layout, addTextContrast, enableLinks, bestFit, marginMm, onProgress)
+                mergeNUp(
+                    input, output, layout, addTextContrast, enableLinks, bestFit,
+                    marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
+                    onProgress
+                )
             }
         }
+    }
+
+    /**
+     * Backward-compatible overload for symmetric margins (file-based).
+     */
+    fun mergeNUp(
+        sourcePdfFile: File,
+        outputPdfFile: File,
+        layout: PrintLayout = LayoutRegistry.builtInLayouts.first(),
+        addTextContrast: Boolean = false,
+        enableLinks: Boolean = false,
+        bestFit: Boolean = true,
+        marginMm: Int = 0,
+        onProgress: ((current: Int, total: Int) -> Unit)? = null
+    ) {
+        mergeNUp(
+            sourcePdfFile, outputPdfFile, layout,
+            addTextContrast, enableLinks, bestFit,
+            marginTopMm = marginMm,
+            marginBottomMm = marginMm,
+            marginLeftMm = marginMm,
+            marginRightMm = marginMm,
+            onProgress = onProgress
+        )
     }
 
     /**

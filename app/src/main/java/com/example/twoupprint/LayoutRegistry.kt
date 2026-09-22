@@ -148,16 +148,64 @@ object LayoutRegistry {
         prefs.edit().putBoolean("enable_best_fit", enabled).apply()
     }
 
-    // --- "Page & Slot Margins" setting (0 mm, 3 mm, 6 mm) ---
+    // --- "Page & Slot Margins" setting (Top, Bottom, Left, Right) ---
+
+    fun getMarginTopMm(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt("margin_top_mm", prefs.getInt("page_margin_mm", 0))
+    }
+
+    fun getMarginBottomMm(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt("margin_bottom_mm", prefs.getInt("page_margin_mm", 0))
+    }
+
+    fun getMarginLeftMm(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt("margin_left_mm", prefs.getInt("page_margin_mm", 0))
+    }
+
+    fun getMarginRightMm(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt("margin_right_mm", prefs.getInt("page_margin_mm", 0))
+    }
+
+    fun setMarginTopMm(context: Context, mm: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt("margin_top_mm", mm).apply()
+    }
+
+    fun setMarginBottomMm(context: Context, mm: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt("margin_bottom_mm", mm).apply()
+    }
+
+    fun setMarginLeftMm(context: Context, mm: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt("margin_left_mm", mm).apply()
+    }
+
+    fun setMarginRightMm(context: Context, mm: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt("margin_right_mm", mm).apply()
+    }
+
+    fun setMargins(context: Context, top: Int, bottom: Int, left: Int, right: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putInt("margin_top_mm", top)
+            .putInt("margin_bottom_mm", bottom)
+            .putInt("margin_left_mm", left)
+            .putInt("margin_right_mm", right)
+            .apply()
+    }
 
     fun getMarginMm(context: Context): Int {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getInt("page_margin_mm", 0) // default 0 mm (edge-to-edge)
+        return getMarginTopMm(context)
     }
 
     fun setMarginMm(context: Context, marginMm: Int) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putInt("page_margin_mm", marginMm).apply()
+        setMargins(context, marginMm, marginMm, marginMm, marginMm)
     }
 
     fun getColorMode(context: Context): ColorProcessingMode {

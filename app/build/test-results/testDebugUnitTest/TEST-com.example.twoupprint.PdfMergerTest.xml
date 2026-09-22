@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.example.twoupprint.PdfMergerTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-22T16:27:30.470Z" hostname="SWIFT-5" time="0.098">
+<testsuite name="com.example.twoupprint.PdfMergerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-22T20:38:04.067Z" hostname="SWIFT-5" time="0.151">
   <properties/>
-  <testcase name="testMarginsPreserveAspectRatio" classname="com.example.twoupprint.PdfMergerTest" time="0.073"/>
-  <testcase name="testBestFit16x9_4Up" classname="com.example.twoupprint.PdfMergerTest" time="0.008"/>
-  <testcase name="testFixedA4WhenBestFitDisabled" classname="com.example.twoupprint.PdfMergerTest" time="0.009"/>
-  <testcase name="testBestFit4x3_4Up" classname="com.example.twoupprint.PdfMergerTest" time="0.007"/>
+  <testcase name="testMarginsPreserveAspectRatio" classname="com.example.twoupprint.PdfMergerTest" time="0.097"/>
+  <testcase name="testBestFit16x9_4Up" classname="com.example.twoupprint.PdfMergerTest" time="0.02"/>
+  <testcase name="testFixedA4WhenBestFitDisabled" classname="com.example.twoupprint.PdfMergerTest" time="0.011"/>
+  <testcase name="testAsymmetricMargins" classname="com.example.twoupprint.PdfMergerTest" time="0.013"/>
+  <testcase name="testBestFit4x3_4Up" classname="com.example.twoupprint.PdfMergerTest" time="0.009"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

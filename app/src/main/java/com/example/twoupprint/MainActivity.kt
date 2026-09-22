@@ -43,10 +43,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var switchEnableLinks: MaterialSwitch
     private lateinit var switchBestFit: MaterialSwitch
     private lateinit var marginPreviewView: MarginPreviewView
-    private lateinit var toggleGroupMargins: com.google.android.material.button.MaterialButtonToggleGroup
-    private lateinit var btnMargin0: MaterialButton
-    private lateinit var btnMargin3: MaterialButton
-    private lateinit var btnMargin6: MaterialButton
+    private lateinit var toggleGroupMarginTop: com.google.android.material.button.MaterialButtonToggleGroup
+    private lateinit var toggleGroupMarginBottom: com.google.android.material.button.MaterialButtonToggleGroup
+    private lateinit var toggleGroupMarginLeft: com.google.android.material.button.MaterialButtonToggleGroup
+    private lateinit var toggleGroupMarginRight: com.google.android.material.button.MaterialButtonToggleGroup
+    private lateinit var btnPresetAll0: MaterialButton
+    private lateinit var btnPresetAll3: MaterialButton
+    private lateinit var btnPresetHeaderSafe: MaterialButton
+    private var isUpdatingMarginUI: Boolean = false
     private lateinit var marginDescriptionText: TextView
     private lateinit var pathText: TextView
     private lateinit var btnSetLocation: MaterialButton
@@ -117,10 +121,13 @@ class MainActivity : AppCompatActivity() {
         // Slide Fit & Margins
         switchBestFit = findViewById(R.id.switchBestFit)
         marginPreviewView = findViewById(R.id.marginPreviewView)
-        toggleGroupMargins = findViewById(R.id.toggleGroupMargins)
-        btnMargin0 = findViewById(R.id.btnMargin0)
-        btnMargin3 = findViewById(R.id.btnMargin3)
-        btnMargin6 = findViewById(R.id.btnMargin6)
+        toggleGroupMarginTop = findViewById(R.id.toggleGroupMarginTop)
+        toggleGroupMarginBottom = findViewById(R.id.toggleGroupMarginBottom)
+        toggleGroupMarginLeft = findViewById(R.id.toggleGroupMarginLeft)
+        toggleGroupMarginRight = findViewById(R.id.toggleGroupMarginRight)
+        btnPresetAll0 = findViewById(R.id.btnPresetAll0)
+        btnPresetAll3 = findViewById(R.id.btnPresetAll3)
+        btnPresetHeaderSafe = findViewById(R.id.btnPresetHeaderSafe)
         marginDescriptionText = findViewById(R.id.marginDescriptionText)
 
         switchBestFit.isChecked = LayoutRegistry.isBestFitEnabled(this)
@@ -128,20 +135,73 @@ class MainActivity : AppCompatActivity() {
             LayoutRegistry.setBestFitEnabled(this, isChecked)
         }
 
-        val currentMargin = LayoutRegistry.getMarginMm(this)
-        updateMarginSelectionUI(currentMargin)
+        refreshMarginsUI()
 
-        toggleGroupMargins.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
+        toggleGroupMarginTop.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked && !isUpdatingMarginUI) {
                 val mm = when (checkedId) {
-                    R.id.btnMargin0 -> 0
-                    R.id.btnMargin3 -> 3
-                    R.id.btnMargin6 -> 6
+                    R.id.btnTop0 -> 0
+                    R.id.btnTop3 -> 3
+                    R.id.btnTop6 -> 6
                     else -> 0
                 }
-                LayoutRegistry.setMarginMm(this, mm)
-                updateMarginSelectionUI(mm)
+                LayoutRegistry.setMarginTopMm(this, mm)
+                refreshMarginsUI()
             }
+        }
+
+        toggleGroupMarginBottom.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked && !isUpdatingMarginUI) {
+                val mm = when (checkedId) {
+                    R.id.btnBottom0 -> 0
+                    R.id.btnBottom3 -> 3
+                    R.id.btnBottom6 -> 6
+                    else -> 0
+                }
+                LayoutRegistry.setMarginBottomMm(this, mm)
+                refreshMarginsUI()
+            }
+        }
+
+        toggleGroupMarginLeft.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked && !isUpdatingMarginUI) {
+                val mm = when (checkedId) {
+                    R.id.btnLeft0 -> 0
+                    R.id.btnLeft3 -> 3
+                    R.id.btnLeft6 -> 6
+                    else -> 0
+                }
+                LayoutRegistry.setMarginLeftMm(this, mm)
+                refreshMarginsUI()
+            }
+        }
+
+        toggleGroupMarginRight.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked && !isUpdatingMarginUI) {
+                val mm = when (checkedId) {
+                    R.id.btnRight0 -> 0
+                    R.id.btnRight3 -> 3
+                    R.id.btnRight6 -> 6
+                    else -> 0
+                }
+                LayoutRegistry.setMarginRightMm(this, mm)
+                refreshMarginsUI()
+            }
+        }
+
+        btnPresetAll0.setOnClickListener {
+            LayoutRegistry.setMargins(this, 0, 0, 0, 0)
+            refreshMarginsUI()
+        }
+
+        btnPresetAll3.setOnClickListener {
+            LayoutRegistry.setMargins(this, 3, 3, 3, 3)
+            refreshMarginsUI()
+        }
+
+        btnPresetHeaderSafe.setOnClickListener {
+            LayoutRegistry.setMargins(this, 6, 0, 0, 0)
+            refreshMarginsUI()
         }
 
         btnSetLocation.setOnClickListener {
@@ -204,8 +264,11 @@ class MainActivity : AppCompatActivity() {
             pathText.text = "Downloads/TwoUpPrint/ (default)"
         }
 
-        // Text Contrast State
+        // Contrast, links, and margin states
         switchTextContrast.isChecked = LayoutRegistry.isTextContrastEnabled(this)
+        switchEnableLinks.isChecked = LayoutRegistry.isLinksEnabled(this)
+        switchBestFit.isChecked = LayoutRegistry.isBestFitEnabled(this)
+        refreshMarginsUI()
 
         // Battery status
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -467,26 +530,48 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateMarginSelectionUI(mm: Int) {
-        marginPreviewView.setMarginMm(mm)
-        when (mm) {
-            0 -> {
-                toggleGroupMargins.check(R.id.btnMargin0)
-                marginDescriptionText.text = "Edge-to-edge (0 mm) — Maximum area"
+    private fun refreshMarginsUI() {
+        val top = LayoutRegistry.getMarginTopMm(this)
+        val bottom = LayoutRegistry.getMarginBottomMm(this)
+        val left = LayoutRegistry.getMarginLeftMm(this)
+        val right = LayoutRegistry.getMarginRightMm(this)
+        updateMarginSelectionUI(top, bottom, left, right)
+    }
+
+    private fun updateMarginSelectionUI(top: Int, bottom: Int, left: Int, right: Int) {
+        marginPreviewView.setMargins(top, bottom, left, right)
+
+        isUpdatingMarginUI = true
+        try {
+            when (top) {
+                0 -> toggleGroupMarginTop.check(R.id.btnTop0)
+                3 -> toggleGroupMarginTop.check(R.id.btnTop3)
+                6 -> toggleGroupMarginTop.check(R.id.btnTop6)
+                else -> toggleGroupMarginTop.clearChecked()
             }
-            3 -> {
-                toggleGroupMargins.check(R.id.btnMargin3)
-                marginDescriptionText.text = "Compact (3 mm) — Safe printer margin"
+            when (bottom) {
+                0 -> toggleGroupMarginBottom.check(R.id.btnBottom0)
+                3 -> toggleGroupMarginBottom.check(R.id.btnBottom3)
+                6 -> toggleGroupMarginBottom.check(R.id.btnBottom6)
+                else -> toggleGroupMarginBottom.clearChecked()
             }
-            6 -> {
-                toggleGroupMargins.check(R.id.btnMargin6)
-                marginDescriptionText.text = "Comfort (6 mm) — Generous spacing for notes"
+            when (left) {
+                0 -> toggleGroupMarginLeft.check(R.id.btnLeft0)
+                3 -> toggleGroupMarginLeft.check(R.id.btnLeft3)
+                6 -> toggleGroupMarginLeft.check(R.id.btnLeft6)
+                else -> toggleGroupMarginLeft.clearChecked()
             }
-            else -> {
-                toggleGroupMargins.check(R.id.btnMargin0)
-                marginDescriptionText.text = "Edge-to-edge (0 mm)"
+            when (right) {
+                0 -> toggleGroupMarginRight.check(R.id.btnRight0)
+                3 -> toggleGroupMarginRight.check(R.id.btnRight3)
+                6 -> toggleGroupMarginRight.check(R.id.btnRight6)
+                else -> toggleGroupMarginRight.clearChecked()
             }
+        } finally {
+            isUpdatingMarginUI = false
         }
+
+        marginDescriptionText.text = "Top: ${top} mm • Bottom: ${bottom} mm • Left: ${left} mm • Right: ${right} mm"
     }
 
     private fun openPrintSettings() {

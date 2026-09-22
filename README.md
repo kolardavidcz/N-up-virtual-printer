@@ -30,8 +30,8 @@ Unlike standard print services that rasterize documents into low-resolution imag
 
 - 📄 **True Vector PDF N-Up Merging**: Combines 2, 4, 6, 8, or arbitrary N-up pages onto a single sheet without rasterizing to bitmaps. Text is 100% selectable and vector paths remain sharp.
 - 📐 **Adaptive "Best Fit" for Presentations (16:9 & 4:3)**: Automatically sizes the output PDF sheet to match the exact combined aspect ratio of presentation slides in 4-up (2×2) or N-up grids, completely eliminating empty white/black letterboxing bars.
-- 📏 **Visual Page & Slot Margins (0 mm, 3 mm, 6 mm)**: Interactive margin spacing with a live UI preview card in the app. Protects slide headers, footers, and page numbers from being clipped by physical printer hardware margins.
-- 📑 **Dedicated 16:9 & 4:3 Paper Sizes**: Registers `16:9 Presentation` and `4:3 Presentation` media sizes directly in the Android / Samsung Print Spooler paper size picker.
+- 📏 **Visual Page & Slot Margins (Per Side: Top, Bottom, Left, Right)**: Interactive per-side margin spacing arranged around a live visual box-model preview card in the app. Protects slide headers, footers, binding edges, and page numbers from clipping.
+- 📑 **Unified "Match Document Size" Paper Size**: Registers a unified `Match Document Size (Auto N-Up)` media size directly in the Samsung / Android Print Spooler dialog, dynamically calculating the exact destination sheet size to eliminate letterboxing.
 - 🔗 **Clickable Hyperlinks & Auto-URL Detection**: Preserves existing PDF hyperlinks and auto-detects plain text URLs with exact transformed bounding boxes and balanced punctuation trimming.
 - 🖋️ **High-Contrast Vector Text & Formula Booster**: Enhances faint gray text, math formulas, and notes to solid black while preserving 100% text selectability and color images.
 - 🎛️ **Dual Orientation Control (Sheet vs. Subpages)**:

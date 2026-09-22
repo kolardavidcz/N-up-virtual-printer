@@ -49,9 +49,13 @@ class TwoUpPrintService : PrintService() {
         val enableLinks = LayoutRegistry.isLinksEnabled(applicationContext)
 
         // Determine Best Fit and Margin settings
-        val isExplicitPresentationMedia = mediaSize?.id == "MEDIA_16_9" || mediaSize?.id == "MEDIA_4_3"
-        val bestFit = isExplicitPresentationMedia || LayoutRegistry.isBestFitEnabled(applicationContext)
-        val marginMm = LayoutRegistry.getMarginMm(applicationContext)
+        val isExplicitMatchSize = mediaSize?.id == "MEDIA_MATCH_SIZE"
+        val bestFit = isExplicitMatchSize || LayoutRegistry.isBestFitEnabled(applicationContext)
+
+        val marginTopMm = LayoutRegistry.getMarginTopMm(applicationContext)
+        val marginBottomMm = LayoutRegistry.getMarginBottomMm(applicationContext)
+        val marginLeftMm = LayoutRegistry.getMarginLeftMm(applicationContext)
+        val marginRightMm = LayoutRegistry.getMarginRightMm(applicationContext)
 
         // Extract website / page title from print job metadata if available
         val docName = extractCleanDocumentName(printJob)
@@ -77,7 +81,10 @@ class TwoUpPrintService : PrintService() {
                 addTextContrast,
                 enableLinks,
                 bestFit,
-                marginMm
+                marginTopMm,
+                marginBottomMm,
+                marginLeftMm,
+                marginRightMm
             )
             return
         }
@@ -104,7 +111,8 @@ class TwoUpPrintService : PrintService() {
         PrintJobHandler(
             applicationContext, printJob, documentData, destinationUri,
             layout, fileName, addTextContrast, enableLinks,
-            bestFit, marginMm
+            bestFit,
+            marginTopMm, marginBottomMm, marginLeftMm, marginRightMm
         ).start()
     }
 

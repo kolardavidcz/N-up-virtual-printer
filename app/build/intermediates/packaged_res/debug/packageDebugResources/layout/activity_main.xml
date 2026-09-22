@@ -267,7 +267,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Page &amp; Slot Margins"
+                        android:text="Page &amp; Slot Margins (Per Side)"
                         android:textColor="#E6E0E9"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -276,82 +276,328 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Adds outer padding and slot spacing so headers, footers, and slide numbers never get cut off by printers."
+                        android:text="Select margins for each side of the rectangle individually to protect headers, footers, or binding edges."
                         android:textColor="#CAC4D0"
                         android:textSize="13sp" />
 
-                    <!-- Visual Margin Selector & Preview -->
+                    <!-- Box-Model Margin Container -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical">
 
-                        <!-- Interactive MarginPreviewView -->
-                        <com.example.twoupprint.MarginPreviewView
-                            android:id="@+id/marginPreviewView"
-                            android:layout_width="110dp"
-                            android:layout_height="76dp"
-                            android:layout_marginEnd="16dp" />
-
-                        <!-- Segmented Margin Options -->
+                        <!-- TOP SIDE SELECTOR -->
                         <LinearLayout
-                            android:layout_width="0dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:gravity="center"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="8dp"
+                                android:text="TOP:"
+                                android:textColor="#D0BCFF"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
 
                             <com.google.android.material.button.MaterialButtonToggleGroup
-                                android:id="@+id/toggleGroupMargins"
-                                android:layout_width="match_parent"
+                                android:id="@+id/toggleGroupMarginTop"
+                                android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 app:singleSelection="true">
 
                                 <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/btnMargin0"
+                                    android:id="@+id/btnTop0"
                                     style="?attr/materialButtonOutlinedStyle"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:paddingLeft="4dp"
-                                    android:paddingRight="4dp"
-                                    android:text="0 mm"
-                                    android:textSize="12sp" />
+                                    android:layout_width="50dp"
+                                    android:layout_height="36dp"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:padding="0dp"
+                                    android:text="0"
+                                    android:textSize="11sp" />
 
                                 <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/btnMargin3"
+                                    android:id="@+id/btnTop3"
                                     style="?attr/materialButtonOutlinedStyle"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:paddingLeft="4dp"
-                                    android:paddingRight="4dp"
-                                    android:text="3 mm"
-                                    android:textSize="12sp" />
+                                    android:layout_width="50dp"
+                                    android:layout_height="36dp"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:padding="0dp"
+                                    android:text="3mm"
+                                    android:textSize="11sp" />
 
                                 <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/btnMargin6"
+                                    android:id="@+id/btnTop6"
                                     style="?attr/materialButtonOutlinedStyle"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:paddingLeft="4dp"
-                                    android:paddingRight="4dp"
-                                    android:text="6 mm"
-                                    android:textSize="12sp" />
-
+                                    android:layout_width="50dp"
+                                    android:layout_height="36dp"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:padding="0dp"
+                                    android:text="6mm"
+                                    android:textSize="11sp" />
                             </com.google.android.material.button.MaterialButtonToggleGroup>
+                        </LinearLayout>
 
-                            <TextView
-                                android:id="@+id/marginDescriptionText"
+                        <!-- MIDDLE ROW: LEFT SELECTOR + RECTANGLE PREVIEW + RIGHT SELECTOR -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp"
+                            android:gravity="center"
+                            android:orientation="horizontal">
+
+                            <!-- LEFT SIDE SELECTOR -->
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
-                                android:text="Edge-to-edge (0 mm)"
-                                android:textColor="#D0BCFF"
-                                android:textSize="12sp" />
+                                android:gravity="center"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginBottom="4dp"
+                                    android:text="LEFT"
+                                    android:textColor="#D0BCFF"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold" />
+
+                                <com.google.android.material.button.MaterialButtonToggleGroup
+                                    android:id="@+id/toggleGroupMarginLeft"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    app:singleSelection="true">
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnLeft0"
+                                        style="?attr/materialButtonOutlinedStyle"
+                                        android:layout_width="44dp"
+                                        android:layout_height="36dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:padding="0dp"
+                                        android:text="0"
+                                        android:textSize="11sp" />
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnLeft3"
+                                        style="?attr/materialButtonOutlinedStyle"
+                                        android:layout_width="44dp"
+                                        android:layout_height="36dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:padding="0dp"
+                                        android:text="3"
+                                        android:textSize="11sp" />
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnLeft6"
+                                        style="?attr/materialButtonOutlinedStyle"
+                                        android:layout_width="44dp"
+                                        android:layout_height="36dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:padding="0dp"
+                                        android:text="6"
+                                        android:textSize="11sp" />
+                                </com.google.android.material.button.MaterialButtonToggleGroup>
+                            </LinearLayout>
+
+                            <!-- CENTRAL PREVIEW RECTANGLE -->
+                            <com.example.twoupprint.MarginPreviewView
+                                android:id="@+id/marginPreviewView"
+                                android:layout_width="140dp"
+                                android:layout_height="95dp"
+                                android:layout_marginStart="12dp"
+                                android:layout_marginEnd="12dp" />
+
+                            <!-- RIGHT SIDE SELECTOR -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginBottom="4dp"
+                                    android:text="RIGHT"
+                                    android:textColor="#D0BCFF"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold" />
+
+                                <com.google.android.material.button.MaterialButtonToggleGroup
+                                    android:id="@+id/toggleGroupMarginRight"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    app:singleSelection="true">
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnRight0"
+                                        style="?attr/materialButtonOutlinedStyle"
+                                        android:layout_width="44dp"
+                                        android:layout_height="36dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:padding="0dp"
+                                        android:text="0"
+                                        android:textSize="11sp" />
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnRight3"
+                                        style="?attr/materialButtonOutlinedStyle"
+                                        android:layout_width="44dp"
+                                        android:layout_height="36dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:padding="0dp"
+                                        android:text="3"
+                                        android:textSize="11sp" />
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnRight6"
+                                        style="?attr/materialButtonOutlinedStyle"
+                                        android:layout_width="44dp"
+                                        android:layout_height="36dp"
+                                        android:insetTop="0dp"
+                                        android:insetBottom="0dp"
+                                        android:padding="0dp"
+                                        android:text="6"
+                                        android:textSize="11sp" />
+                                </com.google.android.material.button.MaterialButtonToggleGroup>
+                            </LinearLayout>
+
                         </LinearLayout>
+
+                        <!-- BOTTOM SIDE SELECTOR -->
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="8dp"
+                                android:text="BOTTOM:"
+                                android:textColor="#D0BCFF"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <com.google.android.material.button.MaterialButtonToggleGroup
+                                android:id="@+id/toggleGroupMarginBottom"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                app:singleSelection="true">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnBottom0"
+                                    style="?attr/materialButtonOutlinedStyle"
+                                    android:layout_width="50dp"
+                                    android:layout_height="36dp"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:padding="0dp"
+                                    android:text="0"
+                                    android:textSize="11sp" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnBottom3"
+                                    style="?attr/materialButtonOutlinedStyle"
+                                    android:layout_width="50dp"
+                                    android:layout_height="36dp"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:padding="0dp"
+                                    android:text="3mm"
+                                    android:textSize="11sp" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnBottom6"
+                                    style="?attr/materialButtonOutlinedStyle"
+                                    android:layout_width="50dp"
+                                    android:layout_height="36dp"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:padding="0dp"
+                                    android:text="6mm"
+                                    android:textSize="11sp" />
+                            </com.google.android.material.button.MaterialButtonToggleGroup>
+                        </LinearLayout>
+
+                        <!-- QUICK PRESET SHORTCUTS -->
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:gravity="center"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="6dp"
+                                android:text="Presets:"
+                                android:textColor="#CAC4D0"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPresetAll0"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="32dp"
+                                android:layout_marginEnd="4dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:paddingLeft="8dp"
+                                android:paddingRight="8dp"
+                                android:text="All 0"
+                                android:textSize="11sp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPresetAll3"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="32dp"
+                                android:layout_marginEnd="4dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:paddingLeft="8dp"
+                                android:paddingRight="8dp"
+                                android:text="All 3 mm"
+                                android:textSize="11sp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPresetHeaderSafe"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="32dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:paddingLeft="8dp"
+                                android:paddingRight="8dp"
+                                android:text="Top 6 mm"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/marginDescriptionText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Top: 0 mm • Bottom: 0 mm • Left: 0 mm • Right: 0 mm"
+                            android:textColor="#D0BCFF"
+                            android:textSize="12sp" />
 
                     </LinearLayout>
 

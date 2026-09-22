@@ -3,6 +3,7 @@ package com.example.twoupprint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
@@ -10,7 +11,7 @@ import android.view.View
 
 /**
  * Live visual preview showing how subpages sit on a sheet with configurable
- * outer margins and inner gutters (0 mm, 3 mm, 6 mm).
+ * per-side margins (Top, Bottom, Left, Right).
  */
 class MarginPreviewView @JvmOverloads constructor(
     context: Context,
@@ -18,7 +19,10 @@ class MarginPreviewView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    private var marginMm: Int = 0
+    private var marginTopMm: Int = 0
+    private var marginBottomMm: Int = 0
+    private var marginLeftMm: Int = 0
+    private var marginRightMm: Int = 0
 
     private val sheetPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.parseColor("#2D2B33")
@@ -42,6 +46,13 @@ class MarginPreviewView @JvmOverloads constructor(
         strokeWidth = 1.5f
     }
 
+    private val marginGuidePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#4D8055E8") // Semi-transparent purple guide
+        style = Paint.Style.STROKE
+        strokeWidth = 1f
+        pathEffect = DashPathEffect(floatArrayOf(4f, 4f), 0f)
+    }
+
     private val miniLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.parseColor("#605D66")
         strokeWidth = 2f
@@ -51,11 +62,18 @@ class MarginPreviewView @JvmOverloads constructor(
     private val sheetRect = RectF()
     private val slotRect = RectF()
 
-    fun setMarginMm(mm: Int) {
-        if (this.marginMm != mm) {
-            this.marginMm = mm
+    fun setMargins(top: Int, bottom: Int, left: Int, right: Int) {
+        if (marginTopMm != top || marginBottomMm != bottom || marginLeftMm != left || marginRightMm != right) {
+            marginTopMm = top
+            marginBottomMm = bottom
+            marginLeftMm = left
+            marginRightMm = right
             invalidate()
         }
+    }
+
+    fun setMarginMm(mm: Int) {
+        setMargins(mm, mm, mm, mm)
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -65,12 +83,11 @@ class MarginPreviewView @JvmOverloads constructor(
         val h = height.toFloat()
         if (w <= 0 || h <= 0) return
 
-        // Draw outer sheet box with 16:9 or A4 proportions
-        val padding = 12f
+        // Outer sheet box with landscape presentation/A4 proportions
+        val padding = 10f
         val availW = w - 2 * padding
         val availH = h - 2 * padding
 
-        // Landscape sheet ratio (~1.414 or 1.6)
         val targetRatio = 1.45f
         val sheetW: Float
         val sheetH: Float
@@ -90,27 +107,40 @@ class MarginPreviewView @JvmOverloads constructor(
         canvas.drawRoundRect(sheetRect, sheetCorner, sheetCorner, sheetPaint)
         canvas.drawRoundRect(sheetRect, sheetCorner, sheetCorner, sheetBorderPaint)
 
-        // Calculate visual margin gap based on marginMm
-        // 0mm -> 1.5dp gap, 3mm -> 6dp gap, 6mm -> 11dp gap
-        val visualMargin = when (marginMm) {
-            0 -> 1.5f * density
-            3 -> 6.5f * density
-            else -> 12f * density
-        }
+        // Calculate visual margins per side
+        val vTop = mmToVisualPx(marginTopMm)
+        val vBottom = mmToVisualPx(marginBottomMm)
+        val vLeft = mmToVisualPx(marginLeftMm)
+        val vRight = mmToVisualPx(marginRightMm)
 
-        val printableW = sheetW - 2 * visualMargin
-        val printableH = sheetH - 2 * visualMargin
+        // Internal gutters
+        val vGutterX = ((vLeft + vRight) / 2f).coerceAtLeast(1.5f * density)
+        val vGutterY = ((vTop + vBottom) / 2f).coerceAtLeast(1.5f * density)
+
+        val printableW = (sheetW - (vLeft + vRight)).coerceAtLeast(20f)
+        val printableH = (sheetH - (vTop + vBottom)).coerceAtLeast(20f)
+
+        // Draw printable boundary guideline if any margin is > 0
+        if (marginTopMm > 0 || marginBottomMm > 0 || marginLeftMm > 0 || marginRightMm > 0) {
+            canvas.drawRect(
+                sheetLeft + vLeft,
+                sheetTop + vTop,
+                sheetLeft + sheetW - vRight,
+                sheetTop + sheetH - vBottom,
+                marginGuidePaint
+            )
+        }
 
         val cols = 2
         val rows = 2
 
-        val slotW = (printableW - (cols - 1) * visualMargin) / cols
-        val slotH = (printableH - (rows - 1) * visualMargin) / rows
+        val slotW = (printableW - (cols - 1) * vGutterX) / cols
+        val slotH = (printableH - (rows - 1) * vGutterY) / rows
 
         for (r in 0 until rows) {
             for (c in 0 until cols) {
-                val sLeft = sheetLeft + visualMargin + c * (slotW + visualMargin)
-                val sTop = sheetTop + visualMargin + r * (slotH + visualMargin)
+                val sLeft = sheetLeft + vLeft + c * (slotW + vGutterX)
+                val sTop = sheetTop + vTop + r * (slotH + vGutterY)
                 slotRect.set(sLeft, sTop, sLeft + slotW, sTop + slotH)
 
                 val slotCorner = 6f
@@ -124,6 +154,15 @@ class MarginPreviewView @JvmOverloads constructor(
                 canvas.drawLine(sLeft + lineInsetX, lineStartY, sLeft + slotW - lineInsetX, lineStartY, miniLinePaint)
                 canvas.drawLine(sLeft + lineInsetX, lineStartY + lineSpacing, sLeft + slotW * 0.65f, lineStartY + lineSpacing, miniLinePaint)
             }
+        }
+    }
+
+    private fun mmToVisualPx(mm: Int): Float {
+        return when (mm) {
+            0 -> 1.5f * density
+            3 -> 6.5f * density
+            6 -> 12f * density
+            else -> mm * 2f * density
         }
     }
 

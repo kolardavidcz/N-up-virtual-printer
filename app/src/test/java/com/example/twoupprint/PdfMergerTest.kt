@@ -177,4 +177,42 @@ class PdfMergerTest {
 
         outDoc.close()
     }
+
+    @Test
+    fun testAsymmetricMargins() {
+        // 16:9 slides with Top=6mm, Bottom=0mm, Left=3mm, Right=3mm
+        val srcBytes = createTestPresentation(4, 960f, 540f)
+        val outStream = ByteArrayOutputStream()
+
+        val layout = PrintLayout(
+            printerId = "grid_2x2",
+            displayName = "4-Up Grid (2x2)",
+            cols = 2,
+            rows = 2,
+            landscape = true,
+            subPageLandscape = true
+        )
+
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(srcBytes),
+            outputStream = outStream,
+            layout = layout,
+            addTextContrast = false,
+            enableLinks = false,
+            bestFit = true,
+            marginTopMm = 6,
+            marginBottomMm = 0,
+            marginLeftMm = 3,
+            marginRightMm = 3
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        assertEquals(1, outDoc.numberOfPages)
+
+        val outPage = outDoc.getPage(0)
+        assertTrue(outPage.mediaBox.width > 0)
+        assertTrue(outPage.mediaBox.height > 0)
+
+        outDoc.close()
+    }
 }

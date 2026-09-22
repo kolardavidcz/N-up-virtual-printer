@@ -30,7 +30,10 @@ object PendingPrintJobManager {
     private var activeAddTextContrast: Boolean = false
     private var activeEnableLinks: Boolean = false
     private var activeBestFit: Boolean = true
-    private var activeMarginMm: Int = 0
+    private var activeMarginTopMm: Int = 0
+    private var activeMarginBottomMm: Int = 0
+    private var activeMarginLeftMm: Int = 0
+    private var activeMarginRightMm: Int = 0
 
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val timeoutRunnable = Runnable {
@@ -50,7 +53,10 @@ object PendingPrintJobManager {
         addTextContrast: Boolean = false,
         enableLinks: Boolean = false,
         bestFit: Boolean = true,
-        marginMm: Int = 0
+        marginTopMm: Int = 0,
+        marginBottomMm: Int = 0,
+        marginLeftMm: Int = 0,
+        marginRightMm: Int = 0
     ) {
         // Cancel previous pending job if any
         cancelPendingJob(context)
@@ -62,7 +68,10 @@ object PendingPrintJobManager {
         activeAddTextContrast = addTextContrast
         activeEnableLinks = enableLinks
         activeBestFit = bestFit
-        activeMarginMm = marginMm
+        activeMarginTopMm = marginTopMm
+        activeMarginBottomMm = marginBottomMm
+        activeMarginLeftMm = marginLeftMm
+        activeMarginRightMm = marginRightMm
 
         // Set 2 minute timeout
         timeoutHandler.postDelayed(timeoutRunnable, TIMEOUT_MS)
@@ -82,7 +91,10 @@ object PendingPrintJobManager {
         val addTextContrast = activeAddTextContrast
         val enableLinks = activeEnableLinks
         val bestFit = activeBestFit
-        val marginMm = activeMarginMm
+        val marginTopMm = activeMarginTopMm
+        val marginBottomMm = activeMarginBottomMm
+        val marginLeftMm = activeMarginLeftMm
+        val marginRightMm = activeMarginRightMm
 
         activeJob = null
         activeFd = null
@@ -96,7 +108,8 @@ object PendingPrintJobManager {
             PrintJobHandler(
                 context.applicationContext, job, fd, uri,
                 layout, fileName, addTextContrast, enableLinks,
-                bestFit, marginMm
+                bestFit,
+                marginTopMm, marginBottomMm, marginLeftMm, marginRightMm
             ).start()
         } else {
             if (job.isStarted) {

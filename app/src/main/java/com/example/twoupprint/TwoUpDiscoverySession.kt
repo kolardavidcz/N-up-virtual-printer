@@ -31,23 +31,18 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
             PrintAttributes.MediaSize.ISO_A4.asPortrait()
         }
 
-        // Dedicated presentation paper sizes (16:9 and 4:3) matching the subpage orientation
-        val size16_9 = if (mode.subPageLandscape) {
-            PrintAttributes.MediaSize("MEDIA_16_9", "16:9 Presentation", 11693, 6577)
+        // "Match Document Size" option in Samsung print dialog:
+        // Advertised capability acts as a carrier, while the engine sizes the destination
+        // sheet to the exact M x N layout matching the real presentation slide size.
+        val sizeMatchSize = if (mode.subPageLandscape) {
+            PrintAttributes.MediaSize("MEDIA_MATCH_SIZE", "Match Document Size (Auto N-Up)", 11693, 8268)
         } else {
-            PrintAttributes.MediaSize("MEDIA_16_9", "16:9 Presentation", 6577, 11693)
-        }
-
-        val size4_3 = if (mode.subPageLandscape) {
-            PrintAttributes.MediaSize("MEDIA_4_3", "4:3 Presentation", 11693, 8770)
-        } else {
-            PrintAttributes.MediaSize("MEDIA_4_3", "4:3 Presentation", 8770, 11693)
+            PrintAttributes.MediaSize("MEDIA_MATCH_SIZE", "Match Document Size (Auto N-Up)", 8268, 11693)
         }
 
         val capabilities = PrinterCapabilitiesInfo.Builder(id)
             .addMediaSize(defaultSize, true)
-            .addMediaSize(size16_9, false)
-            .addMediaSize(size4_3, false)
+            .addMediaSize(sizeMatchSize, false)
             .addResolution(
                 PrintAttributes.Resolution("nup_res", "300dpi", 300, 300),
                 true

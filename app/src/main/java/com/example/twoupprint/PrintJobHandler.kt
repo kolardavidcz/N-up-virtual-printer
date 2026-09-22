@@ -34,7 +34,10 @@ class PrintJobHandler(
     private val addTextContrast: Boolean = false,
     private val enableLinks: Boolean = false,
     private val bestFit: Boolean = true,
-    private val marginMm: Int = 0
+    private val marginTopMm: Int = 0,
+    private val marginBottomMm: Int = 0,
+    private val marginLeftMm: Int = 0,
+    private val marginRightMm: Int = 0
 ) : Thread("NUpPrintJob") {
 
     companion object {
@@ -90,7 +93,10 @@ class PrintJobHandler(
                 // Mark as complete after writing
                 outStream.use { output ->
                     tempSource.inputStream().use { input ->
-                        PdfMerger.mergeNUp(input, output, layout, addTextContrast, enableLinks, bestFit, marginMm) { current, total ->
+                        PdfMerger.mergeNUp(
+                            input, output, layout, addTextContrast, enableLinks, bestFit,
+                            marginTopMm, marginBottomMm, marginLeftMm, marginRightMm
+                        ) { current, total ->
                             updateProgressNotification(current, total, false)
                         }
                     }
@@ -109,7 +115,7 @@ class PrintJobHandler(
                     }
                 }
                 showCompleteNotification(displayLocation, resultUri)
-                Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (addTextContrast=$addTextContrast, enableLinks=$enableLinks, bestFit=$bestFit, marginMm=$marginMm)")
+                Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (addTextContrast=$addTextContrast, enableLinks=$enableLinks, bestFit=$bestFit, margins=T:$marginTopMm B:$marginBottomMm L:$marginLeftMm R:$marginRightMm)")
                 return
             } else {
                 // Legacy: direct file I/O to Downloads
@@ -130,7 +136,10 @@ class PrintJobHandler(
 
             outStream.use { output ->
                 tempSource.inputStream().use { input ->
-                    PdfMerger.mergeNUp(input, output, layout, addTextContrast, enableLinks, bestFit, marginMm) { current, total ->
+                    PdfMerger.mergeNUp(
+                        input, output, layout, addTextContrast, enableLinks, bestFit,
+                        marginTopMm, marginBottomMm, marginLeftMm, marginRightMm
+                    ) { current, total ->
                         updateProgressNotification(current, total, false)
                     }
                 }
