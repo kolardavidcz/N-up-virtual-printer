@@ -41,32 +41,36 @@ class TwoUpPrintService : PrintService() {
         // Read media size and orientation requested by the user in the system print dialog
         val mediaSize = printJob.info?.attributes?.mediaSize
 
-        // Explicit paper size detection:
-        val isExplicitMatchSize = mediaSize?.id == "MEDIA_MATCH_SIZE"
-        val isExplicitA4 = mediaSize?.id == PrintAttributes.MediaSize.ISO_A4.id
+        // "Presentation Smart" mode:
+        // No matter what orientation is set in the print dialog (portrait or landscape),
+        // internally we always process it as Landscape and output onto an A4 page.
+        val isPresentationSmart = mediaSize?.id == "MEDIA_PRESENTATION_SMART" || mediaSize?.id == "MEDIA_MATCH_SIZE"
 
-        // When ISO A4 is explicitly selected by the user, honor standard A4 dimensions (bestFit = false).
-        // Otherwise, use Match Document Size or user preference.
-        val bestFit = if (isExplicitA4) false else (isExplicitMatchSize || LayoutRegistry.isBestFitEnabled(applicationContext))
+        val sheetLandscape: Boolean
+        val subPageLandscape: Boolean
 
-        // When A4 is explicitly chosen, sheet orientation follows the chosen orientation (Portrait by default)
-        val sheetLandscape = if (isExplicitA4) {
-            mediaSize?.isPortrait == false
+        if (isPresentationSmart) {
+            sheetLandscape = true
+            subPageLandscape = true
         } else {
-            baseLayout.landscape
+            // Default ISO A4 or other standard paper:
+            // Follow the user's selected orientation from the print spooler dialog (default Portrait)
+            val userRequestedLandscape = mediaSize?.isPortrait == false
+            sheetLandscape = if (mediaSize != null) userRequestedLandscape else baseLayout.landscape
+            subPageLandscape = if (mediaSize != null) userRequestedLandscape else baseLayout.subPageLandscape
         }
 
-        val userSelectedSubPageLandscape = if (mediaSize != null) !mediaSize.isPortrait else baseLayout.subPageLandscape
-
-        // Layout keeps configured sheet orientation (Sheet_v2 internal processing)
+        // Layout keeps configured sheet orientation
         val layout = baseLayout.copy(
             landscape = sheetLandscape,
-            subPageLandscape = userSelectedSubPageLandscape
+            subPageLandscape = subPageLandscape
         )
 
         // Determine if text contrast enhancement and clickable links are enabled
         val addTextContrast = LayoutRegistry.isTextContrastEnabled(applicationContext)
         val enableLinks = LayoutRegistry.isLinksEnabled(applicationContext)
+
+        val bestFit = false // Output is always standard A4 page
 
         val marginTopMm = LayoutRegistry.getMarginTopMm(applicationContext)
         val marginBottomMm = LayoutRegistry.getMarginBottomMm(applicationContext)

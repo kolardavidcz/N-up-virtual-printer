@@ -3416,7 +3416,6 @@ id stop
 id stretch
 id submenuarrow
 id submit_area
-id switchBestFit
 id switchEnableLinks
 id switchTextContrast
 id tabMode

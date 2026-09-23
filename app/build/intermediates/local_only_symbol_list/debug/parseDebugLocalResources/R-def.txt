@@ -43,7 +43,6 @@ id marginDescriptionText
 id marginPreviewView
 id pathText
 id promptSwitch
-id switchBestFit
 id switchEnableLinks
 id switchTextContrast
 id toggleGroupMarginBottom

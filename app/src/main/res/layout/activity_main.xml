@@ -191,14 +191,14 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Section: Slide Fit & Margins -->
+            <!-- Section: Page & Slot Margins -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="28dp"
                 android:layout_marginBottom="12dp"
                 android:letterSpacing="0.08"
-                android:text="SLIDE FIT &amp; MARGINS"
+                android:text="PAGE &amp; SLOT MARGINS"
                 android:textColor="#D0BCFF"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -218,50 +218,6 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="20dp">
-
-                    <!-- Best Fit Toggle -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Adaptive &quot;Best Fit&quot; for slides"
-                                android:textColor="#E6E0E9"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="Sizes the sheet to match 16:9, 4:3, or custom presentation proportions, eliminating empty letterbox bars."
-                                android:textColor="#CAC4D0"
-                                android:textSize="13sp" />
-                        </LinearLayout>
-
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/switchBestFit"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="16dp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="16dp"
-                        android:layout_marginBottom="16dp"
-                        android:background="#36343B" />
 
                     <!-- Page & Slot Margins Header -->
                     <TextView

@@ -23,22 +23,22 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
     private fun buildPrinterInfo(mode: PrintLayout): PrinterInfo {
         val id: PrinterId = service.generatePrinterId(mode.printerId)
 
-        // 1. "Match Document Size" option in Samsung print dialog:
-        // Set as default paper size and default Landscape (11693 x 8268 mils)
-        // so presentations (16:9, 4:3) open ready to print without letterboxing.
-        val sizeMatchSize = PrintAttributes.MediaSize(
-            "MEDIA_MATCH_SIZE",
-            "Match Document Size (Auto N-Up)",
-            11693,
-            8268
-        )
-
-        // 2. ISO A4 kept as standard Portrait (8268 x 11693 mils).
+        // 1. Default A4 paper size, strictly Portrait (8268 x 11693 mils)
         val sizeA4Portrait = PrintAttributes.MediaSize.ISO_A4.asPortrait()
 
+        // 2. "Presentation Smart" option in Samsung print dialog:
+        // When selected, the print engine automatically processes the document in Landscape
+        // on a standard A4 sheet regardless of the spooler's orientation toggle setting.
+        val sizePresentationSmart = PrintAttributes.MediaSize(
+            "MEDIA_PRESENTATION_SMART",
+            "Presentation Smart",
+            8268,
+            11693
+        )
+
         val capabilities = PrinterCapabilitiesInfo.Builder(id)
-            .addMediaSize(sizeMatchSize, true)   // Default paper size: Match Document Size (Landscape)
-            .addMediaSize(sizeA4Portrait, false) // Alternative paper size: ISO A4 (Portrait)
+            .addMediaSize(sizeA4Portrait, true)          // Default: ISO A4 (Portrait)
+            .addMediaSize(sizePresentationSmart, false)  // Smart mode for presentations
             .addResolution(
                 PrintAttributes.Resolution("nup_res", "300dpi", 300, 300),
                 true

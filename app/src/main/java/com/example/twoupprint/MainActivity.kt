@@ -41,7 +41,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var layoutCardsContainer: LinearLayout
     private lateinit var switchTextContrast: MaterialSwitch
     private lateinit var switchEnableLinks: MaterialSwitch
-    private lateinit var switchBestFit: MaterialSwitch
     private lateinit var marginPreviewView: MarginPreviewView
     private lateinit var toggleGroupMarginTop: com.google.android.material.button.MaterialButtonToggleGroup
     private lateinit var toggleGroupMarginBottom: com.google.android.material.button.MaterialButtonToggleGroup
@@ -118,8 +117,7 @@ class MainActivity : AppCompatActivity() {
             LayoutRegistry.setLinksEnabled(this, isChecked)
         }
 
-        // Slide Fit & Margins
-        switchBestFit = findViewById(R.id.switchBestFit)
+        // Page & Slot Margins
         marginPreviewView = findViewById(R.id.marginPreviewView)
         toggleGroupMarginTop = findViewById(R.id.toggleGroupMarginTop)
         toggleGroupMarginBottom = findViewById(R.id.toggleGroupMarginBottom)
@@ -129,11 +127,6 @@ class MainActivity : AppCompatActivity() {
         btnPresetAll3 = findViewById(R.id.btnPresetAll3)
         btnPresetHeaderSafe = findViewById(R.id.btnPresetHeaderSafe)
         marginDescriptionText = findViewById(R.id.marginDescriptionText)
-
-        switchBestFit.isChecked = LayoutRegistry.isBestFitEnabled(this)
-        switchBestFit.setOnCheckedChangeListener { _, isChecked ->
-            LayoutRegistry.setBestFitEnabled(this, isChecked)
-        }
 
         refreshMarginsUI()
 
@@ -267,7 +260,6 @@ class MainActivity : AppCompatActivity() {
         // Contrast, links, and margin states
         switchTextContrast.isChecked = LayoutRegistry.isTextContrastEnabled(this)
         switchEnableLinks.isChecked = LayoutRegistry.isLinksEnabled(this)
-        switchBestFit.isChecked = LayoutRegistry.isBestFitEnabled(this)
         refreshMarginsUI()
 
         // Battery status
