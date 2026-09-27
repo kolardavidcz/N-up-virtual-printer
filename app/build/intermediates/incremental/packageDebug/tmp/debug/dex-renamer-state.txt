@@ -1,4 +1,4 @@
-#Sun Sep 27 17:33:02 CEST 2026
+#Sun Sep 27 17:37:49 CEST 2026
 base.0=C\:\\Users\\kolar\\Desktop\\TwoUpPrintv_v2\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
 base.1=C\:\\Users\\kolar\\Desktop\\TwoUpPrintv_v2\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
 base.2=C\:\\Users\\kolar\\Desktop\\TwoUpPrintv_v2\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\2\\classes.dex
