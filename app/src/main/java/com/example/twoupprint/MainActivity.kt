@@ -294,6 +294,7 @@ class MainActivity : AppCompatActivity() {
     private fun renderLayoutCards() {
         layoutCardsContainer.removeAllViews()
         val allLayouts = LayoutRegistry.getAllLayouts(this)
+        val density = resources.displayMetrics.density
 
         for (layout in allLayouts) {
             val card = MaterialCardView(this).apply {
@@ -301,23 +302,26 @@ class MainActivity : AppCompatActivity() {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply {
-                    setMargins(0, 0, 0, 16)
+                    setMargins(0, 0, 0, (6 * density).toInt())
                 }
                 setCardBackgroundColor(Color.parseColor("#211F26"))
-                radius = 20f * resources.displayMetrics.density
+                radius = 12f * density
                 strokeColor = Color.parseColor("#49454F")
-                strokeWidth = (1 * resources.displayMetrics.density).toInt()
+                strokeWidth = (1 * density).toInt()
                 cardElevation = 0f
             }
 
             val cardContent = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(24, 20, 24, 20)
+                val padH = (14 * density).toInt()
+                val padV = (6 * density).toInt()
+                setPadding(padH, padV, padH, padV)
             }
 
+            val iconPx = (44 * density).toInt()
             val iconView = ImageView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(96, 96)
+                layoutParams = LinearLayout.LayoutParams(iconPx, iconPx)
                 val bitmap = LayoutIconGenerator.generateIconBitmap(layout)
                 setImageBitmap(bitmap)
             }
@@ -329,14 +333,14 @@ class MainActivity : AppCompatActivity() {
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     1f
                 ).apply {
-                    setMargins(20, 0, 16, 0)
+                    setMargins((12 * density).toInt(), 0, (8 * density).toInt(), 0)
                 }
             }
 
             val titleView = TextView(this).apply {
                 text = layout.displayName
                 setTextColor(Color.parseColor("#E6E0E9"))
-                textSize = 15f
+                textSize = 14f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
             }
 
@@ -345,23 +349,29 @@ class MainActivity : AppCompatActivity() {
             val subView = TextView(this).apply {
                 text = "${layout.pagesPerSheet} pages/sheet • ${layout.cols}×${layout.rows} • Sheet: $sheetStr • Subpages: $subStr"
                 setTextColor(Color.parseColor("#CAC4D0"))
-                textSize = 12f
-                setPadding(0, 4, 0, 0)
+                textSize = 11f
+                setPadding(0, 1, 0, 0)
             }
 
             val actionRow = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, 4, 0, 0)
+                setPadding(0, 2, 0, 0)
             }
+
+            val btnPadH = (6 * density).toInt()
+            val btnPadV = (2 * density).toInt()
 
             val btnOrientation = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
                 val isLandscape = layout.landscape
                 text = if (isLandscape) "Sheet: Landscape" else "Sheet: Portrait"
                 setTextColor(Color.parseColor("#D0BCFF"))
-                textSize = 12f
+                textSize = 11f
+                minHeight = 0
+                minimumHeight = 0
                 insetTop = 0
                 insetBottom = 0
+                setPadding(btnPadH, btnPadV, btnPadH, btnPadV)
                 setOnClickListener {
                     LayoutRegistry.setLayoutOrientation(this@MainActivity, layout.printerId, !isLandscape)
                     updateUIState()
@@ -373,9 +383,12 @@ class MainActivity : AppCompatActivity() {
                 val isSubLandscape = layout.subPageLandscape
                 text = if (isSubLandscape) "Subpages: Landscape" else "Subpages: Portrait"
                 setTextColor(Color.parseColor("#CCC2DC"))
-                textSize = 12f
+                textSize = 11f
+                minHeight = 0
+                minimumHeight = 0
                 insetTop = 0
                 insetBottom = 0
+                setPadding(btnPadH, btnPadV, btnPadH, btnPadV)
                 setOnClickListener {
                     LayoutRegistry.setSubPageOrientation(this@MainActivity, layout.printerId, !isSubLandscape)
                     updateUIState()
@@ -387,9 +400,12 @@ class MainActivity : AppCompatActivity() {
                 val btnRemove = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
                     text = "Remove"
                     setTextColor(Color.parseColor("#F2B8B5"))
-                    textSize = 12f
+                    textSize = 11f
+                    minHeight = 0
+                    minimumHeight = 0
                     insetTop = 0
                     insetBottom = 0
+                    setPadding(btnPadH, btnPadV, btnPadH, btnPadV)
                     setOnClickListener {
                         AlertDialog.Builder(this@MainActivity)
                             .setTitle("Remove Custom Layout")

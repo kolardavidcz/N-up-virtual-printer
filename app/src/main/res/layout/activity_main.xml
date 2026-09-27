@@ -13,33 +13,25 @@
         android:layout_height="wrap_content"
         android:background="#141218"
         android:orientation="vertical"
-        android:paddingHorizontal="24dp"
-        android:paddingTop="28dp"
-        android:paddingBottom="16dp">
+        android:paddingHorizontal="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="4dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="N-Up Print"
             android:textColor="#E6E0E9"
-            android:textSize="26sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Configure virtual printer layouts, text contrast, and save destinations"
-            android:textColor="#CAC4D0"
-            android:textSize="14sp" />
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingHorizontal="24dp"
-        android:paddingBottom="40dp">
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="24dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -50,8 +42,8 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="12dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="6dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -62,14 +54,19 @@
                     android:letterSpacing="0.08"
                     android:text="VIRTUAL PRINTER LAYOUTS"
                     android:textColor="#D0BCFF"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnAddLayout"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="32dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="0dp"
+                    android:textSize="11sp"
                     android:text="Add Layout"
                     app:icon="@android:drawable/ic_input_add" />
             </LinearLayout>
@@ -85,20 +82,20 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:layout_marginBottom="12dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="6dp"
                 android:letterSpacing="0.08"
                 android:text="TEXT &amp; LINK ENHANCEMENTS"
                 android:textColor="#D0BCFF"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="8dp"
                 app:cardBackgroundColor="#211F26"
-                app:cardCornerRadius="20dp"
+                app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
                 app:strokeColor="#49454F"
                 app:strokeWidth="1dp">
@@ -107,7 +104,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="10dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -126,16 +124,16 @@
                                 android:layout_height="wrap_content"
                                 android:text="Enable high contrast text"
                                 android:textColor="#E6E0E9"
-                                android:textSize="15sp"
+                                android:textSize="14sp"
                                 android:textStyle="bold" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="Boosts faint gray text, math formulas, and notes to solid crisp black (100% selectable text) while preserving colorful images"
+                                android:layout_marginTop="2dp"
+                                android:text="Boosts faint text to solid black while preserving images"
                                 android:textColor="#CAC4D0"
-                                android:textSize="13sp" />
+                                android:textSize="12sp" />
                         </LinearLayout>
 
                         <com.google.android.material.materialswitch.MaterialSwitch
@@ -148,8 +146,7 @@
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:layout_marginTop="16dp"
-                        android:layout_marginBottom="16dp"
+                        android:layout_marginVertical="8dp"
                         android:background="#36343B" />
 
                     <LinearLayout
@@ -169,16 +166,16 @@
                                 android:layout_height="wrap_content"
                                 android:text="Make URLs and links clickable"
                                 android:textColor="#E6E0E9"
-                                android:textSize="15sp"
+                                android:textSize="14sp"
                                 android:textStyle="bold" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="Preserves hyperlinks and auto-detects URLs in text. Note: Scanning text and calculating link coordinates slightly increases processing time."
+                                android:layout_marginTop="2dp"
+                                android:text="Preserves hyperlinks and detects URLs in text"
                                 android:textColor="#CAC4D0"
-                                android:textSize="13sp" />
+                                android:textSize="12sp" />
                         </LinearLayout>
 
                         <com.google.android.material.materialswitch.MaterialSwitch
@@ -195,20 +192,20 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:layout_marginBottom="12dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="6dp"
                 android:letterSpacing="0.08"
                 android:text="PAGE &amp; SLOT MARGINS"
                 android:textColor="#D0BCFF"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="8dp"
                 app:cardBackgroundColor="#211F26"
-                app:cardCornerRadius="20dp"
+                app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
                 app:strokeColor="#49454F"
                 app:strokeWidth="1dp">
@@ -217,30 +214,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <!-- Page & Slot Margins Header -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Page &amp; Slot Margins (Per Side)"
-                        android:textColor="#E6E0E9"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Select margins for each side of the rectangle individually to protect headers, footers, or binding edges."
-                        android:textColor="#CAC4D0"
-                        android:textSize="13sp" />
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="10dp">
 
                     <!-- Box-Model Margin Container -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
                         android:gravity="center_horizontal"
                         android:orientation="vertical">
 
@@ -254,10 +234,10 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginEnd="8dp"
+                                android:layout_marginEnd="6dp"
                                 android:text="TOP:"
                                 android:textColor="#D0BCFF"
-                                android:textSize="11sp"
+                                android:textSize="10sp"
                                 android:textStyle="bold" />
 
                             <com.google.android.material.button.MaterialButtonToggleGroup
@@ -269,35 +249,35 @@
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnTop0"
                                     style="?attr/materialButtonOutlinedStyle"
-                                    android:layout_width="50dp"
-                                    android:layout_height="36dp"
+                                    android:layout_width="44dp"
+                                    android:layout_height="28dp"
                                     android:insetTop="0dp"
                                     android:insetBottom="0dp"
                                     android:padding="0dp"
                                     android:text="0"
-                                    android:textSize="11sp" />
+                                    android:textSize="10sp" />
 
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnTop3"
                                     style="?attr/materialButtonOutlinedStyle"
-                                    android:layout_width="50dp"
-                                    android:layout_height="36dp"
+                                    android:layout_width="44dp"
+                                    android:layout_height="28dp"
                                     android:insetTop="0dp"
                                     android:insetBottom="0dp"
                                     android:padding="0dp"
                                     android:text="3mm"
-                                    android:textSize="11sp" />
+                                    android:textSize="10sp" />
 
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnTop6"
                                     style="?attr/materialButtonOutlinedStyle"
-                                    android:layout_width="50dp"
-                                    android:layout_height="36dp"
+                                    android:layout_width="44dp"
+                                    android:layout_height="28dp"
                                     android:insetTop="0dp"
                                     android:insetBottom="0dp"
                                     android:padding="0dp"
                                     android:text="6mm"
-                                    android:textSize="11sp" />
+                                    android:textSize="10sp" />
                             </com.google.android.material.button.MaterialButtonToggleGroup>
                         </LinearLayout>
 
@@ -305,8 +285,8 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:layout_marginBottom="8dp"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginBottom="4dp"
                             android:gravity="center"
                             android:orientation="horizontal">
 
@@ -320,10 +300,10 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginBottom="4dp"
+                                    android:layout_marginBottom="2dp"
                                     android:text="LEFT"
                                     android:textColor="#D0BCFF"
-                                    android:textSize="11sp"
+                                    android:textSize="10sp"
                                     android:textStyle="bold" />
 
                                 <com.google.android.material.button.MaterialButtonToggleGroup
@@ -335,45 +315,45 @@
                                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnLeft0"
                                         style="?attr/materialButtonOutlinedStyle"
-                                        android:layout_width="44dp"
-                                        android:layout_height="36dp"
+                                        android:layout_width="38dp"
+                                        android:layout_height="28dp"
                                         android:insetTop="0dp"
                                         android:insetBottom="0dp"
                                         android:padding="0dp"
                                         android:text="0"
-                                        android:textSize="11sp" />
+                                        android:textSize="10sp" />
 
                                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnLeft3"
                                         style="?attr/materialButtonOutlinedStyle"
-                                        android:layout_width="44dp"
-                                        android:layout_height="36dp"
+                                        android:layout_width="38dp"
+                                        android:layout_height="28dp"
                                         android:insetTop="0dp"
                                         android:insetBottom="0dp"
                                         android:padding="0dp"
                                         android:text="3"
-                                        android:textSize="11sp" />
+                                        android:textSize="10sp" />
 
                                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnLeft6"
                                         style="?attr/materialButtonOutlinedStyle"
-                                        android:layout_width="44dp"
-                                        android:layout_height="36dp"
+                                        android:layout_width="38dp"
+                                        android:layout_height="28dp"
                                         android:insetTop="0dp"
                                         android:insetBottom="0dp"
                                         android:padding="0dp"
                                         android:text="6"
-                                        android:textSize="11sp" />
+                                        android:textSize="10sp" />
                                 </com.google.android.material.button.MaterialButtonToggleGroup>
                             </LinearLayout>
 
                             <!-- CENTRAL PREVIEW RECTANGLE -->
                             <com.example.twoupprint.MarginPreviewView
                                 android:id="@+id/marginPreviewView"
-                                android:layout_width="140dp"
-                                android:layout_height="95dp"
-                                android:layout_marginStart="12dp"
-                                android:layout_marginEnd="12dp" />
+                                android:layout_width="100dp"
+                                android:layout_height="65dp"
+                                android:layout_marginStart="10dp"
+                                android:layout_marginEnd="10dp" />
 
                             <!-- RIGHT SIDE SELECTOR -->
                             <LinearLayout
@@ -385,10 +365,10 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginBottom="4dp"
+                                    android:layout_marginBottom="2dp"
                                     android:text="RIGHT"
                                     android:textColor="#D0BCFF"
-                                    android:textSize="11sp"
+                                    android:textSize="10sp"
                                     android:textStyle="bold" />
 
                                 <com.google.android.material.button.MaterialButtonToggleGroup
@@ -400,35 +380,35 @@
                                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnRight0"
                                         style="?attr/materialButtonOutlinedStyle"
-                                        android:layout_width="44dp"
-                                        android:layout_height="36dp"
+                                        android:layout_width="38dp"
+                                        android:layout_height="28dp"
                                         android:insetTop="0dp"
                                         android:insetBottom="0dp"
                                         android:padding="0dp"
                                         android:text="0"
-                                        android:textSize="11sp" />
+                                        android:textSize="10sp" />
 
                                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnRight3"
                                         style="?attr/materialButtonOutlinedStyle"
-                                        android:layout_width="44dp"
-                                        android:layout_height="36dp"
+                                        android:layout_width="38dp"
+                                        android:layout_height="28dp"
                                         android:insetTop="0dp"
                                         android:insetBottom="0dp"
                                         android:padding="0dp"
                                         android:text="3"
-                                        android:textSize="11sp" />
+                                        android:textSize="10sp" />
 
                                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnRight6"
                                         style="?attr/materialButtonOutlinedStyle"
-                                        android:layout_width="44dp"
-                                        android:layout_height="36dp"
+                                        android:layout_width="38dp"
+                                        android:layout_height="28dp"
                                         android:insetTop="0dp"
                                         android:insetBottom="0dp"
                                         android:padding="0dp"
                                         android:text="6"
-                                        android:textSize="11sp" />
+                                        android:textSize="10sp" />
                                 </com.google.android.material.button.MaterialButtonToggleGroup>
                             </LinearLayout>
 
@@ -444,10 +424,10 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginEnd="8dp"
+                                android:layout_marginEnd="6dp"
                                 android:text="BOTTOM:"
                                 android:textColor="#D0BCFF"
-                                android:textSize="11sp"
+                                android:textSize="10sp"
                                 android:textStyle="bold" />
 
                             <com.google.android.material.button.MaterialButtonToggleGroup
@@ -459,35 +439,35 @@
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnBottom0"
                                     style="?attr/materialButtonOutlinedStyle"
-                                    android:layout_width="50dp"
-                                    android:layout_height="36dp"
+                                    android:layout_width="44dp"
+                                    android:layout_height="28dp"
                                     android:insetTop="0dp"
                                     android:insetBottom="0dp"
                                     android:padding="0dp"
                                     android:text="0"
-                                    android:textSize="11sp" />
+                                    android:textSize="10sp" />
 
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnBottom3"
                                     style="?attr/materialButtonOutlinedStyle"
-                                    android:layout_width="50dp"
-                                    android:layout_height="36dp"
+                                    android:layout_width="44dp"
+                                    android:layout_height="28dp"
                                     android:insetTop="0dp"
                                     android:insetBottom="0dp"
                                     android:padding="0dp"
                                     android:text="3mm"
-                                    android:textSize="11sp" />
+                                    android:textSize="10sp" />
 
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnBottom6"
                                     style="?attr/materialButtonOutlinedStyle"
-                                    android:layout_width="50dp"
-                                    android:layout_height="36dp"
+                                    android:layout_width="44dp"
+                                    android:layout_height="28dp"
                                     android:insetTop="0dp"
                                     android:insetBottom="0dp"
                                     android:padding="0dp"
                                     android:text="6mm"
-                                    android:textSize="11sp" />
+                                    android:textSize="10sp" />
                             </com.google.android.material.button.MaterialButtonToggleGroup>
                         </LinearLayout>
 
@@ -495,7 +475,7 @@
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="14dp"
+                            android:layout_marginTop="6dp"
                             android:gravity="center"
                             android:orientation="horizontal">
 
@@ -505,63 +485,62 @@
                                 android:layout_marginEnd="6dp"
                                 android:text="Presets:"
                                 android:textColor="#CAC4D0"
-                                android:textSize="12sp" />
+                                android:textSize="11sp" />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnPresetAll0"
                                 style="?attr/materialButtonOutlinedStyle"
                                 android:layout_width="wrap_content"
-                                android:layout_height="32dp"
+                                android:layout_height="26dp"
                                 android:layout_marginEnd="4dp"
                                 android:insetTop="0dp"
                                 android:insetBottom="0dp"
-                                android:paddingLeft="8dp"
-                                android:paddingRight="8dp"
+                                android:paddingLeft="6dp"
+                                android:paddingRight="6dp"
                                 android:text="All 0"
-                                android:textSize="11sp" />
+                                android:textSize="10sp" />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnPresetAll3"
                                 style="?attr/materialButtonOutlinedStyle"
                                 android:layout_width="wrap_content"
-                                android:layout_height="32dp"
+                                android:layout_height="26dp"
                                 android:layout_marginEnd="4dp"
                                 android:insetTop="0dp"
                                 android:insetBottom="0dp"
-                                android:paddingLeft="8dp"
-                                android:paddingRight="8dp"
+                                android:paddingLeft="6dp"
+                                android:paddingRight="6dp"
                                 android:text="All 3 mm"
-                                android:textSize="11sp" />
+                                android:textSize="10sp" />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnPresetHeaderSafe"
                                 style="?attr/materialButtonOutlinedStyle"
                                 android:layout_width="wrap_content"
-                                android:layout_height="32dp"
+                                android:layout_height="26dp"
                                 android:insetTop="0dp"
                                 android:insetBottom="0dp"
-                                android:paddingLeft="8dp"
-                                android:paddingRight="8dp"
+                                android:paddingLeft="6dp"
+                                android:paddingRight="6dp"
                                 android:text="Top 6 mm"
-                                android:textSize="11sp" />
+                                android:textSize="10sp" />
                         </LinearLayout>
 
                         <TextView
                             android:id="@+id/marginDescriptionText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
+                            android:layout_marginTop="4dp"
                             android:text="Top: 0 mm • Bottom: 0 mm • Left: 0 mm • Right: 0 mm"
                             android:textColor="#D0BCFF"
-                            android:textSize="12sp" />
+                            android:textSize="11sp" />
 
                     </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:layout_marginTop="16dp"
-                        android:layout_marginBottom="16dp"
+                        android:layout_marginVertical="8dp"
                         android:background="#36343B" />
 
                     <LinearLayout
@@ -581,16 +560,16 @@
                                 android:layout_height="wrap_content"
                                 android:text="Auto-crop slide letterbox borders"
                                 android:textColor="#E6E0E9"
-                                android:textSize="15sp"
+                                android:textSize="14sp"
                                 android:textStyle="bold" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="Automatically trims blank letterbox bars added by apps when printing 16:9 slides to A4, expanding slides to fill each N-up slot compactly with your custom margins."
+                                android:layout_marginTop="2dp"
+                                android:text="Trims blank letterboxes so slides fill N-up slots"
                                 android:textColor="#CAC4D0"
-                                android:textSize="13sp" />
+                                android:textSize="12sp" />
                         </LinearLayout>
 
                         <com.google.android.material.materialswitch.MaterialSwitch
@@ -607,20 +586,20 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:layout_marginBottom="12dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="6dp"
                 android:letterSpacing="0.08"
                 android:text="OUTPUT DESTINATION"
                 android:textColor="#D0BCFF"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="8dp"
                 app:cardBackgroundColor="#211F26"
-                app:cardCornerRadius="20dp"
+                app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
                 app:strokeColor="#49454F"
                 app:strokeWidth="1dp">
@@ -629,43 +608,48 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="10dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Save Folder"
                         android:textColor="#E6E0E9"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/pathText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="4dp"
                         android:background="#2B2930"
                         android:ellipsize="middle"
-                        android:padding="14dp"
+                        android:padding="8dp"
                         android:singleLine="true"
                         android:text="Downloads/TwoUpPrint/ (default)"
                         android:textColor="#D0BCFF"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:typeface="monospace" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
+                        android:layout_marginTop="8dp"
                         android:orientation="horizontal">
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSetLocation"
                             style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
+                            android:layout_height="34dp"
+                            android:layout_marginEnd="6dp"
                             android:layout_weight="1"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:paddingVertical="0dp"
+                            android:textSize="12sp"
                             android:text="Select Folder"
                             app:icon="@android:drawable/ic_menu_upload" />
 
@@ -673,16 +657,20 @@
                             android:id="@+id/btnResetLocation"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
+                            android:layout_height="34dp"
+                            android:layout_marginStart="6dp"
                             android:layout_weight="1"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:paddingVertical="0dp"
+                            android:textSize="12sp"
                             android:text="Reset to Default" />
                     </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:layout_marginVertical="20dp"
+                        android:layout_marginVertical="8dp"
                         android:background="#49454F" />
 
                     <LinearLayout
@@ -702,16 +690,16 @@
                                 android:layout_height="wrap_content"
                                 android:text="Prompt location per print"
                                 android:textColor="#E6E0E9"
-                                android:textSize="15sp"
+                                android:textSize="14sp"
                                 android:textStyle="bold" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="Shows a notification popup to choose output folder for each document"
+                                android:layout_marginTop="2dp"
+                                android:text="Show notification to choose folder per document"
                                 android:textColor="#CAC4D0"
-                                android:textSize="13sp" />
+                                android:textSize="12sp" />
                         </LinearLayout>
 
                         <com.google.android.material.materialswitch.MaterialSwitch
@@ -728,20 +716,20 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:layout_marginBottom="12dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="6dp"
                 android:letterSpacing="0.08"
                 android:text="SYSTEM &amp; RELIABILITY"
                 android:textColor="#D0BCFF"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="8dp"
                 app:cardBackgroundColor="#211F26"
-                app:cardCornerRadius="20dp"
+                app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
                 app:strokeColor="#49454F"
                 app:strokeWidth="1dp">
@@ -761,7 +749,8 @@
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:padding="20dp">
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="10dp">
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -775,32 +764,37 @@
                                 android:layout_height="wrap_content"
                                 android:text="Battery Optimization"
                                 android:textColor="#E6E0E9"
-                                android:textSize="15sp"
+                                android:textSize="14sp"
                                 android:textStyle="bold" />
 
                             <TextView
                                 android:id="@+id/batterySub"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="2dp"
                                 android:text="Checking background service status..."
                                 android:textColor="#CAC4D0"
-                                android:textSize="13sp" />
+                                android:textSize="12sp" />
                         </LinearLayout>
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnBatteryAction"
                             style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
+                            android:layout_height="32dp"
+                            android:layout_marginStart="10dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="0dp"
+                            android:textSize="11sp"
                             android:text="Configure" />
                     </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="#49454F" />
+                        android:background="#36343B" />
 
                     <!-- System Print Settings Item -->
                     <LinearLayout
@@ -812,36 +806,29 @@
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:padding="20dp">
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="10dp">
 
-                        <LinearLayout
+                        <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:text="System Print Settings"
+                            android:textColor="#E6E0E9"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="System Print Settings"
-                                android:textColor="#E6E0E9"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="Open Android system print manager settings"
-                                android:textColor="#CAC4D0"
-                                android:textSize="13sp" />
-                        </LinearLayout>
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@android:drawable/ic_menu_preferences"
+                            app:tint="#CAC4D0" />
                     </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="#49454F" />
+                        android:background="#36343B" />
 
                     <!-- Clear Old / Phantom Printers Item -->
                     <LinearLayout
@@ -853,36 +840,29 @@
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:padding="20dp">
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="10dp">
 
-                        <LinearLayout
+                        <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:text="Clear Old / Phantom Printers"
+                            android:textColor="#E6E0E9"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Clear Old / Phantom Printers"
-                                android:textColor="#E6E0E9"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="Wipe cached deleted printers from Samsung print menu"
-                                android:textColor="#CAC4D0"
-                                android:textSize="13sp" />
-                        </LinearLayout>
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@android:drawable/ic_menu_delete"
+                            app:tint="#CAC4D0" />
                     </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="#49454F" />
+                        android:background="#36343B" />
 
                     <!-- Troubleshoot Item -->
                     <LinearLayout
@@ -894,30 +874,23 @@
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:padding="20dp">
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="10dp">
 
-                        <LinearLayout
+                        <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:text="Fix Stuck Print Job"
+                            android:textColor="#E6E0E9"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Fix Stuck Print Job"
-                                android:textColor="#E6E0E9"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="Open Print Spooler settings to force stop or clear cache"
-                                android:textColor="#CAC4D0"
-                                android:textSize="13sp" />
-                        </LinearLayout>
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@android:drawable/ic_menu_help"
+                            app:tint="#CAC4D0" />
                     </LinearLayout>
 
                 </LinearLayout>
