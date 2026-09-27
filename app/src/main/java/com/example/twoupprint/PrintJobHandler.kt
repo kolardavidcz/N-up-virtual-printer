@@ -37,7 +37,9 @@ class PrintJobHandler(
     private val marginTopMm: Int = 0,
     private val marginBottomMm: Int = 0,
     private val marginLeftMm: Int = 0,
-    private val marginRightMm: Int = 0
+    private val marginRightMm: Int = 0,
+    private val autoTrimSlideBorders: Boolean = true,
+    private val isPresentationSmart: Boolean = false
 ) : Thread("NUpPrintJob") {
 
     companion object {
@@ -95,7 +97,8 @@ class PrintJobHandler(
                     tempSource.inputStream().use { input ->
                         PdfMerger.mergeNUp(
                             input, output, layout, addTextContrast, enableLinks, bestFit,
-                            marginTopMm, marginBottomMm, marginLeftMm, marginRightMm
+                            marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
+                            autoTrimSlideBorders, isPresentationSmart
                         ) { current, total ->
                             updateProgressNotification(current, total, false)
                         }
@@ -115,7 +118,7 @@ class PrintJobHandler(
                     }
                 }
                 showCompleteNotification(displayLocation, resultUri)
-                Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (addTextContrast=$addTextContrast, enableLinks=$enableLinks, bestFit=$bestFit, margins=T:$marginTopMm B:$marginBottomMm L:$marginLeftMm R:$marginRightMm)")
+                Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (addTextContrast=$addTextContrast, enableLinks=$enableLinks, bestFit=$bestFit, margins=T:$marginTopMm B:$marginBottomMm L:$marginLeftMm R:$marginRightMm, autoTrim=$autoTrimSlideBorders)")
                 return
             } else {
                 // Legacy: direct file I/O to Downloads
@@ -138,7 +141,8 @@ class PrintJobHandler(
                 tempSource.inputStream().use { input ->
                     PdfMerger.mergeNUp(
                         input, output, layout, addTextContrast, enableLinks, bestFit,
-                        marginTopMm, marginBottomMm, marginLeftMm, marginRightMm
+                        marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
+                        autoTrimSlideBorders, isPresentationSmart
                     ) { current, total ->
                         updateProgressNotification(current, total, false)
                     }

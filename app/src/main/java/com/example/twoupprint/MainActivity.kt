@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var layoutCardsContainer: LinearLayout
     private lateinit var switchTextContrast: MaterialSwitch
     private lateinit var switchEnableLinks: MaterialSwitch
+    private lateinit var switchAutoCrop: MaterialSwitch
     private lateinit var marginPreviewView: MarginPreviewView
     private lateinit var toggleGroupMarginTop: com.google.android.material.button.MaterialButtonToggleGroup
     private lateinit var toggleGroupMarginBottom: com.google.android.material.button.MaterialButtonToggleGroup
@@ -127,6 +128,13 @@ class MainActivity : AppCompatActivity() {
         btnPresetAll3 = findViewById(R.id.btnPresetAll3)
         btnPresetHeaderSafe = findViewById(R.id.btnPresetHeaderSafe)
         marginDescriptionText = findViewById(R.id.marginDescriptionText)
+
+        // Auto-Crop Slide Letterbox Borders Switch Listener
+        switchAutoCrop = findViewById(R.id.switchAutoCrop)
+        switchAutoCrop.isChecked = LayoutRegistry.isAutoTrimEnabled(this)
+        switchAutoCrop.setOnCheckedChangeListener { _, isChecked ->
+            LayoutRegistry.setAutoTrimEnabled(this, isChecked)
+        }
 
         refreshMarginsUI()
 

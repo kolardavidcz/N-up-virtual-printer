@@ -47,6 +47,8 @@ object PdfMerger {
         marginBottomMm: Int = 0,
         marginLeftMm: Int = 0,
         marginRightMm: Int = 0,
+        autoTrimSlideBorders: Boolean = true,
+        isPresentationSmart: Boolean = false,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         val srcDoc = PDDocument.load(sourcePdfStream)
@@ -56,6 +58,11 @@ object PdfMerger {
         try {
             val pageCount = srcDoc.numberOfPages
             if (pageCount == 0) return
+
+            // If auto-crop is enabled or presentation mode forced, detect & trim letterbox margins
+            if (autoTrimSlideBorders || isPresentationSmart) {
+                PdfContentTrimmer.trimDocumentSlides(srcDoc, forceSlideMode = isPresentationSmart)
+            }
 
             // If text contrast enhancement is enabled, boost text & formulas directly in vector stream
             if (addTextContrast) {
@@ -165,6 +172,8 @@ object PdfMerger {
         enableLinks: Boolean = false,
         bestFit: Boolean = true,
         marginMm: Int = 0,
+        autoTrimSlideBorders: Boolean = true,
+        isPresentationSmart: Boolean = false,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         mergeNUp(
@@ -174,6 +183,8 @@ object PdfMerger {
             marginBottomMm = marginMm,
             marginLeftMm = marginMm,
             marginRightMm = marginMm,
+            autoTrimSlideBorders = autoTrimSlideBorders,
+            isPresentationSmart = isPresentationSmart,
             onProgress = onProgress
         )
     }
@@ -268,6 +279,8 @@ object PdfMerger {
         marginBottomMm: Int = 0,
         marginLeftMm: Int = 0,
         marginRightMm: Int = 0,
+        autoTrimSlideBorders: Boolean = true,
+        isPresentationSmart: Boolean = false,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         sourcePdfFile.inputStream().use { input ->
@@ -275,6 +288,7 @@ object PdfMerger {
                 mergeNUp(
                     input, output, layout, addTextContrast, enableLinks, bestFit,
                     marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
+                    autoTrimSlideBorders, isPresentationSmart,
                     onProgress
                 )
             }
@@ -292,6 +306,8 @@ object PdfMerger {
         enableLinks: Boolean = false,
         bestFit: Boolean = true,
         marginMm: Int = 0,
+        autoTrimSlideBorders: Boolean = true,
+        isPresentationSmart: Boolean = false,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         mergeNUp(
@@ -301,6 +317,8 @@ object PdfMerger {
             marginBottomMm = marginMm,
             marginLeftMm = marginMm,
             marginRightMm = marginMm,
+            autoTrimSlideBorders = autoTrimSlideBorders,
+            isPresentationSmart = isPresentationSmart,
             onProgress = onProgress
         )
     }

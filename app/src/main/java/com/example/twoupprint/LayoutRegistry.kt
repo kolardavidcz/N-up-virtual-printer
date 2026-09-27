@@ -148,6 +148,18 @@ object LayoutRegistry {
         prefs.edit().putBoolean("enable_best_fit", enabled).apply()
     }
 
+    // --- "Auto-crop slide letterbox borders" setting ---
+
+    fun isAutoTrimEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean("enable_auto_trim_letterbox", true) // default true
+    }
+
+    fun setAutoTrimEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("enable_auto_trim_letterbox", enabled).apply()
+    }
+
     // --- "Page & Slot Margins" setting (Top, Bottom, Left, Right) ---
 
     fun getMarginTopMm(context: Context): Int {

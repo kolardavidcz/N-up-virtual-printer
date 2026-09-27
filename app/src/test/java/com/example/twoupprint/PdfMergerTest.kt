@@ -253,4 +253,161 @@ class PdfMergerTest {
 
         outDoc.close()
     }
+
+    @Test
+    fun testAutoTrim16x9SlideOnA4Portrait() {
+        val doc = PDDocument()
+        val page = PDPage(PDRectangle(595.28f, 841.89f))
+        doc.addPage(page)
+
+        // 16:9 slide height = 595.28 / (16/9) = 334.85 pt
+        // Centered padding: (841.89 - 334.85) / 2 = 253.52 pt
+        val cs = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(doc, page)
+        cs.addRect(20f, 253.52f + 10f, 555f, 314f)
+        cs.fill()
+        cs.close()
+
+        val detectedRatio = PdfContentTrimmer.trimDocumentSlides(doc)
+        org.junit.Assert.assertNotNull(detectedRatio)
+        assertEquals(16f / 9f, detectedRatio!!, 0.01f)
+
+        val cropBox = page.cropBox
+        assertEquals(595.28f, cropBox.width, 1.0f)
+        assertEquals(334.85f, cropBox.height, 1.0f)
+        assertEquals(253.52f, cropBox.lowerLeftY, 1.0f)
+
+        doc.close()
+    }
+
+    @Test
+    fun testAutoTrim4x3SlideOnA4Portrait() {
+        val doc = PDDocument()
+        val page = PDPage(PDRectangle(595.28f, 841.89f))
+        doc.addPage(page)
+
+        // 4:3 slide height = 595.28 / (4/3) = 446.46 pt
+        // Centered padding: (841.89 - 446.46) / 2 = 197.71 pt
+        val cs = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(doc, page)
+        cs.addRect(20f, 197.71f + 10f, 555f, 426f)
+        cs.fill()
+        cs.close()
+
+        val detectedRatio = PdfContentTrimmer.trimDocumentSlides(doc)
+        org.junit.Assert.assertNotNull(detectedRatio)
+        assertEquals(4f / 3f, detectedRatio!!, 0.01f)
+
+        val cropBox = page.cropBox
+        assertEquals(595.28f, cropBox.width, 1.0f)
+        assertEquals(446.46f, cropBox.height, 1.0f)
+        assertEquals(197.71f, cropBox.lowerLeftY, 1.0f)
+
+        doc.close()
+    }
+
+    @Test
+    fun testStandardTextDocumentUntouched() {
+        val doc = PDDocument()
+        val page = PDPage(PDRectangle(595.28f, 841.89f))
+        doc.addPage(page)
+
+        // Standard text document with content distributed near top (780 pt) and bottom (60 pt)
+        val cs = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(doc, page)
+        cs.addRect(50f, 60f, 495f, 100f) // footer area
+        cs.addRect(50f, 780f, 495f, 40f) // header area
+        cs.fill()
+        cs.close()
+
+        val detectedRatio = PdfContentTrimmer.trimDocumentSlides(doc)
+        org.junit.Assert.assertNull(detectedRatio)
+
+        val cropBox = page.cropBox ?: page.mediaBox
+        assertEquals(595.28f, cropBox.width, 0.5f)
+        assertEquals(841.89f, cropBox.height, 0.5f)
+
+        doc.close()
+    }
+
+    @Test
+    fun testAutoTrimSlideOnA4Portrait_4UpMerge() {
+        val doc = PDDocument()
+        for (i in 0 until 4) {
+            val page = PDPage(PDRectangle(595.28f, 841.89f))
+            doc.addPage(page)
+            val cs = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(doc, page)
+            cs.addRect(20f, 260f, 555f, 310f)
+            cs.fill()
+            cs.close()
+        }
+        val inBytes = ByteArrayOutputStream().also { doc.save(it); doc.close() }.toByteArray()
+        val outStream = ByteArrayOutputStream()
+
+        val layout = PrintLayout(
+            printerId = "nup_2x2",
+            displayName = "4-Up Grid (2x2)",
+            cols = 2,
+            rows = 2,
+            landscape = true,
+            subPageLandscape = true
+        )
+
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(inBytes),
+            outputStream = outStream,
+            layout = layout,
+            addTextContrast = false,
+            enableLinks = false,
+            bestFit = false, // Output on standard A4 sheet
+            autoTrimSlideBorders = true
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        assertEquals(1, outDoc.numberOfPages)
+        val outPage = outDoc.getPage(0)
+        assertEquals(PDRectangle.A4.height, outPage.mediaBox.width, 0.5f)
+        assertEquals(PDRectangle.A4.width, outPage.mediaBox.height, 0.5f)
+        outDoc.close()
+    }
+
+    @Test
+    fun testAutoTrim16x9SlideOnA4Landscape() {
+        val doc = PDDocument()
+        val page = PDPage(PDRectangle(841.89f, 595.28f)) // A4 Landscape
+        doc.addPage(page)
+
+        // 16:9 slide on A4 Landscape: width 841.89 pt, height 473.56 pt
+        // Centered padding: (595.28 - 473.56) / 2 = 60.86 pt
+        val cs = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(doc, page)
+        cs.addRect(20f, 60.86f + 10f, 800f, 453f)
+        cs.fill()
+        cs.close()
+
+        val detectedRatio = PdfContentTrimmer.trimDocumentSlides(doc)
+        org.junit.Assert.assertNotNull(detectedRatio)
+        assertEquals(16f / 9f, detectedRatio!!, 0.01f)
+
+        val cropBox = page.cropBox
+        assertEquals(841.89f, cropBox.width, 1.0f)
+        assertEquals(473.56f, cropBox.height, 1.0f)
+        assertEquals(60.86f, cropBox.lowerLeftY, 1.0f)
+
+        doc.close()
+    }
+
+    @Test
+    fun testForceSlideModeOnEmptyPage() {
+        val doc = PDDocument()
+        val page = PDPage(PDRectangle(595.28f, 841.89f)) // Empty A4 Portrait
+        doc.addPage(page)
+
+        val detectedRatio = PdfContentTrimmer.trimDocumentSlides(doc, forceSlideMode = true)
+        org.junit.Assert.assertNotNull(detectedRatio)
+        assertEquals(16f / 9f, detectedRatio!!, 0.01f)
+
+        val cropBox = page.cropBox
+        assertEquals(595.28f, cropBox.width, 1.0f)
+        assertEquals(334.85f, cropBox.height, 1.0f)
+        assertEquals(253.52f, cropBox.lowerLeftY, 1.0f)
+
+        doc.close()
+    }
 }

@@ -77,6 +77,9 @@ class TwoUpPrintService : PrintService() {
         val marginLeftMm = LayoutRegistry.getMarginLeftMm(applicationContext)
         val marginRightMm = LayoutRegistry.getMarginRightMm(applicationContext)
 
+        val autoTrimEnabled = LayoutRegistry.isAutoTrimEnabled(applicationContext)
+        val autoTrimSlideBorders = isPresentationSmart || autoTrimEnabled
+
         // Extract website / page title from print job metadata if available
         val docName = extractCleanDocumentName(printJob)
 
@@ -104,7 +107,9 @@ class TwoUpPrintService : PrintService() {
                 marginTopMm,
                 marginBottomMm,
                 marginLeftMm,
-                marginRightMm
+                marginRightMm,
+                autoTrimSlideBorders,
+                isPresentationSmart
             )
             return
         }
@@ -132,7 +137,8 @@ class TwoUpPrintService : PrintService() {
             applicationContext, printJob, documentData, destinationUri,
             layout, fileName, addTextContrast, enableLinks,
             bestFit,
-            marginTopMm, marginBottomMm, marginLeftMm, marginRightMm
+            marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
+            autoTrimSlideBorders, isPresentationSmart
         ).start()
     }
 

@@ -34,6 +34,8 @@ object PendingPrintJobManager {
     private var activeMarginBottomMm: Int = 0
     private var activeMarginLeftMm: Int = 0
     private var activeMarginRightMm: Int = 0
+    private var activeAutoTrimSlideBorders: Boolean = true
+    private var activeIsPresentationSmart: Boolean = false
 
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val timeoutRunnable = Runnable {
@@ -56,7 +58,9 @@ object PendingPrintJobManager {
         marginTopMm: Int = 0,
         marginBottomMm: Int = 0,
         marginLeftMm: Int = 0,
-        marginRightMm: Int = 0
+        marginRightMm: Int = 0,
+        autoTrimSlideBorders: Boolean = true,
+        isPresentationSmart: Boolean = false
     ) {
         // Cancel previous pending job if any
         cancelPendingJob(context)
@@ -72,6 +76,8 @@ object PendingPrintJobManager {
         activeMarginBottomMm = marginBottomMm
         activeMarginLeftMm = marginLeftMm
         activeMarginRightMm = marginRightMm
+        activeAutoTrimSlideBorders = autoTrimSlideBorders
+        activeIsPresentationSmart = isPresentationSmart
 
         // Set 2 minute timeout
         timeoutHandler.postDelayed(timeoutRunnable, TIMEOUT_MS)
@@ -95,6 +101,8 @@ object PendingPrintJobManager {
         val marginBottomMm = activeMarginBottomMm
         val marginLeftMm = activeMarginLeftMm
         val marginRightMm = activeMarginRightMm
+        val autoTrimSlideBorders = activeAutoTrimSlideBorders
+        val isPresentationSmart = activeIsPresentationSmart
 
         activeJob = null
         activeFd = null
@@ -109,7 +117,8 @@ object PendingPrintJobManager {
                 context.applicationContext, job, fd, uri,
                 layout, fileName, addTextContrast, enableLinks,
                 bestFit,
-                marginTopMm, marginBottomMm, marginLeftMm, marginRightMm
+                marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
+                autoTrimSlideBorders, isPresentationSmart
             ).start()
         } else {
             if (job.isStarted) {
