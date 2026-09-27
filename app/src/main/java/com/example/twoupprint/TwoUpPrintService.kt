@@ -42,28 +42,19 @@ class TwoUpPrintService : PrintService() {
         val mediaSize = printJob.info?.attributes?.mediaSize
 
         // "Presentation Smart" mode:
-        // No matter what orientation is set in the print dialog (portrait or landscape),
-        // internally we always process it as Landscape and output onto an A4 page.
         val isPresentationSmart = mediaSize?.id == "MEDIA_PRESENTATION_SMART" || mediaSize?.id == "MEDIA_MATCH_SIZE"
 
-        val sheetLandscape: Boolean
-        val subPageLandscape: Boolean
-
-        if (isPresentationSmart) {
-            sheetLandscape = true
-            subPageLandscape = true
+        val sheetLandscape: Boolean = if (isPresentationSmart) {
+            baseLayout.landscape
+        } else if (mediaSize != null) {
+            !mediaSize.isPortrait
         } else {
-            // Default ISO A4 or other standard paper:
-            // Follow the user's selected orientation from the print spooler dialog (default Portrait)
-            val userRequestedLandscape = mediaSize?.isPortrait == false
-            sheetLandscape = if (mediaSize != null) userRequestedLandscape else baseLayout.landscape
-            subPageLandscape = if (mediaSize != null) userRequestedLandscape else baseLayout.subPageLandscape
+            baseLayout.landscape
         }
 
-        // Layout keeps configured sheet orientation
+        // Layout preserves configured sheet orientation and sub-page orientation
         val layout = baseLayout.copy(
-            landscape = sheetLandscape,
-            subPageLandscape = subPageLandscape
+            landscape = sheetLandscape
         )
 
         // Determine if text contrast enhancement and clickable links are enabled

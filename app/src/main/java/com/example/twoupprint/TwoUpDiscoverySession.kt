@@ -23,21 +23,41 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
     private fun buildPrinterInfo(mode: PrintLayout): PrinterInfo {
         val id: PrinterId = service.generatePrinterId(mode.printerId)
 
-        // 1. Default A4 paper size, strictly Portrait (8268 x 11693 mils)
-        val sizeA4Portrait = PrintAttributes.MediaSize.ISO_A4.asPortrait()
+        // 1. Default A4 paper size matches layout's sheet orientation:
+        //    • 2x1, 2x2: Landscape sheet (11693 x 8268 mils)
+        //    • 1x2, 2x3, 2x4: Portrait sheet (8268 x 11693 mils)
+        val defaultSize = if (mode.landscape) {
+            PrintAttributes.MediaSize.ISO_A4.asLandscape()
+        } else {
+            PrintAttributes.MediaSize.ISO_A4.asPortrait()
+        }
+
+        val altSize = if (mode.landscape) {
+            PrintAttributes.MediaSize.ISO_A4.asPortrait()
+        } else {
+            PrintAttributes.MediaSize.ISO_A4.asLandscape()
+        }
 
         // 2. "Presentation Smart" option in Samsung print dialog:
-        // When selected, the print engine automatically processes the document in Landscape
-        // on a standard A4 sheet regardless of the spooler's orientation toggle setting.
-        val sizePresentationSmart = PrintAttributes.MediaSize(
-            "MEDIA_PRESENTATION_SMART",
-            "Presentation Smart",
-            8268,
-            11693
-        )
+        val sizePresentationSmart = if (mode.landscape) {
+            PrintAttributes.MediaSize(
+                "MEDIA_PRESENTATION_SMART",
+                "Presentation Smart",
+                11693,
+                8268
+            )
+        } else {
+            PrintAttributes.MediaSize(
+                "MEDIA_PRESENTATION_SMART",
+                "Presentation Smart",
+                8268,
+                11693
+            )
+        }
 
         val capabilities = PrinterCapabilitiesInfo.Builder(id)
-            .addMediaSize(sizeA4Portrait, true)          // Default: ISO A4 (Portrait)
+            .addMediaSize(defaultSize, true)             // Default matches layout (Landscape for 2x1/2x2)
+            .addMediaSize(altSize, false)                // Alternate orientation
             .addMediaSize(sizePresentationSmart, false)  // Smart mode for presentations
             .addResolution(
                 PrintAttributes.Resolution("nup_res", "300dpi", 300, 300),

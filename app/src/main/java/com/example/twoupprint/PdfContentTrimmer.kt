@@ -90,7 +90,7 @@ class PdfContentTrimmer {
         if (pageCount == 0) return null
 
         // 1. Detect document-wide slide ratio by inspecting initial pages
-        val detectedRatio = detectDocumentSlideRatio(doc) ?: if (forceSlideMode) (16f / 9f) else null
+        val detectedRatio = detectDocumentSlideRatio(doc, forceSlideMode)
         if (detectedRatio == null) {
             // Normal document (not a letterboxed presentation), leave untouched
             return null
@@ -109,7 +109,7 @@ class PdfContentTrimmer {
     /**
      * Detects if the document has a consistent slide aspect ratio across its pages.
      */
-    fun detectDocumentSlideRatio(doc: PDDocument): Float? {
+    fun detectDocumentSlideRatio(doc: PDDocument, forceSlideMode: Boolean = false): Float? {
         val pageCount = doc.numberOfPages
         val sampleSize = min(pageCount, 5)
 
@@ -119,8 +119,20 @@ class PdfContentTrimmer {
             if (ratio != null) {
                 return ratio
             }
+            // Check if page clearly has full-page content (not a letterboxed slide)
+            val content = detectContentBounds(doc, page, i)
+            if (content.hasContent) {
+                val origBox = page.cropBox ?: page.mediaBox ?: PDRectangle.A4
+                val emptyBottom = content.minY - origBox.lowerLeftY
+                val emptyTop = origBox.upperRightY - content.maxY
+                val minMargin = origBox.height * 0.12f
+                if (emptyBottom < minMargin || emptyTop < minMargin) {
+                    // Content extends near top or bottom: unequivocally a regular document, never crop!
+                    return null
+                }
+            }
         }
-        return null
+        return if (forceSlideMode) (16f / 9f) else null
     }
 
     /**

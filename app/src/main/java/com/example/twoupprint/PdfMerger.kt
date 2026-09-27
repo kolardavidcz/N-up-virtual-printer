@@ -3,6 +3,9 @@ package com.example.twoupprint
 import android.content.Context
 import android.graphics.Bitmap
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.cos.COSArray
+import com.tom_roush.pdfbox.cos.COSFloat
+import com.tom_roush.pdfbox.cos.COSName
 import com.tom_roush.pdfbox.multipdf.LayerUtility
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
@@ -357,6 +360,20 @@ object PdfMerger {
 
         val needsRotation = (srcIsLandscape != targetIsLandscape)
 
+        // Normalize Form XObject so BBox is strictly [0, 0, srcW, srcH]
+        // and Matrix translates original page coordinates (-cropBox.lowerLeftX, -cropBox.lowerLeftY).
+        // This completely resolves PDFBox's LayerUtility double-offset bug on cropped pages!
+        form.bBox = PDRectangle(srcW, srcH)
+        val matrixArray = COSArray().apply {
+            add(COSFloat(1f))
+            add(COSFloat(0f))
+            add(COSFloat(0f))
+            add(COSFloat(1f))
+            add(COSFloat(-cropBox.lowerLeftX))
+            add(COSFloat(-cropBox.lowerLeftY))
+        }
+        form.cosObject.setItem(COSName.MATRIX, matrixArray)
+
         contentStream.saveGraphicsState()
 
         if (needsRotation) {
@@ -370,18 +387,15 @@ object PdfMerger {
             val tx = slotLeft + (slotWidth - destW) / 2f
             val ty = slotBottom + (slotHeight - destH) / 2f
 
-            val e = tx + destW + scale * cropBox.lowerLeftY
-            val f = ty - scale * cropBox.lowerLeftX
-
-            contentStream.transform(Matrix(0f, scale, -scale, 0f, e, f))
+            contentStream.transform(Matrix(0f, scale, -scale, 0f, tx + destW, ty))
         } else {
             val scale = Math.min(slotWidth / srcW, slotHeight / srcH)
 
             val destW = srcW * scale
             val destH = srcH * scale
 
-            val tx = slotLeft + (slotWidth - destW) / 2f - cropBox.lowerLeftX * scale
-            val ty = slotBottom + (slotHeight - destH) / 2f - cropBox.lowerLeftY * scale
+            val tx = slotLeft + (slotWidth - destW) / 2f
+            val ty = slotBottom + (slotHeight - destH) / 2f
 
             contentStream.transform(Matrix(scale, 0f, 0f, scale, tx, ty))
         }

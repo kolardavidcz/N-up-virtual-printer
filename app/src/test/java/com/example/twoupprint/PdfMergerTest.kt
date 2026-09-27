@@ -410,4 +410,124 @@ class PdfMergerTest {
 
         doc.close()
     }
+
+    @Test
+    fun testDrawCroppedPageInSlot() {
+        val srcDoc = PDDocument()
+        val page = PDPage(PDRectangle(595.28f, 841.89f))
+        srcDoc.addPage(page)
+
+        // Draw a test box in the 16:9 slide region (Y: 253.5 to 588.4)
+        val cs = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(srcDoc, page)
+        cs.setNonStrokingColor(255, 0, 0)
+        cs.addRect(100f, 300f, 200f, 100f) // from Y=300 to 400
+        cs.fill()
+        cs.close()
+
+        // Auto-trim the slide
+        val ratio = PdfContentTrimmer.trimDocumentSlides(srcDoc)
+        assertEquals(16f / 9f, ratio!!, 0.01f)
+
+        // Now merge 1x1 onto an A4 landscape sheet
+        val outStream = ByteArrayOutputStream()
+        val layout = PrintLayout("test", "test", 1, 1, landscape = true, subPageLandscape = true)
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(ByteArrayOutputStream().also { srcDoc.save(it) }.toByteArray()),
+            outputStream = outStream,
+            layout = layout,
+            bestFit = false,
+            autoTrimSlideBorders = true
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        val outPage = outDoc.getPage(0)
+        val res = outPage.resources
+        val formNames = res.xObjectNames.toList()
+        assertEquals(1, formNames.size)
+        val xobj = res.getXObject(formNames[0]) as com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject
+
+        // BBox must be normalized to (0, 0, width, height)
+        assertEquals(0f, xobj.bBox.lowerLeftX, 0.01f)
+        assertEquals(0f, xobj.bBox.lowerLeftY, 0.01f)
+        assertEquals(595.28f, xobj.bBox.width, 0.5f)
+        assertEquals(334.85f, xobj.bBox.height, 0.5f)
+
+        // Matrix must translate by -lowerLeftY
+        assertEquals(-253.52f, xobj.matrix.translateY, 0.5f)
+
+        outDoc.close()
+        srcDoc.close()
+    }
+
+    @Test
+    fun testNormalDocumentNotCroppedEvenInPresentationMode() {
+        val srcDoc = PDDocument()
+        val page = PDPage(PDRectangle(595.28f, 841.89f))
+        srcDoc.addPage(page)
+
+        // Lecture notes document with text near the very top (Y=820)
+        val cs = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(srcDoc, page)
+        cs.setNonStrokingColor(0, 0, 0)
+        cs.addRect(50f, 820f, 400f, 15f) // Heading at the very top
+        cs.addRect(50f, 100f, 400f, 500f) // Body text
+        cs.fill()
+        cs.close()
+
+        // Even with forceSlideMode = true, content near borders prevents cropping
+        val ratio = PdfContentTrimmer.trimDocumentSlides(srcDoc, forceSlideMode = true)
+        org.junit.Assert.assertNull("Normal document must not be trimmed even in presentation mode!", ratio)
+
+        val cropBox = page.cropBox ?: page.mediaBox
+        assertEquals(595.28f, cropBox.width, 0.5f)
+        assertEquals(841.89f, cropBox.height, 0.5f)
+        assertEquals(0f, cropBox.lowerLeftY, 0.5f)
+
+        srcDoc.close()
+    }
+
+    @Test
+    fun test2UpPortraitDocumentOnLandscapeA4WithMargins() {
+        val srcDoc = PDDocument()
+        for (i in 0 until 2) {
+            val page = PDPage(PDRectangle(595.28f, 841.89f))
+            srcDoc.addPage(page)
+            val cs = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(srcDoc, page)
+            cs.setNonStrokingColor(0, 0, 0)
+            cs.addRect(50f, 820f, 400f, 15f) // text at top
+            cs.fill()
+            cs.close()
+        }
+
+        val inBytes = ByteArrayOutputStream().also { srcDoc.save(it); srcDoc.close() }.toByteArray()
+        val outStream = ByteArrayOutputStream()
+
+        val layout = LayoutRegistry.builtInLayouts.first { it.printerId == "nup_2x1" }
+        assertEquals(2, layout.cols)
+        assertEquals(1, layout.rows)
+        assertTrue(layout.landscape)
+        org.junit.Assert.assertFalse(layout.subPageLandscape)
+
+        // Top margin 3mm, Bottom margin 3mm
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(inBytes),
+            outputStream = outStream,
+            layout = layout,
+            bestFit = false,
+            marginTopMm = 3,
+            marginBottomMm = 3,
+            marginLeftMm = 0,
+            marginRightMm = 0,
+            autoTrimSlideBorders = true
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        assertEquals(1, outDoc.numberOfPages)
+
+        val outPage = outDoc.getPage(0)
+        // Must be A4 Landscape: width ~841.89 pt, height ~595.28 pt
+        assertEquals(PDRectangle.A4.height, outPage.mediaBox.width, 0.5f)
+        assertEquals(PDRectangle.A4.width, outPage.mediaBox.height, 0.5f)
+
+        outDoc.close()
+    }
 }
