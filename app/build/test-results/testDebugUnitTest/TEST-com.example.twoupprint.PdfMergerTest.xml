@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.example.twoupprint.PdfMergerTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-27T14:56:48.861Z" hostname="SWIFT-5" time="0.346">
+<testsuite name="com.example.twoupprint.PdfMergerTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:13:16.616Z" hostname="SWIFT-5" time="0.326">
   <properties/>
-  <testcase name="testAutoTrim4x3SlideOnA4Portrait" classname="com.example.twoupprint.PdfMergerTest" time="0.108"/>
-  <testcase name="testAutoTrim16x9SlideOnA4Portrait" classname="com.example.twoupprint.PdfMergerTest" time="0.003"/>
-  <testcase name="testMarginsPreserveAspectRatio" classname="com.example.twoupprint.PdfMergerTest" time="0.062"/>
+  <testcase name="testAutoTrim4x3SlideOnA4Portrait" classname="com.example.twoupprint.PdfMergerTest" time="0.111"/>
+  <testcase name="testAutoTrim16x9SlideOnA4Portrait" classname="com.example.twoupprint.PdfMergerTest" time="0.002"/>
+  <testcase name="testMarginsPreserveAspectRatio" classname="com.example.twoupprint.PdfMergerTest" time="0.065"/>
   <testcase name="testAutoTrim16x9SlideOnA4Landscape" classname="com.example.twoupprint.PdfMergerTest" time="0.002"/>
-  <testcase name="testForceSlideModeOnEmptyPage" classname="com.example.twoupprint.PdfMergerTest" time="0.002"/>
-  <testcase name="testDrawCroppedPageInSlot" classname="com.example.twoupprint.PdfMergerTest" time="0.024"/>
-  <testcase name="testBestFit16x9_4Up" classname="com.example.twoupprint.PdfMergerTest" time="0.019"/>
-  <testcase name="test2UpPortraitDocumentOnLandscapeA4WithMargins" classname="com.example.twoupprint.PdfMergerTest" time="0.041"/>
-  <testcase name="testFixedA4PortraitWhenBestFitDisabled" classname="com.example.twoupprint.PdfMergerTest" time="0.014"/>
+  <testcase name="testForceSlideModeOnEmptyPage" classname="com.example.twoupprint.PdfMergerTest" time="0.001"/>
+  <testcase name="testDrawCroppedPageInSlot" classname="com.example.twoupprint.PdfMergerTest" time="0.025"/>
+  <testcase name="testBestFit16x9_4Up" classname="com.example.twoupprint.PdfMergerTest" time="0.011"/>
+  <testcase name="test2UpPortraitDocumentOnLandscapeA4WithMargins" classname="com.example.twoupprint.PdfMergerTest" time="0.047"/>
+  <testcase name="testFixedA4PortraitWhenBestFitDisabled" classname="com.example.twoupprint.PdfMergerTest" time="0.009"/>
   <testcase name="testFixedA4WhenBestFitDisabled" classname="com.example.twoupprint.PdfMergerTest" time="0.012"/>
-  <testcase name="testStandardTextDocumentUntouched" classname="com.example.twoupprint.PdfMergerTest" time="0.003"/>
-  <testcase name="testAutoTrimSlideOnA4Portrait_4UpMerge" classname="com.example.twoupprint.PdfMergerTest" time="0.015"/>
+  <testcase name="testStandardTextDocumentUntouched" classname="com.example.twoupprint.PdfMergerTest" time="0.002"/>
+  <testcase name="testAutoTrimSlideOnA4Portrait_4UpMerge" classname="com.example.twoupprint.PdfMergerTest" time="0.014"/>
   <testcase name="testAsymmetricMargins" classname="com.example.twoupprint.PdfMergerTest" time="0.01"/>
-  <testcase name="testNormalDocumentNotCroppedEvenInPresentationMode" classname="com.example.twoupprint.PdfMergerTest" time="0.002"/>
-  <testcase name="testBestFit4x3_4Up" classname="com.example.twoupprint.PdfMergerTest" time="0.022"/>
+  <testcase name="testNormalDocumentNotCroppedEvenInPresentationMode" classname="com.example.twoupprint.PdfMergerTest" time="0.001"/>
+  <testcase name="testBestFit4x3_4Up" classname="com.example.twoupprint.PdfMergerTest" time="0.012"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

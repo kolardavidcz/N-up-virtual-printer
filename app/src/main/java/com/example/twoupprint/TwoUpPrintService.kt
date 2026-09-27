@@ -41,20 +41,22 @@ class TwoUpPrintService : PrintService() {
         // Read media size and orientation requested by the user in the system print dialog
         val mediaSize = printJob.info?.attributes?.mediaSize
 
-        // "Presentation Smart" mode:
-        val isPresentationSmart = mediaSize?.id == "MEDIA_PRESENTATION_SMART" || mediaSize?.id == "MEDIA_MATCH_SIZE"
+        // "Smart" mode (Default):
+        val isSmart = mediaSize?.id == "MEDIA_SMART" || mediaSize?.id == "MEDIA_PRESENTATION_SMART" || mediaSize?.id == "MEDIA_MATCH_SIZE"
 
-        val sheetLandscape: Boolean = if (isPresentationSmart) {
+        // Orientation strictly follows in-app settings (sheet: landscape vs portrait, subpage: landscape vs portrait)
+        val sheetLandscape: Boolean = if (isSmart) {
             baseLayout.landscape
-        } else if (mediaSize != null) {
+        } else if (mediaSize != null && mediaSize.id.startsWith("ISO_A4")) {
             !mediaSize.isPortrait
         } else {
             baseLayout.landscape
         }
 
-        // Layout preserves configured sheet orientation and sub-page orientation
+        // Layout preserves configured sheet orientation and sub-page orientation from in-app settings
         val layout = baseLayout.copy(
-            landscape = sheetLandscape
+            landscape = sheetLandscape,
+            subPageLandscape = baseLayout.subPageLandscape
         )
 
         // Determine if text contrast enhancement and clickable links are enabled
@@ -69,7 +71,7 @@ class TwoUpPrintService : PrintService() {
         val marginRightMm = LayoutRegistry.getMarginRightMm(applicationContext)
 
         val autoTrimEnabled = LayoutRegistry.isAutoTrimEnabled(applicationContext)
-        val autoTrimSlideBorders = isPresentationSmart || autoTrimEnabled
+        val autoTrimSlideBorders = isSmart || autoTrimEnabled
 
         // Extract website / page title from print job metadata if available
         val docName = extractCleanDocumentName(printJob)
@@ -100,7 +102,7 @@ class TwoUpPrintService : PrintService() {
                 marginLeftMm,
                 marginRightMm,
                 autoTrimSlideBorders,
-                isPresentationSmart
+                isSmart
             )
             return
         }
@@ -129,7 +131,7 @@ class TwoUpPrintService : PrintService() {
             layout, fileName, addTextContrast, enableLinks,
             bestFit,
             marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
-            autoTrimSlideBorders, isPresentationSmart
+            autoTrimSlideBorders, isSmart
         ).start()
     }
 

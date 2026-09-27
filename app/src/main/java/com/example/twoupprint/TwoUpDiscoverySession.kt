@@ -23,42 +23,43 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
     private fun buildPrinterInfo(mode: PrintLayout): PrinterInfo {
         val id: PrinterId = service.generatePrinterId(mode.printerId)
 
-        // 1. Default A4 paper size matches layout's sheet orientation:
-        //    • 2x1, 2x2: Landscape sheet (11693 x 8268 mils)
-        //    • 1x2, 2x3, 2x4: Portrait sheet (8268 x 11693 mils)
-        val defaultSize = if (mode.landscape) {
-            PrintAttributes.MediaSize.ISO_A4.asLandscape()
-        } else {
-            PrintAttributes.MediaSize.ISO_A4.asPortrait()
-        }
-
-        val altSize = if (mode.landscape) {
-            PrintAttributes.MediaSize.ISO_A4.asPortrait()
-        } else {
-            PrintAttributes.MediaSize.ISO_A4.asLandscape()
-        }
-
-        // 2. "Presentation Smart" option in Samsung print dialog:
-        val sizePresentationSmart = if (mode.landscape) {
+        // 1. "Smart" paper size (Default):
+        // Automatically optimizes presentation slides, margins, and placement onto an A4 sheet.
+        // Orientation matches the in-app layout configuration (Landscape for 2x1/2x2, Portrait for 1x2/2x3/2x4).
+        val sizeSmart = if (mode.landscape) {
             PrintAttributes.MediaSize(
-                "MEDIA_PRESENTATION_SMART",
-                "Presentation Smart",
+                "MEDIA_SMART",
+                "Smart",
                 11693,
                 8268
             )
         } else {
             PrintAttributes.MediaSize(
-                "MEDIA_PRESENTATION_SMART",
-                "Presentation Smart",
+                "MEDIA_SMART",
+                "Smart",
                 8268,
                 11693
             )
         }
 
+        // 2. Standard ISO A4 paper size (matches layout's configured sheet orientation)
+        val defaultA4Size = if (mode.landscape) {
+            PrintAttributes.MediaSize.ISO_A4.asLandscape()
+        } else {
+            PrintAttributes.MediaSize.ISO_A4.asPortrait()
+        }
+
+        // 3. Alternate A4 orientation
+        val altA4Size = if (mode.landscape) {
+            PrintAttributes.MediaSize.ISO_A4.asPortrait()
+        } else {
+            PrintAttributes.MediaSize.ISO_A4.asLandscape()
+        }
+
         val capabilities = PrinterCapabilitiesInfo.Builder(id)
-            .addMediaSize(defaultSize, true)             // Default matches layout (Landscape for 2x1/2x2)
-            .addMediaSize(altSize, false)                // Alternate orientation
-            .addMediaSize(sizePresentationSmart, false)  // Smart mode for presentations
+            .addMediaSize(sizeSmart, true)               // Default: "Smart"
+            .addMediaSize(defaultA4Size, false)          // Standard ISO A4
+            .addMediaSize(altA4Size, false)              // Alternate ISO A4
             .addResolution(
                 PrintAttributes.Resolution("nup_res", "300dpi", 300, 300),
                 true
