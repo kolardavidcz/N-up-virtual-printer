@@ -785,4 +785,63 @@ class PdfMergerTest {
         }
         outDoc.close()
     }
+
+    @Test
+    fun testSmartMode_2x1_PortraitA4Input_ProducesLandscapeA4SheetWithMargins() {
+        val srcDoc = PDDocument()
+        for (i in 0 until 2) {
+            val page = PDPage(PDRectangle(595.28f, 841.89f))
+            srcDoc.addPage(page)
+            val cs = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(srcDoc, page)
+            cs.setNonStrokingColor(0, 0, 0)
+            cs.addRect(50f, 820f, 400f, 15f) // text at top
+            cs.fill()
+            cs.close()
+        }
+
+        val inBytes = ByteArrayOutputStream().also { srcDoc.save(it); srcDoc.close() }.toByteArray()
+        val outStream = ByteArrayOutputStream()
+
+        val layout = LayoutRegistry.builtInLayouts.first { it.printerId == "nup_2x1" }
+        assertEquals(2, layout.cols)
+        assertEquals(1, layout.rows)
+        assertTrue(layout.landscape)
+        org.junit.Assert.assertFalse(layout.subPageLandscape)
+
+        // Top margin 3mm, Bottom margin 3mm, Smart mode enabled
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(inBytes),
+            outputStream = outStream,
+            layout = layout,
+            bestFit = false,
+            marginTopMm = 3,
+            marginBottomMm = 3,
+            marginLeftMm = 0,
+            marginRightMm = 0,
+            autoTrimSlideBorders = true,
+            isPresentationSmart = true
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        assertEquals(1, outDoc.numberOfPages)
+
+        val outPage = outDoc.getPage(0)
+        // Output must be Landscape A4: width ~841.89 pt, height ~595.28 pt
+        assertEquals(PDRectangle.A4.height, outPage.mediaBox.width, 0.5f)
+        assertEquals(PDRectangle.A4.width, outPage.mediaBox.height, 0.5f)
+        assertTrue("MediaBox must be landscape", outPage.mediaBox.width > outPage.mediaBox.height)
+
+        val resources = outPage.resources
+        for (name in resources.xObjectNames) {
+            val xobj = resources.getXObject(name)
+            if (xobj is com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject) {
+                // Form XObject for portrait A4 input must remain portrait (upright)
+                assertEquals(595.28f, xobj.bBox.width, 1f)
+                assertEquals(841.89f, xobj.bBox.height, 1f)
+                assertTrue("BBox must be portrait", xobj.bBox.height > xobj.bBox.width)
+            }
+        }
+
+        outDoc.close()
+    }
 }

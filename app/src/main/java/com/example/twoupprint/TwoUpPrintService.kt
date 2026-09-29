@@ -44,8 +44,11 @@ class TwoUpPrintService : PrintService() {
         // "Smart" mode (Default):
         val isSmart = mediaSize?.id == "MEDIA_SMART" || mediaSize?.id == "MEDIA_PRESENTATION_SMART" || mediaSize?.id == "MEDIA_MATCH_SIZE"
 
-        // Sheet orientation honors print dialog selection (Portrait vs Landscape); falls back to in-app setting
-        val sheetLandscape: Boolean = if (mediaSize != null) {
+        // Orientation strictly follows in-app settings (sheet: landscape vs portrait, subpage: landscape vs portrait).
+        // When standard ISO A4 is explicitly selected by the user, follow the print dialog orientation.
+        val sheetLandscape: Boolean = if (isSmart) {
+            baseLayout.landscape
+        } else if (mediaSize != null && mediaSize.id.startsWith("ISO_A4")) {
             !mediaSize.isPortrait
         } else {
             baseLayout.landscape
