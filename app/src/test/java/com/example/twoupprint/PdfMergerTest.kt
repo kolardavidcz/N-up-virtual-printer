@@ -667,4 +667,122 @@ class PdfMergerTest {
         assertTrue("2:1 middle gap ($middleGapRatio) > Center gap ($middleGapCenter)", middleGapRatio > middleGapCenter)
         assertTrue("Max middle gap ($middleGapMax) > 2:1 gap ($middleGapRatio)", middleGapMax > middleGapRatio)
     }
+
+    @Test
+    fun testSmartMode_NoAutorotation_2x1_KeepsSlidesUpright() {
+        // 16:9 slides: 960 x 540 pt
+        val srcBytes = createTestPresentation(2, 960f, 540f)
+        val outStream = ByteArrayOutputStream()
+
+        val layout = LayoutRegistry.builtInLayouts.first { it.printerId == "nup_2x1" }
+        // In 2x1 layout, subPageLandscape is false, but in Smart mode slides must NEVER be rotated sideways!
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(srcBytes),
+            outputStream = outStream,
+            layout = layout,
+            isPresentationSmart = true,
+            bestFit = false
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        assertEquals(1, outDoc.numberOfPages)
+        val page = outDoc.getPage(0)
+
+        // Inspect Form XObjects on output page
+        val resources = page.resources
+        val xobjectNames = resources.xObjectNames
+        assertTrue("Must have imported Form XObjects", xobjectNames.iterator().hasNext())
+
+        for (name in xobjectNames) {
+            val xobj = resources.getXObject(name)
+            if (xobj is com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject) {
+                // Visual slide must be landscape (width > height) and BBox must be upright
+                assertTrue("Form XObject BBox width must be > height", xobj.bBox.width > xobj.bBox.height)
+                assertEquals(960f, xobj.bBox.width, 1f)
+                assertEquals(540f, xobj.bBox.height, 1f)
+            }
+        }
+        outDoc.close()
+    }
+
+    @Test
+    fun testRotatedSourcePdf_NormalizedUpright_NoInversion() {
+        val srcDoc = PDDocument()
+
+        // Page with rotation = 90
+        val p1 = PDPage(PDRectangle(540f, 960f))
+        p1.rotation = 90
+        srcDoc.addPage(p1)
+
+        // Page with rotation = 180
+        val p2 = PDPage(PDRectangle(960f, 540f))
+        p2.rotation = 180
+        srcDoc.addPage(p2)
+
+        val inBytes = ByteArrayOutputStream().also { srcDoc.save(it); srcDoc.close() }.toByteArray()
+        val outStream = ByteArrayOutputStream()
+
+        val layout = LayoutRegistry.builtInLayouts.first { it.printerId == "nup_2x1" }
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(inBytes),
+            outputStream = outStream,
+            layout = layout,
+            isPresentationSmart = true,
+            bestFit = false
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        assertEquals(1, outDoc.numberOfPages)
+        val outPage = outDoc.getPage(0)
+
+        val resources = outPage.resources
+        for (name in resources.xObjectNames) {
+            val xobj = resources.getXObject(name)
+            if (xobj is com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject) {
+                // Both pages must normalize to visual landscape (width 960, height 540)
+                assertEquals(960f, xobj.bBox.width, 1f)
+                assertEquals(540f, xobj.bBox.height, 1f)
+            }
+        }
+        outDoc.close()
+    }
+
+    @Test
+    fun testSmartMode_3x2_Grid_NoInversion() {
+        val srcBytes = createTestPresentation(6, 960f, 540f)
+        val outStream = ByteArrayOutputStream()
+
+        val layout = PrintLayout(
+            printerId = "custom_3x2",
+            displayName = "6-Up Custom (3x2)",
+            cols = 3,
+            rows = 2,
+            landscape = true,
+            subPageLandscape = false,
+            isCustom = true
+        )
+
+        // In 3x2 with subPageLandscape = false, Smart mode must NOT rotate or invert slides
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(srcBytes),
+            outputStream = outStream,
+            layout = layout,
+            isPresentationSmart = true,
+            bestFit = false
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        assertEquals(1, outDoc.numberOfPages)
+        val outPage = outDoc.getPage(0)
+
+        val resources = outPage.resources
+        for (name in resources.xObjectNames) {
+            val xobj = resources.getXObject(name)
+            if (xobj is com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject) {
+                assertEquals(960f, xobj.bBox.width, 1f)
+                assertEquals(540f, xobj.bBox.height, 1f)
+            }
+        }
+        outDoc.close()
+    }
 }

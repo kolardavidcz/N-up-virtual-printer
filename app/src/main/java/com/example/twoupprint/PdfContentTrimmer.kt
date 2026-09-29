@@ -141,13 +141,15 @@ class PdfContentTrimmer {
      */
     fun detectPageSlideRatio(doc: PDDocument, page: PDPage, pageIndex: Int): Float? {
         val origBox = page.cropBox ?: page.mediaBox ?: return null
-        val pageW = origBox.width
-        val pageH = origBox.height
+        val rot = ((page.rotation % 360) + 360) % 360
+        val isRot90or270 = (rot == 90 || rot == 270)
+        val visualW = if (isRot90or270) origBox.height else origBox.width
+        val visualH = if (isRot90or270) origBox.width else origBox.height
 
-        if (pageW <= 0f || pageH <= 0f) return null
+        if (visualW <= 0f || visualH <= 0f) return null
 
         // Already native landscape slide (e.g. 960x540 or 1024x768, ratio != A4 landscape 1.414)
-        val currentRatio = pageW / pageH
+        val currentRatio = visualW / visualH
         if (currentRatio > 1.25f && currentRatio < 2.0f && abs(currentRatio - 1.4142f) > 0.06f) {
             return null
         }
@@ -156,6 +158,8 @@ class PdfContentTrimmer {
         if (!content.hasContent) return null
 
         // Case A: Portrait Canvas (e.g. A4 Portrait 595 x 842 pt)
+        val pageW = origBox.width
+        val pageH = origBox.height
         if (pageH > pageW) {
             val emptyBottom = content.minY - origBox.lowerLeftY
             val emptyTop = origBox.upperRightY - content.maxY
@@ -217,34 +221,52 @@ class PdfContentTrimmer {
      */
     fun calculateTrimmedBoxForRatio(page: PDPage, slideRatio: Float): PDRectangle {
         val origBox = page.cropBox ?: page.mediaBox ?: return PDRectangle.A4
-        val pageW = origBox.width
-        val pageH = origBox.height
+        val rot = ((page.rotation % 360) + 360) % 360
+        val isRot90or270 = (rot == 90 || rot == 270)
+        val visualW = if (isRot90or270) origBox.height else origBox.width
+        val visualH = if (isRot90or270) origBox.width else origBox.height
 
-        if (pageW <= 0f || pageH <= 0f) return origBox
+        if (visualW <= 0f || visualH <= 0f) return origBox
 
         // Already native slide format
-        val currentRatio = pageW / pageH
+        val currentRatio = visualW / visualH
         if (currentRatio > 1.25f && currentRatio < 2.0f && abs(currentRatio - 1.4142f) > 0.06f) {
             return origBox
         }
 
-        if (pageH > pageW) {
-            // Portrait sheet: slide fills width, trimmed top and bottom
-            val slideH = pageW / slideRatio
-            val padY = (pageH - slideH) / 2f
-            return PDRectangle(origBox.lowerLeftX, origBox.lowerLeftY + padY, pageW, slideH)
-        } else {
-            // Landscape sheet
-            if (slideRatio > currentRatio) {
-                // Widescreen (e.g. 16:9 on A4 landscape): fills width, trimmed top and bottom
-                val slideH = pageW / slideRatio
-                val padY = (pageH - slideH) / 2f
-                return PDRectangle(origBox.lowerLeftX, origBox.lowerLeftY + padY, pageW, slideH)
+        if (isRot90or270) {
+            if (visualH > visualW) {
+                val slideW_raw = origBox.height / slideRatio
+                val padX = (origBox.width - slideW_raw) / 2f
+                return PDRectangle(origBox.lowerLeftX + padX, origBox.lowerLeftY, slideW_raw, origBox.height)
             } else {
-                // Narrower slide (e.g. 4:3 on A4 landscape): fills height, trimmed left and right
-                val slideW = pageH * slideRatio
-                val padX = (pageW - slideW) / 2f
-                return PDRectangle(origBox.lowerLeftX + padX, origBox.lowerLeftY, slideW, pageH)
+                if (slideRatio > currentRatio) {
+                    val slideW_raw = origBox.height / slideRatio
+                    val padX = (origBox.width - slideW_raw) / 2f
+                    return PDRectangle(origBox.lowerLeftX + padX, origBox.lowerLeftY, slideW_raw, origBox.height)
+                } else {
+                    val slideH_raw = origBox.width * slideRatio
+                    val padY = (origBox.height - slideH_raw) / 2f
+                    return PDRectangle(origBox.lowerLeftX, origBox.lowerLeftY + padY, origBox.width, slideH_raw)
+                }
+            }
+        } else {
+            if (visualH > visualW) {
+                // Portrait sheet: slide fills width, trimmed top and bottom
+                val slideH = visualW / slideRatio
+                val padY = (visualH - slideH) / 2f
+                return PDRectangle(origBox.lowerLeftX, origBox.lowerLeftY + padY, visualW, slideH)
+            } else {
+                // Landscape sheet
+                if (slideRatio > currentRatio) {
+                    val slideH = visualW / slideRatio
+                    val padY = (visualH - slideH) / 2f
+                    return PDRectangle(origBox.lowerLeftX, origBox.lowerLeftY + padY, visualW, slideH)
+                } else {
+                    val slideW = visualH * slideRatio
+                    val padX = (visualW - slideW) / 2f
+                    return PDRectangle(origBox.lowerLeftX + padX, origBox.lowerLeftY, slideW, visualH)
+                }
             }
         }
     }

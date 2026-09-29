@@ -33,24 +33,12 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
             11693
         )
 
-        // 2. Standard ISO A4 paper size (matches layout's configured sheet orientation)
-        val defaultA4Size = if (mode.landscape) {
-            PrintAttributes.MediaSize.ISO_A4.asLandscape()
-        } else {
-            PrintAttributes.MediaSize.ISO_A4.asPortrait()
-        }
-
-        // 3. Alternate A4 orientation
-        val altA4Size = if (mode.landscape) {
-            PrintAttributes.MediaSize.ISO_A4.asPortrait()
-        } else {
-            PrintAttributes.MediaSize.ISO_A4.asLandscape()
-        }
+        // 2. Standard ISO A4 paper size (single entry to prevent duplicate "ISO A4" in print dialog)
+        val sizeA4 = PrintAttributes.MediaSize.ISO_A4.asPortrait()
 
         val capabilities = PrinterCapabilitiesInfo.Builder(id)
-            .addMediaSize(sizeSmart, true)               // Default: "Smart"
-            .addMediaSize(defaultA4Size, false)          // Standard ISO A4
-            .addMediaSize(altA4Size, false)              // Alternate ISO A4
+            .addMediaSize(sizeSmart, true)               // Default: "Smart" (Portrait default)
+            .addMediaSize(sizeA4, false)                 // Standard ISO A4
             .addResolution(
                 PrintAttributes.Resolution("nup_res", "300dpi", 300, 300),
                 true

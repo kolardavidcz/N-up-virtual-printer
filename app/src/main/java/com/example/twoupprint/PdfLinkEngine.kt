@@ -51,7 +51,8 @@ object PdfLinkEngine {
         layout: PrintLayout,
         col: Int = 0,
         cols: Int = 1,
-        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
+        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
+        isPresentationSmart: Boolean = false
     ) {
         val cropBox = srcPage.cropBox ?: srcPage.mediaBox ?: return
         val existingLinkRects = mutableListOf<PDRectangle>()
@@ -79,7 +80,9 @@ object PdfLinkEngine {
                             layout,
                             col = col,
                             cols = cols,
-                            spaceDistributionMode = spaceDistributionMode
+                            spaceDistributionMode = spaceDistributionMode,
+                            pageRotation = srcPage.rotation,
+                            isPresentationSmart = isPresentationSmart
                         )
 
                         val targetAction = annot.action
@@ -141,7 +144,9 @@ object PdfLinkEngine {
                     layout,
                     col = col,
                     cols = cols,
-                    spaceDistributionMode = spaceDistributionMode
+                    spaceDistributionMode = spaceDistributionMode,
+                    pageRotation = srcPage.rotation,
+                    isPresentationSmart = isPresentationSmart
                 )
 
                 val newLink = PDAnnotationLink().apply {
@@ -232,24 +237,50 @@ object PdfLinkEngine {
         layout: PrintLayout,
         col: Int = 0,
         cols: Int = 1,
-        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
+        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
+        pageRotation: Int = 0,
+        isPresentationSmart: Boolean = false
     ): PDRectangle {
-        val srcW = cropBox.width
-        val srcH = cropBox.height
+        val pageRot = ((pageRotation % 360) + 360) % 360
+        val isRot90or270 = (pageRot == 90 || pageRot == 270)
+        val rawW = cropBox.width
+        val rawH = cropBox.height
+        val rawX = cropBox.lowerLeftX
+        val rawY = cropBox.lowerLeftY
 
-        val srcIsLandscape = srcW > srcH
+        val visualW = if (isRot90or270) rawH else rawW
+        val visualH = if (isRot90or270) rawW else rawH
+
+        val srcIsLandscape = visualW > visualH
         val targetIsLandscape = layout.subPageLandscape
-        val needsRotation = (srcIsLandscape != targetIsLandscape)
+        val needsRotation = if (isPresentationSmart) false else (srcIsLandscape != targetIsLandscape)
 
-        val x1 = srcRect.lowerLeftX
-        val y1 = srcRect.lowerLeftY
-        val x2 = srcRect.upperRightX
-        val y2 = srcRect.upperRightY
+        // 1. Transform raw [x1, y1, x2, y2] to visual upright space in [0, 0, visualW, visualH]
+        val rx1 = srcRect.lowerLeftX
+        val ry1 = srcRect.lowerLeftY
+        val rx2 = srcRect.upperRightX
+        val ry2 = srcRect.upperRightY
 
+        fun mapToVisual(x: Float, y: Float): Pair<Float, Float> {
+            return when (pageRot) {
+                90 -> Pair(y - rawY, rawX + rawW - x)
+                180 -> Pair(rawX + rawW - x, rawY + rawH - y)
+                270 -> Pair(rawY + rawH - y, x - rawX)
+                else -> Pair(x - rawX, y - rawY)
+            }
+        }
+
+        val p1 = mapToVisual(rx1, ry1)
+        val p2 = mapToVisual(rx2, ry2)
+        val vxMin = Math.min(p1.first, p2.first)
+        val vxMax = Math.max(p1.first, p2.first)
+        val vyMin = Math.min(p1.second, p2.second)
+        val vyMax = Math.max(p1.second, p2.second)
+
+        // 2. Transform visual rectangle into slot
         if (needsRotation) {
-            // 90° rotation transformation matching Matrix(0f, s, -s, 0f, e, f)
-            val rotatedW = srcH
-            val rotatedH = srcW
+            val rotatedW = visualH
+            val rotatedH = visualW
             val scale = Math.min(slotWidth / rotatedW, slotHeight / rotatedH)
 
             val destW = rotatedW * scale
@@ -267,32 +298,22 @@ object PdfLinkEngine {
             val tx = slotLeft + spareW * offsetRatio
             val ty = slotBottom + (slotHeight - destH) / 2f
 
-            val e = tx + destW + scale * cropBox.lowerLeftY
-            val f = ty - scale * cropBox.lowerLeftX
-
-            // Mapping: X = -scale * y + e, Y = scale * x + f
-            val xA = -scale * y1 + e
-            val xB = -scale * y2 + e
-            val yA = scale * x1 + f
-            val yB = scale * x2 + f
-
-            val minX = Math.min(xA, xB)
-            val maxX = Math.max(xA, xB)
-            val minY = Math.min(yA, yB)
-            val maxY = Math.max(yA, yB)
+            val xA = tx + destW - scale * vyMin
+            val xB = tx + destW - scale * vyMax
+            val yA = ty + scale * vxMin
+            val yB = ty + scale * vxMax
 
             return PDRectangle().apply {
-                lowerLeftX = minX
-                lowerLeftY = minY
-                upperRightX = maxX
-                upperRightY = maxY
+                lowerLeftX = Math.min(xA, xB)
+                lowerLeftY = Math.min(yA, yB)
+                upperRightX = Math.max(xA, xB)
+                upperRightY = Math.max(yA, yB)
             }
         } else {
-            // Standard fitting without rotation matching Matrix(s, 0f, 0f, s, tx, ty)
-            val scale = Math.min(slotWidth / srcW, slotHeight / srcH)
+            val scale = Math.min(slotWidth / visualW, slotHeight / visualH)
 
-            val destW = srcW * scale
-            val destH = srcH * scale
+            val destW = visualW * scale
+            val destH = visualH * scale
 
             val spareW = (slotWidth - destW).coerceAtLeast(0f)
             val offsetRatio = if (cols > 1) {
@@ -303,13 +324,13 @@ object PdfLinkEngine {
                 0.5f
             }
 
-            val tx = slotLeft + spareW * offsetRatio - cropBox.lowerLeftX * scale
-            val ty = slotBottom + (slotHeight - destH) / 2f - cropBox.lowerLeftY * scale
+            val tx = slotLeft + spareW * offsetRatio
+            val ty = slotBottom + (slotHeight - destH) / 2f
 
-            val minX = x1 * scale + tx
-            val maxX = x2 * scale + tx
-            val minY = y1 * scale + ty
-            val maxY = y2 * scale + ty
+            val minX = tx + vxMin * scale
+            val maxX = tx + vxMax * scale
+            val minY = ty + vyMin * scale
+            val maxY = ty + vyMax * scale
 
             return PDRectangle().apply {
                 lowerLeftX = minX

@@ -64,9 +64,12 @@ object PdfMerger {
             if (pageCount == 0) return
 
             // If auto-crop is enabled or presentation mode forced, detect & trim letterbox margins
-            if (autoTrimSlideBorders || isPresentationSmart) {
+            val detectedSlideRatio = if (autoTrimSlideBorders || isPresentationSmart) {
                 PdfContentTrimmer.trimDocumentSlides(srcDoc, forceSlideMode = isPresentationSmart)
+            } else {
+                null
             }
+            val isSlideMode = isPresentationSmart || (detectedSlideRatio != null)
 
             // If text contrast enhancement is enabled, boost text & formulas directly in vector stream
             if (addTextContrast) {
@@ -135,7 +138,8 @@ object PdfMerger {
                             layout = layout,
                             col = col,
                             cols = cols,
-                            spaceDistributionMode = spaceDistributionMode
+                            spaceDistributionMode = spaceDistributionMode,
+                            isPresentationSmart = isSlideMode
                         )
 
                         // Transfer and transform hyperlinks with exact N-up coordinates if enabled
@@ -153,7 +157,8 @@ object PdfMerger {
                                 layout = layout,
                                 col = col,
                                 cols = cols,
-                                spaceDistributionMode = spaceDistributionMode
+                                spaceDistributionMode = spaceDistributionMode,
+                                isPresentationSmart = isSlideMode
                             )
                         }
 
@@ -232,20 +237,16 @@ object PdfMerger {
 
         // Determine input slide aspect ratio from page 0
         val firstPage = srcDoc.getPage(0)
-        val cropBox = firstPage.cropBox ?: firstPage.mediaBox
-        val srcW = cropBox.width
-        val srcH = cropBox.height
+        val cropBox = firstPage.cropBox ?: firstPage.mediaBox ?: PDRectangle.A4
+        val pageRot = ((firstPage.rotation % 360) + 360) % 360
+        val isRot90or270 = (pageRot == 90 || pageRot == 270)
+        val srcW = if (isRot90or270) cropBox.height else cropBox.width
+        val srcH = if (isRot90or270) cropBox.width else cropBox.height
         if (srcW <= 0f || srcH <= 0f) {
             return if (layout.landscape) PDRectangle(a4Long, a4Short) else PDRectangle(a4Short, a4Long)
         }
 
-        val srcIsLandscape = srcW > srcH
-        val targetIsLandscape = layout.subPageLandscape
-        val needsRotation = (srcIsLandscape != targetIsLandscape)
-
-        val subW = if (needsRotation) srcH else srcW
-        val subH = if (needsRotation) srcW else srcH
-        val subRatio = subW / subH
+        val subRatio = srcW / srcH
 
         val cols = layout.cols
         val rows = layout.rows
@@ -363,39 +364,85 @@ object PdfMerger {
         layout: PrintLayout,
         col: Int = 0,
         cols: Int = 1,
-        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
+        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
+        isPresentationSmart: Boolean = false
     ) {
         val form = layerUtility.importPageAsForm(srcDoc, pageIndex)
         val srcPage = srcDoc.getPage(pageIndex)
-        val cropBox = srcPage.cropBox ?: srcPage.mediaBox
+        val cropBox = srcPage.cropBox ?: srcPage.mediaBox ?: PDRectangle.A4
 
-        val srcW = cropBox.width
-        val srcH = cropBox.height
+        val rawW = cropBox.width
+        val rawH = cropBox.height
+        val rawX = cropBox.lowerLeftX
+        val rawY = cropBox.lowerLeftY
 
-        val srcIsLandscape = srcW > srcH
-        val targetIsLandscape = layout.subPageLandscape
+        val pageRot = ((srcPage.rotation % 360) + 360) % 360
+        val isRot90or270 = (pageRot == 90 || pageRot == 270)
 
-        val needsRotation = (srcIsLandscape != targetIsLandscape)
+        val visualW = if (isRot90or270) rawH else rawW
+        val visualH = if (isRot90or270) rawW else rawH
 
-        // Normalize Form XObject so BBox is strictly [0, 0, srcW, srcH]
-        // and Matrix translates original page coordinates (-cropBox.lowerLeftX, -cropBox.lowerLeftY).
-        // This completely resolves PDFBox's LayerUtility double-offset bug on cropped pages!
-        form.bBox = PDRectangle(srcW, srcH)
-        val matrixArray = COSArray().apply {
-            add(COSFloat(1f))
-            add(COSFloat(0f))
-            add(COSFloat(0f))
-            add(COSFloat(1f))
-            add(COSFloat(-cropBox.lowerLeftX))
-            add(COSFloat(-cropBox.lowerLeftY))
+        // Normalize Form XObject so BBox is strictly [0, 0, visualW, visualH]
+        // and Form Matrix incorporates the page's intrinsic rotation (0, 90, 180, 270)
+        // so that the Form XObject is ALWAYS 100% upright and starts at (0, 0).
+        form.bBox = PDRectangle(visualW, visualH)
+        val matrixArray = COSArray()
+        when (pageRot) {
+            90 -> {
+                // 90° clockwise in PDF: [0, -1, 1, 0, -rawY, rawX + rawW]
+                matrixArray.add(COSFloat(0f))
+                matrixArray.add(COSFloat(-1f))
+                matrixArray.add(COSFloat(1f))
+                matrixArray.add(COSFloat(0f))
+                matrixArray.add(COSFloat(-rawY))
+                matrixArray.add(COSFloat(rawX + rawW))
+            }
+            180 -> {
+                // 180° rotation: [-1, 0, 0, -1, rawX + rawW, rawY + rawH]
+                matrixArray.add(COSFloat(-1f))
+                matrixArray.add(COSFloat(0f))
+                matrixArray.add(COSFloat(0f))
+                matrixArray.add(COSFloat(-1f))
+                matrixArray.add(COSFloat(rawX + rawW))
+                matrixArray.add(COSFloat(rawY + rawH))
+            }
+            270 -> {
+                // 270° clockwise (90° CCW): [0, 1, -1, 0, rawY + rawH, -rawX]
+                matrixArray.add(COSFloat(0f))
+                matrixArray.add(COSFloat(1f))
+                matrixArray.add(COSFloat(-1f))
+                matrixArray.add(COSFloat(0f))
+                matrixArray.add(COSFloat(rawY + rawH))
+                matrixArray.add(COSFloat(-rawX))
+            }
+            else -> {
+                // 0° rotation: [1, 0, 0, 1, -rawX, -rawY]
+                matrixArray.add(COSFloat(1f))
+                matrixArray.add(COSFloat(0f))
+                matrixArray.add(COSFloat(0f))
+                matrixArray.add(COSFloat(1f))
+                matrixArray.add(COSFloat(-rawX))
+                matrixArray.add(COSFloat(-rawY))
+            }
         }
         form.cosObject.setItem(COSName.MATRIX, matrixArray)
+
+        val srcIsLandscape = visualW > visualH
+        val targetIsLandscape = layout.subPageLandscape
+
+        // In Smart Mode (or when auto-crop slide presentation is active):
+        // NEVER autorotate content! Slides must remain right-side up.
+        val needsRotation = if (isPresentationSmart) {
+            false
+        } else {
+            (srcIsLandscape != targetIsLandscape)
+        }
 
         contentStream.saveGraphicsState()
 
         if (needsRotation) {
-            val rotatedW = srcH
-            val rotatedH = srcW
+            val rotatedW = visualH
+            val rotatedH = visualW
             val scale = Math.min(slotWidth / rotatedW, slotHeight / rotatedH)
 
             val destW = rotatedW * scale
@@ -415,10 +462,10 @@ object PdfMerger {
 
             contentStream.transform(Matrix(0f, scale, -scale, 0f, tx + destW, ty))
         } else {
-            val scale = Math.min(slotWidth / srcW, slotHeight / srcH)
+            val scale = Math.min(slotWidth / visualW, slotHeight / visualH)
 
-            val destW = srcW * scale
-            val destH = srcH * scale
+            val destW = visualW * scale
+            val destH = visualH * scale
 
             val spareW = (slotWidth - destW).coerceAtLeast(0f)
             val offsetRatio = if (cols > 1) {
