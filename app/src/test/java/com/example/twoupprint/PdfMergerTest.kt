@@ -530,4 +530,141 @@ class PdfMergerTest {
 
         outDoc.close()
     }
+
+    @Test
+    fun testSpaceDistributionModeEnum() {
+        assertEquals("center", SpaceDistributionMode.CENTER.id)
+        assertEquals("ratio_2_1", SpaceDistributionMode.RATIO_2_1.id)
+        assertEquals("max_middle", SpaceDistributionMode.MAX_MIDDLE.id)
+
+        assertEquals(0.0f, SpaceDistributionMode.CENTER.factor, 0.001f)
+        assertEquals(0.5f, SpaceDistributionMode.RATIO_2_1.factor, 0.001f)
+        assertEquals(1.0f, SpaceDistributionMode.MAX_MIDDLE.factor, 0.001f)
+
+        assertEquals(1.0f, SpaceDistributionMode.CENTER.gutterMultiplier, 0.001f)
+        assertEquals(1.5f, SpaceDistributionMode.RATIO_2_1.gutterMultiplier, 0.001f)
+        assertEquals(2.0f, SpaceDistributionMode.MAX_MIDDLE.gutterMultiplier, 0.001f)
+
+        assertEquals(SpaceDistributionMode.CENTER, SpaceDistributionMode.fromId("center"))
+        assertEquals(SpaceDistributionMode.RATIO_2_1, SpaceDistributionMode.fromId("ratio_2_1"))
+        assertEquals(SpaceDistributionMode.MAX_MIDDLE, SpaceDistributionMode.fromId("max_middle"))
+        assertEquals(SpaceDistributionMode.CENTER, SpaceDistributionMode.fromId("unknown"))
+    }
+
+    @Test
+    fun testMergeNUp_AllSpaceDistributionModes() {
+        val srcBytes = createTestPresentation(2, 960f, 540f)
+        val layout = LayoutRegistry.builtInLayouts.first { it.printerId == "nup_2x1" }
+
+        for (mode in SpaceDistributionMode.values()) {
+            val outStream = ByteArrayOutputStream()
+            PdfMerger.mergeNUp(
+                sourcePdfStream = ByteArrayInputStream(srcBytes),
+                outputStream = outStream,
+                layout = layout,
+                addTextContrast = false,
+                enableLinks = false,
+                bestFit = false,
+                marginTopMm = 6,
+                marginBottomMm = 6,
+                marginLeftMm = 6,
+                marginRightMm = 6,
+                spaceDistributionMode = mode
+            )
+
+            val doc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+            assertEquals(1, doc.numberOfPages)
+            val page = doc.getPage(0)
+            assertEquals(PDRectangle.A4.height, page.mediaBox.width, 0.5f)
+            assertEquals(PDRectangle.A4.width, page.mediaBox.height, 0.5f)
+            doc.close()
+        }
+    }
+
+    @Test
+    fun testSpaceDistribution_AdaptiveBestFitGutterExpansion() {
+        // 16:9 slides in 2x1 grid
+        val srcBytes = createTestPresentation(2, 960f, 540f)
+        val layout = LayoutRegistry.builtInLayouts.first { it.printerId == "nup_2x1" }
+
+        val outCenter = ByteArrayOutputStream()
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(srcBytes),
+            outputStream = outCenter,
+            layout = layout,
+            bestFit = true,
+            marginTopMm = 10,
+            marginBottomMm = 10,
+            marginLeftMm = 10,
+            marginRightMm = 10,
+            spaceDistributionMode = SpaceDistributionMode.CENTER
+        )
+        val docCenter = PDDocument.load(ByteArrayInputStream(outCenter.toByteArray()))
+        val heightCenter = docCenter.getPage(0).mediaBox.height
+        docCenter.close()
+
+        val outMax = ByteArrayOutputStream()
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(srcBytes),
+            outputStream = outMax,
+            layout = layout,
+            bestFit = true,
+            marginTopMm = 10,
+            marginBottomMm = 10,
+            marginLeftMm = 10,
+            marginRightMm = 10,
+            spaceDistributionMode = SpaceDistributionMode.MAX_MIDDLE
+        )
+        val docMax = PDDocument.load(ByteArrayInputStream(outMax.toByteArray()))
+        val heightMax = docMax.getPage(0).mediaBox.height
+        docMax.close()
+
+        // Because MAX_MIDDLE expands gutterX (2.0x vs 1.0x), netW = printableW - (cols-1)*gutterX is smaller,
+        // so netH = netW / gridRatio is smaller, leading to a more compact adaptive height.
+        assertTrue("MAX_MIDDLE adaptive height ($heightMax) should be smaller than CENTER ($heightCenter)",
+            heightMax < heightCenter)
+    }
+
+    @Test
+    fun testSpaceDistribution_OffsetCalculations() {
+        val slotWidth = 400f
+        val destW = 300f
+        val spareW = slotWidth - destW // 100f
+        val cols = 2
+
+        // Verify Center mode
+        val centerFactor = SpaceDistributionMode.CENTER.factor // 0.0
+        val centerOffsetCol0 = 0.5f + (0f / (cols - 1) - 0.5f) * centerFactor
+        val centerOffsetCol1 = 0.5f + (1f / (cols - 1) - 0.5f) * centerFactor
+        assertEquals(0.5f, centerOffsetCol0, 0.001f)
+        assertEquals(0.5f, centerOffsetCol1, 0.001f)
+
+        // Verify 2:1 Middle mode
+        val ratioFactor = SpaceDistributionMode.RATIO_2_1.factor // 0.5
+        val ratioOffsetCol0 = 0.5f + (0f / (cols - 1) - 0.5f) * ratioFactor
+        val ratioOffsetCol1 = 0.5f + (1f / (cols - 1) - 0.5f) * ratioFactor
+        assertEquals(0.25f, ratioOffsetCol0, 0.001f)
+        assertEquals(0.75f, ratioOffsetCol1, 0.001f)
+
+        // Verify Max Middle mode (flush outer margins)
+        val maxFactor = SpaceDistributionMode.MAX_MIDDLE.factor // 1.0
+        val maxOffsetCol0 = 0.5f + (0f / (cols - 1) - 0.5f) * maxFactor
+        val maxOffsetCol1 = 0.5f + (1f / (cols - 1) - 0.5f) * maxFactor
+        assertEquals(0.0f, maxOffsetCol0, 0.001f)
+        assertEquals(1.0f, maxOffsetCol1, 0.001f)
+
+        // Calculate middle extra gap between column 0 and column 1
+        // Col 0 ends at: spareW * offsetCol0 + destW
+        // Col 1 starts at: slotWidth + gutter + spareW * offsetCol1
+        val middleGapCenter = spareW * (1f - centerOffsetCol0) + spareW * centerOffsetCol1
+        val middleGapRatio = spareW * (1f - ratioOffsetCol0) + spareW * ratioOffsetCol1
+        val middleGapMax = spareW * (1f - maxOffsetCol0) + spareW * maxOffsetCol1
+
+        assertEquals(100f, middleGapCenter, 0.001f) // 50 + 50 = 100
+        assertEquals(150f, middleGapRatio, 0.001f)  // 75 + 75 = 150
+        assertEquals(200f, middleGapMax, 0.001f)    // 100 + 100 = 200
+
+        assertTrue("2:1 middle gap ($middleGapRatio) > Center gap ($middleGapCenter)", middleGapRatio > middleGapCenter)
+        assertTrue("Max middle gap ($middleGapMax) > 2:1 gap ($middleGapRatio)", middleGapMax > middleGapRatio)
+    }
 }

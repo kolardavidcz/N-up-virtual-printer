@@ -50,6 +50,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnPresetAll0: MaterialButton
     private lateinit var btnPresetAll3: MaterialButton
     private lateinit var btnPresetHeaderSafe: MaterialButton
+    private lateinit var toggleGroupSpaceDistribution: com.google.android.material.button.MaterialButtonToggleGroup
+    private lateinit var spaceDistributionDescriptionText: TextView
     private var isUpdatingMarginUI: Boolean = false
     private lateinit var marginDescriptionText: TextView
     private lateinit var pathText: TextView
@@ -128,6 +130,21 @@ class MainActivity : AppCompatActivity() {
         btnPresetAll3 = findViewById(R.id.btnPresetAll3)
         btnPresetHeaderSafe = findViewById(R.id.btnPresetHeaderSafe)
         marginDescriptionText = findViewById(R.id.marginDescriptionText)
+        toggleGroupSpaceDistribution = findViewById(R.id.toggleGroupSpaceDistribution)
+        spaceDistributionDescriptionText = findViewById(R.id.spaceDistributionDescriptionText)
+
+        toggleGroupSpaceDistribution.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked && !isUpdatingMarginUI) {
+                val mode = when (checkedId) {
+                    R.id.btnSpaceCenter -> SpaceDistributionMode.CENTER
+                    R.id.btnSpace2to1 -> SpaceDistributionMode.RATIO_2_1
+                    R.id.btnSpaceMaxMiddle -> SpaceDistributionMode.MAX_MIDDLE
+                    else -> SpaceDistributionMode.CENTER
+                }
+                LayoutRegistry.setSpaceDistributionMode(this, mode)
+                refreshMarginsUI()
+            }
+        }
 
         // Auto-Crop Slide Letterbox Borders Switch Listener
         switchAutoCrop = findViewById(R.id.switchAutoCrop)
@@ -551,11 +568,13 @@ class MainActivity : AppCompatActivity() {
         val bottom = LayoutRegistry.getMarginBottomMm(this)
         val left = LayoutRegistry.getMarginLeftMm(this)
         val right = LayoutRegistry.getMarginRightMm(this)
-        updateMarginSelectionUI(top, bottom, left, right)
+        val mode = LayoutRegistry.getSpaceDistributionMode(this)
+        updateMarginSelectionUI(top, bottom, left, right, mode)
     }
 
-    private fun updateMarginSelectionUI(top: Int, bottom: Int, left: Int, right: Int) {
+    private fun updateMarginSelectionUI(top: Int, bottom: Int, left: Int, right: Int, mode: SpaceDistributionMode) {
         marginPreviewView.setMargins(top, bottom, left, right)
+        marginPreviewView.setSpaceDistributionMode(mode)
 
         isUpdatingMarginUI = true
         try {
@@ -583,11 +602,22 @@ class MainActivity : AppCompatActivity() {
                 6 -> toggleGroupMarginRight.check(R.id.btnRight6)
                 else -> toggleGroupMarginRight.clearChecked()
             }
+            when (mode) {
+                SpaceDistributionMode.CENTER -> toggleGroupSpaceDistribution.check(R.id.btnSpaceCenter)
+                SpaceDistributionMode.RATIO_2_1 -> toggleGroupSpaceDistribution.check(R.id.btnSpace2to1)
+                SpaceDistributionMode.MAX_MIDDLE -> toggleGroupSpaceDistribution.check(R.id.btnSpaceMaxMiddle)
+            }
         } finally {
             isUpdatingMarginUI = false
         }
 
         marginDescriptionText.text = "Top: ${top} mm • Bottom: ${bottom} mm • Left: ${left} mm • Right: ${right} mm"
+
+        spaceDistributionDescriptionText.text = when (mode) {
+            SpaceDistributionMode.CENTER -> "Center: Balanced 1:1 distribution across margins and middle"
+            SpaceDistributionMode.RATIO_2_1 -> "2:1 Middle: Extra space prioritized 2:1 into center gutter"
+            SpaceDistributionMode.MAX_MIDDLE -> "Max Middle: Slides flush to outer margins • 100% spare space in middle"
+        }
     }
 
     private fun openPrintSettings() {

@@ -69,6 +69,7 @@ class TwoUpPrintService : PrintService() {
         val marginBottomMm = LayoutRegistry.getMarginBottomMm(applicationContext)
         val marginLeftMm = LayoutRegistry.getMarginLeftMm(applicationContext)
         val marginRightMm = LayoutRegistry.getMarginRightMm(applicationContext)
+        val spaceDistributionMode = LayoutRegistry.getSpaceDistributionMode(applicationContext)
 
         val autoTrimEnabled = LayoutRegistry.isAutoTrimEnabled(applicationContext)
         val autoTrimSlideBorders = isSmart || autoTrimEnabled
@@ -102,7 +103,8 @@ class TwoUpPrintService : PrintService() {
                 marginLeftMm,
                 marginRightMm,
                 autoTrimSlideBorders,
-                isSmart
+                isSmart,
+                spaceDistributionMode
             )
             return
         }
@@ -131,7 +133,8 @@ class TwoUpPrintService : PrintService() {
             layout, fileName, addTextContrast, enableLinks,
             bestFit,
             marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
-            autoTrimSlideBorders, isSmart
+            autoTrimSlideBorders, isSmart,
+            spaceDistributionMode
         ).start()
     }
 

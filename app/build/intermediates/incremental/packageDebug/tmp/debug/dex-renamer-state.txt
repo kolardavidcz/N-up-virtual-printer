@@ -1,8 +1,8 @@
-#Sun Sep 27 17:37:49 CEST 2026
-base.0=C\:\\Users\\kolar\\Desktop\\TwoUpPrintv_v2\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
-base.1=C\:\\Users\\kolar\\Desktop\\TwoUpPrintv_v2\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
-base.2=C\:\\Users\\kolar\\Desktop\\TwoUpPrintv_v2\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\2\\classes.dex
-base.3=C\:\\Users\\kolar\\Desktop\\TwoUpPrintv_v2\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes2.dex
+#Tue Sep 29 14:05:38 CEST 2026
+base.0=C\:\\Users\\kolar\\Desktop\\windows_native_projects\\TwoUpPrintv_v2\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
+base.1=C\:\\Users\\kolar\\Desktop\\windows_native_projects\\TwoUpPrintv_v2\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
+base.2=C\:\\Users\\kolar\\Desktop\\windows_native_projects\\TwoUpPrintv_v2\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\2\\classes.dex
+base.3=C\:\\Users\\kolar\\Desktop\\windows_native_projects\\TwoUpPrintv_v2\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes2.dex
 path.0=classes.dex
 path.1=0/classes.dex
 path.2=2/classes.dex

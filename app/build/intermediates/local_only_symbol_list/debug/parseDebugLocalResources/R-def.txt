@@ -34,6 +34,9 @@ id btnRight0
 id btnRight3
 id btnRight6
 id btnSetLocation
+id btnSpace2to1
+id btnSpaceCenter
+id btnSpaceMaxMiddle
 id btnTop0
 id btnTop3
 id btnTop6
@@ -43,6 +46,7 @@ id marginDescriptionText
 id marginPreviewView
 id pathText
 id promptSwitch
+id spaceDistributionDescriptionText
 id switchAutoCrop
 id switchEnableLinks
 id switchTextContrast
@@ -50,6 +54,7 @@ id toggleGroupMarginBottom
 id toggleGroupMarginLeft
 id toggleGroupMarginRight
 id toggleGroupMarginTop
+id toggleGroupSpaceDistribution
 layout activity_main
 mipmap ic_launcher
 mipmap ic_launcher_round

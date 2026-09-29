@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.example.twoupprint.PdfMergerTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:32:59.263Z" hostname="SWIFT-5" time="0.578">
+<testsuite name="com.example.twoupprint.PdfMergerTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2026-09-29T12:04:25.292Z" hostname="SWIFT-5" time="0.312">
   <properties/>
-  <testcase name="testAutoTrim4x3SlideOnA4Portrait" classname="com.example.twoupprint.PdfMergerTest" time="0.267"/>
+  <testcase name="testAutoTrim4x3SlideOnA4Portrait" classname="com.example.twoupprint.PdfMergerTest" time="0.069"/>
+  <testcase name="testMergeNUp_AllSpaceDistributionModes" classname="com.example.twoupprint.PdfMergerTest" time="0.081"/>
   <testcase name="testAutoTrim16x9SlideOnA4Portrait" classname="com.example.twoupprint.PdfMergerTest" time="0.003"/>
-  <testcase name="testMarginsPreserveAspectRatio" classname="com.example.twoupprint.PdfMergerTest" time="0.086"/>
+  <testcase name="testMarginsPreserveAspectRatio" classname="com.example.twoupprint.PdfMergerTest" time="0.016"/>
+  <testcase name="testSpaceDistribution_AdaptiveBestFitGutterExpansion" classname="com.example.twoupprint.PdfMergerTest" time="0.032"/>
+  <testcase name="testSpaceDistribution_OffsetCalculations" classname="com.example.twoupprint.PdfMergerTest" time="0.001"/>
   <testcase name="testAutoTrim16x9SlideOnA4Landscape" classname="com.example.twoupprint.PdfMergerTest" time="0.002"/>
-  <testcase name="testForceSlideModeOnEmptyPage" classname="com.example.twoupprint.PdfMergerTest" time="0.002"/>
-  <testcase name="testDrawCroppedPageInSlot" classname="com.example.twoupprint.PdfMergerTest" time="0.031"/>
-  <testcase name="testBestFit16x9_4Up" classname="com.example.twoupprint.PdfMergerTest" time="0.021"/>
-  <testcase name="test2UpPortraitDocumentOnLandscapeA4WithMargins" classname="com.example.twoupprint.PdfMergerTest" time="0.046"/>
-  <testcase name="testFixedA4PortraitWhenBestFitDisabled" classname="com.example.twoupprint.PdfMergerTest" time="0.023"/>
-  <testcase name="testFixedA4WhenBestFitDisabled" classname="com.example.twoupprint.PdfMergerTest" time="0.019"/>
+  <testcase name="testForceSlideModeOnEmptyPage" classname="com.example.twoupprint.PdfMergerTest" time="0.001"/>
+  <testcase name="testDrawCroppedPageInSlot" classname="com.example.twoupprint.PdfMergerTest" time="0.014"/>
+  <testcase name="testBestFit16x9_4Up" classname="com.example.twoupprint.PdfMergerTest" time="0.011"/>
+  <testcase name="testSpaceDistributionModeEnum" classname="com.example.twoupprint.PdfMergerTest" time="0.001"/>
+  <testcase name="test2UpPortraitDocumentOnLandscapeA4WithMargins" classname="com.example.twoupprint.PdfMergerTest" time="0.009"/>
+  <testcase name="testFixedA4PortraitWhenBestFitDisabled" classname="com.example.twoupprint.PdfMergerTest" time="0.01"/>
+  <testcase name="testFixedA4WhenBestFitDisabled" classname="com.example.twoupprint.PdfMergerTest" time="0.022"/>
   <testcase name="testStandardTextDocumentUntouched" classname="com.example.twoupprint.PdfMergerTest" time="0.002"/>
-  <testcase name="testAutoTrimSlideOnA4Portrait_4UpMerge" classname="com.example.twoupprint.PdfMergerTest" time="0.031"/>
-  <testcase name="testAsymmetricMargins" classname="com.example.twoupprint.PdfMergerTest" time="0.018"/>
-  <testcase name="testNormalDocumentNotCroppedEvenInPresentationMode" classname="com.example.twoupprint.PdfMergerTest" time="0.003"/>
-  <testcase name="testBestFit4x3_4Up" classname="com.example.twoupprint.PdfMergerTest" time="0.016"/>
+  <testcase name="testAutoTrimSlideOnA4Portrait_4UpMerge" classname="com.example.twoupprint.PdfMergerTest" time="0.012"/>
+  <testcase name="testAsymmetricMargins" classname="com.example.twoupprint.PdfMergerTest" time="0.008"/>
+  <testcase name="testNormalDocumentNotCroppedEvenInPresentationMode" classname="com.example.twoupprint.PdfMergerTest" time="0.001"/>
+  <testcase name="testBestFit4x3_4Up" classname="com.example.twoupprint.PdfMergerTest" time="0.01"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

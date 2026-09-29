@@ -49,6 +49,7 @@ object LayoutRegistry {
     private const val KEY_ADD_TEXT_CONTRAST = "add_text_contrast"
     private const val KEY_COLOR_PROCESSING_MODE = "global_color_processing_mode"
     private const val KEY_BW_ALGORITHM = "global_bw_algorithm"
+    private const val KEY_SPACE_DISTRIBUTION_MODE = "space_distribution_mode"
 
     /**
      * Default configurations:
@@ -218,6 +219,19 @@ object LayoutRegistry {
 
     fun setMarginMm(context: Context, marginMm: Int) {
         setMargins(context, marginMm, marginMm, marginMm, marginMm)
+    }
+
+    // --- "Extra Space Distribution" setting (Center, 2:1 Middle, Max Middle) ---
+
+    fun getSpaceDistributionMode(context: Context): SpaceDistributionMode {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val id = prefs.getString(KEY_SPACE_DISTRIBUTION_MODE, SpaceDistributionMode.CENTER.id)
+        return SpaceDistributionMode.fromId(id)
+    }
+
+    fun setSpaceDistributionMode(context: Context, mode: SpaceDistributionMode) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_SPACE_DISTRIBUTION_MODE, mode.id).apply()
     }
 
     fun getColorMode(context: Context): ColorProcessingMode {

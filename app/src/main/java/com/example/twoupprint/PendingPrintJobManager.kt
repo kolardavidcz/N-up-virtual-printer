@@ -36,6 +36,7 @@ object PendingPrintJobManager {
     private var activeMarginRightMm: Int = 0
     private var activeAutoTrimSlideBorders: Boolean = true
     private var activeIsPresentationSmart: Boolean = false
+    private var activeSpaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
 
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val timeoutRunnable = Runnable {
@@ -60,7 +61,8 @@ object PendingPrintJobManager {
         marginLeftMm: Int = 0,
         marginRightMm: Int = 0,
         autoTrimSlideBorders: Boolean = true,
-        isPresentationSmart: Boolean = false
+        isPresentationSmart: Boolean = false,
+        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
     ) {
         // Cancel previous pending job if any
         cancelPendingJob(context)
@@ -78,6 +80,7 @@ object PendingPrintJobManager {
         activeMarginRightMm = marginRightMm
         activeAutoTrimSlideBorders = autoTrimSlideBorders
         activeIsPresentationSmart = isPresentationSmart
+        activeSpaceDistributionMode = spaceDistributionMode
 
         // Set 2 minute timeout
         timeoutHandler.postDelayed(timeoutRunnable, TIMEOUT_MS)
@@ -103,6 +106,7 @@ object PendingPrintJobManager {
         val marginRightMm = activeMarginRightMm
         val autoTrimSlideBorders = activeAutoTrimSlideBorders
         val isPresentationSmart = activeIsPresentationSmart
+        val spaceDistributionMode = activeSpaceDistributionMode
 
         activeJob = null
         activeFd = null
@@ -118,7 +122,8 @@ object PendingPrintJobManager {
                 layout, fileName, addTextContrast, enableLinks,
                 bestFit,
                 marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
-                autoTrimSlideBorders, isPresentationSmart
+                autoTrimSlideBorders, isPresentationSmart,
+                spaceDistributionMode
             ).start()
         } else {
             if (job.isStarted) {

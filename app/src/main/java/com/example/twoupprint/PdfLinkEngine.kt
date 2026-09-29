@@ -48,7 +48,10 @@ object PdfLinkEngine {
         slotBottom: Float,
         slotWidth: Float,
         slotHeight: Float,
-        layout: PrintLayout
+        layout: PrintLayout,
+        col: Int = 0,
+        cols: Int = 1,
+        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
     ) {
         val cropBox = srcPage.cropBox ?: srcPage.mediaBox ?: return
         val existingLinkRects = mutableListOf<PDRectangle>()
@@ -73,7 +76,10 @@ object PdfLinkEngine {
                         val transformedRect = transformRect(
                             srcRect, cropBox,
                             slotLeft, slotBottom, slotWidth, slotHeight,
-                            layout
+                            layout,
+                            col = col,
+                            cols = cols,
+                            spaceDistributionMode = spaceDistributionMode
                         )
 
                         val targetAction = annot.action
@@ -132,7 +138,10 @@ object PdfLinkEngine {
                 val transformedRect = transformRect(
                     srcRect, cropBox,
                     slotLeft, slotBottom, slotWidth, slotHeight,
-                    layout
+                    layout,
+                    col = col,
+                    cols = cols,
+                    spaceDistributionMode = spaceDistributionMode
                 )
 
                 val newLink = PDAnnotationLink().apply {
@@ -220,7 +229,10 @@ object PdfLinkEngine {
         slotBottom: Float,
         slotWidth: Float,
         slotHeight: Float,
-        layout: PrintLayout
+        layout: PrintLayout,
+        col: Int = 0,
+        cols: Int = 1,
+        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
     ): PDRectangle {
         val srcW = cropBox.width
         val srcH = cropBox.height
@@ -243,7 +255,16 @@ object PdfLinkEngine {
             val destW = rotatedW * scale
             val destH = rotatedH * scale
 
-            val tx = slotLeft + (slotWidth - destW) / 2f
+            val spareW = (slotWidth - destW).coerceAtLeast(0f)
+            val offsetRatio = if (cols > 1) {
+                val normCol = col.toFloat() / (cols - 1).toFloat()
+                val bias = (normCol - 0.5f) * spaceDistributionMode.factor
+                0.5f + bias
+            } else {
+                0.5f
+            }
+
+            val tx = slotLeft + spareW * offsetRatio
             val ty = slotBottom + (slotHeight - destH) / 2f
 
             val e = tx + destW + scale * cropBox.lowerLeftY
@@ -273,7 +294,16 @@ object PdfLinkEngine {
             val destW = srcW * scale
             val destH = srcH * scale
 
-            val tx = slotLeft + (slotWidth - destW) / 2f - cropBox.lowerLeftX * scale
+            val spareW = (slotWidth - destW).coerceAtLeast(0f)
+            val offsetRatio = if (cols > 1) {
+                val normCol = col.toFloat() / (cols - 1).toFloat()
+                val bias = (normCol - 0.5f) * spaceDistributionMode.factor
+                0.5f + bias
+            } else {
+                0.5f
+            }
+
+            val tx = slotLeft + spareW * offsetRatio - cropBox.lowerLeftX * scale
             val ty = slotBottom + (slotHeight - destH) / 2f - cropBox.lowerLeftY * scale
 
             val minX = x1 * scale + tx

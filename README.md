@@ -1,6 +1,6 @@
 # N-Up Print for Android (Virtual Printer Service)
 
-[![Release](https://img.shields.io/badge/release-v2.0.0-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v2.0.0)
+[![Release](https://img.shields.io/badge/release-v2.1.0-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v2.1.0)
 [![API](https://img.shields.io/badge/API-26%2B-green.svg)](https://android-arsenal.com/api?level=26)
 [![License](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Samsung%20One%20UI-3DDC84.svg)](https://developer.android.com/about/versions/oreo)
@@ -13,8 +13,8 @@ Unlike standard print services that rasterize documents into low-resolution imag
 
 ## 📥 Download APK
 
-- **Latest Release (v2.0.0)**: [Download N-Up Print v2.0.0 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v2.0.0/nup-print-v2.0.0.apk)
-- **Local Mirror**: [`releases/nup-print-v2.0.0.apk`](releases/nup-print-v2.0.0.apk)
+- **Latest Release (v2.1.0)**: [Download N-Up Print v2.1.0 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v2.1.0/nup-print-v2.1.0.apk)
+- **Local Mirror**: [`releases/nup-print-v2.1.0.apk`](releases/nup-print-v2.1.0.apk)
 
 ---
 
@@ -29,6 +29,10 @@ Unlike standard print services that rasterize documents into low-resolution imag
 ## ✨ Features & Capabilities
 
 - 📄 **True Vector PDF N-Up Merging**: Combines 2, 4, 6, 8, or arbitrary N-up pages onto a single sheet without rasterizing to bitmaps. Text is 100% selectable and vector paths remain sharp.
+- 📐 **Middle Space Distribution (Center, 2:1 Middle, Max Middle)**: Solves the issue where adding margins or printing scaled slides creates excessive outer white space. Users can choose:
+  - **Center**: Balanced 1:1 distribution across margins and internal gutter.
+  - **2:1 Middle**: 2:1 ratio prioritizing the middle gutter for handwritten annotations and binding.
+  - **Max Middle**: Slides flush to outer margins, pooling 100% of spare horizontal space into the center gutter for placing images, diagrams, and lecture notes.
 - 📑 **"Presentation Smart" Mode & Standard A4 Portrait Default**: Standard printing defaults naturally to **ISO A4 Portrait**. Selecting **"Presentation Smart"** in the Samsung / Android Print Spooler dialog automatically formats slides in Landscape on an A4 sheet, regardless of the spooler's orientation toggle setting.
 - 📏 **Visual Page & Slot Margins (Per Side: Top, Bottom, Left, Right)**: Interactive per-side margin spacing arranged around a live visual box-model preview card in the app. Protects slide headers, footers, binding edges, and page numbers from clipping.
 - 🔗 **Clickable Hyperlinks & Auto-URL Detection**: Preserves existing PDF hyperlinks and auto-detects plain text URLs with exact transformed bounding boxes and balanced punctuation trimming.

@@ -39,7 +39,8 @@ class PrintJobHandler(
     private val marginLeftMm: Int = 0,
     private val marginRightMm: Int = 0,
     private val autoTrimSlideBorders: Boolean = true,
-    private val isPresentationSmart: Boolean = false
+    private val isPresentationSmart: Boolean = false,
+    private val spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
 ) : Thread("NUpPrintJob") {
 
     companion object {
@@ -98,7 +99,8 @@ class PrintJobHandler(
                         PdfMerger.mergeNUp(
                             input, output, layout, addTextContrast, enableLinks, bestFit,
                             marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
-                            autoTrimSlideBorders, isPresentationSmart
+                            autoTrimSlideBorders, isPresentationSmart,
+                            spaceDistributionMode
                         ) { current, total ->
                             updateProgressNotification(current, total, false)
                         }
@@ -142,7 +144,8 @@ class PrintJobHandler(
                     PdfMerger.mergeNUp(
                         input, output, layout, addTextContrast, enableLinks, bestFit,
                         marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
-                        autoTrimSlideBorders, isPresentationSmart
+                        autoTrimSlideBorders, isPresentationSmart,
+                        spaceDistributionMode
                     ) { current, total ->
                         updateProgressNotification(current, total, false)
                     }

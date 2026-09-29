@@ -3109,6 +3109,9 @@ id btnRight0
 id btnRight3
 id btnRight6
 id btnSetLocation
+id btnSpace2to1
+id btnSpaceCenter
+id btnSpaceMaxMiddle
 id btnTop0
 id btnTop3
 id btnTop6
@@ -3395,6 +3398,7 @@ id snackbar_action
 id snackbar_text
 id snap
 id snapMargins
+id spaceDistributionDescriptionText
 id spacer
 id special_effects_controller_view_tag
 id spline
@@ -3458,6 +3462,7 @@ id toggleGroupMarginBottom
 id toggleGroupMarginLeft
 id toggleGroupMarginRight
 id toggleGroupMarginTop
+id toggleGroupSpaceDistribution
 id top
 id topPanel
 id touch_outside

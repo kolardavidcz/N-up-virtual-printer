@@ -535,6 +535,76 @@
                             android:textColor="#D0BCFF"
                             android:textSize="11sp" />
 
+                        <!-- EXTRA SPACE DISTRIBUTION (CENTER / 2:1 / MAX MIDDLE) -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="4dp"
+                                android:text="EXTRA SPACE DISTRIBUTION"
+                                android:textColor="#D0BCFF"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+
+                            <com.google.android.material.button.MaterialButtonToggleGroup
+                                android:id="@+id/toggleGroupSpaceDistribution"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:singleSelection="true">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnSpaceCenter"
+                                    style="?attr/materialButtonOutlinedStyle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="28dp"
+                                    android:layout_weight="1"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:padding="0dp"
+                                    android:text="Center"
+                                    android:textSize="10sp" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnSpace2to1"
+                                    style="?attr/materialButtonOutlinedStyle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="28dp"
+                                    android:layout_weight="1"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:padding="0dp"
+                                    android:text="2:1 Middle"
+                                    android:textSize="10sp" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnSpaceMaxMiddle"
+                                    style="?attr/materialButtonOutlinedStyle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="28dp"
+                                    android:layout_weight="1"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:padding="0dp"
+                                    android:text="Max Middle"
+                                    android:textSize="10sp" />
+                            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                            <TextView
+                                android:id="@+id/spaceDistributionDescriptionText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Balanced 1:1 distribution across margins and middle"
+                                android:textColor="#CAC4D0"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+
                     </LinearLayout>
 
                     <View

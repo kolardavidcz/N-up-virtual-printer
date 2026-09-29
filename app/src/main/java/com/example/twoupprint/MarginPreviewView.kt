@@ -23,6 +23,7 @@ class MarginPreviewView @JvmOverloads constructor(
     private var marginBottomMm: Int = 0
     private var marginLeftMm: Int = 0
     private var marginRightMm: Int = 0
+    private var spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
 
     private val sheetPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.parseColor("#2D2B33")
@@ -76,6 +77,13 @@ class MarginPreviewView @JvmOverloads constructor(
         setMargins(mm, mm, mm, mm)
     }
 
+    fun setSpaceDistributionMode(mode: SpaceDistributionMode) {
+        if (spaceDistributionMode != mode) {
+            spaceDistributionMode = mode
+            invalidate()
+        }
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
@@ -113,8 +121,9 @@ class MarginPreviewView @JvmOverloads constructor(
         val vLeft = mmToVisualPx(marginLeftMm)
         val vRight = mmToVisualPx(marginRightMm)
 
-        // Internal gutters
-        val vGutterX = ((vLeft + vRight) / 2f).coerceAtLeast(1.5f * density)
+        // Internal gutters (adjusted by space distribution mode)
+        val baseGutterX = ((vLeft + vRight) / 2f).coerceAtLeast(1.5f * density)
+        val vGutterX = (baseGutterX * spaceDistributionMode.gutterMultiplier).coerceAtLeast(1.5f * density)
         val vGutterY = ((vTop + vBottom) / 2f).coerceAtLeast(1.5f * density)
 
         val printableW = (sheetW - (vLeft + vRight)).coerceAtLeast(20f)
@@ -148,11 +157,16 @@ class MarginPreviewView @JvmOverloads constructor(
                 canvas.drawRoundRect(slotRect, slotCorner, slotCorner, slotBorderPaint)
 
                 // Mini content lines inside each slot for realistic slide preview
+                // Shifted outward when spaceDistributionMode favors middle space
+                val normCol = if (cols > 1) c.toFloat() / (cols - 1).toFloat() else 0.5f
+                val shiftBias = (normCol - 0.5f) * spaceDistributionMode.factor
+                val lineShiftX = (slotW * 0.14f) * (shiftBias * 2f)
+
                 val lineInsetX = slotW * 0.2f
                 val lineStartY = sTop + slotH * 0.35f
                 val lineSpacing = slotH * 0.22f
-                canvas.drawLine(sLeft + lineInsetX, lineStartY, sLeft + slotW - lineInsetX, lineStartY, miniLinePaint)
-                canvas.drawLine(sLeft + lineInsetX, lineStartY + lineSpacing, sLeft + slotW * 0.65f, lineStartY + lineSpacing, miniLinePaint)
+                canvas.drawLine(sLeft + lineInsetX + lineShiftX, lineStartY, sLeft + slotW - lineInsetX + lineShiftX, lineStartY, miniLinePaint)
+                canvas.drawLine(sLeft + lineInsetX + lineShiftX, lineStartY + lineSpacing, sLeft + slotW * 0.65f + lineShiftX, lineStartY + lineSpacing, miniLinePaint)
             }
         }
     }

@@ -52,6 +52,7 @@ object PdfMerger {
         marginRightMm: Int = 0,
         autoTrimSlideBorders: Boolean = true,
         isPresentationSmart: Boolean = false,
+        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         val srcDoc = PDDocument.load(sourcePdfStream)
@@ -85,7 +86,8 @@ object PdfMerger {
             val marginLeftPt = marginLeftMm * mmToPt
             val marginRightPt = marginRightMm * mmToPt
 
-            val gutterX = ((marginLeftPt + marginRightPt) / 2f).coerceAtLeast(0f)
+            val baseGutterX = ((marginLeftPt + marginRightPt) / 2f).coerceAtLeast(0f)
+            val gutterX = (baseGutterX * spaceDistributionMode.gutterMultiplier).coerceAtLeast(0f)
             val gutterY = ((marginTopPt + marginBottomPt) / 2f).coerceAtLeast(0f)
 
             // Sheet dimensions for output (adaptive Best Fit or fixed A4)
@@ -130,7 +132,10 @@ object PdfMerger {
                             srcDoc, layerUtility, contentStream, pageIdx,
                             slotLeft = slotLeft, slotBottom = slotBottom,
                             slotWidth = slotW, slotHeight = slotH,
-                            layout = layout
+                            layout = layout,
+                            col = col,
+                            cols = cols,
+                            spaceDistributionMode = spaceDistributionMode
                         )
 
                         // Transfer and transform hyperlinks with exact N-up coordinates if enabled
@@ -145,7 +150,10 @@ object PdfMerger {
                                 slotBottom = slotBottom,
                                 slotWidth = slotW,
                                 slotHeight = slotH,
-                                layout = layout
+                                layout = layout,
+                                col = col,
+                                cols = cols,
+                                spaceDistributionMode = spaceDistributionMode
                             )
                         }
 
@@ -177,6 +185,7 @@ object PdfMerger {
         marginMm: Int = 0,
         autoTrimSlideBorders: Boolean = true,
         isPresentationSmart: Boolean = false,
+        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         mergeNUp(
@@ -188,6 +197,7 @@ object PdfMerger {
             marginRightMm = marginMm,
             autoTrimSlideBorders = autoTrimSlideBorders,
             isPresentationSmart = isPresentationSmart,
+            spaceDistributionMode = spaceDistributionMode,
             onProgress = onProgress
         )
     }
@@ -284,6 +294,7 @@ object PdfMerger {
         marginRightMm: Int = 0,
         autoTrimSlideBorders: Boolean = true,
         isPresentationSmart: Boolean = false,
+        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         sourcePdfFile.inputStream().use { input ->
@@ -292,6 +303,7 @@ object PdfMerger {
                     input, output, layout, addTextContrast, enableLinks, bestFit,
                     marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
                     autoTrimSlideBorders, isPresentationSmart,
+                    spaceDistributionMode,
                     onProgress
                 )
             }
@@ -311,6 +323,7 @@ object PdfMerger {
         marginMm: Int = 0,
         autoTrimSlideBorders: Boolean = true,
         isPresentationSmart: Boolean = false,
+        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         mergeNUp(
@@ -322,6 +335,7 @@ object PdfMerger {
             marginRightMm = marginMm,
             autoTrimSlideBorders = autoTrimSlideBorders,
             isPresentationSmart = isPresentationSmart,
+            spaceDistributionMode = spaceDistributionMode,
             onProgress = onProgress
         )
     }
@@ -346,7 +360,10 @@ object PdfMerger {
         slotBottom: Float,
         slotWidth: Float,
         slotHeight: Float,
-        layout: PrintLayout
+        layout: PrintLayout,
+        col: Int = 0,
+        cols: Int = 1,
+        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
     ) {
         val form = layerUtility.importPageAsForm(srcDoc, pageIndex)
         val srcPage = srcDoc.getPage(pageIndex)
@@ -384,7 +401,16 @@ object PdfMerger {
             val destW = rotatedW * scale
             val destH = rotatedH * scale
 
-            val tx = slotLeft + (slotWidth - destW) / 2f
+            val spareW = (slotWidth - destW).coerceAtLeast(0f)
+            val offsetRatio = if (cols > 1) {
+                val normCol = col.toFloat() / (cols - 1).toFloat()
+                val bias = (normCol - 0.5f) * spaceDistributionMode.factor
+                0.5f + bias
+            } else {
+                0.5f
+            }
+
+            val tx = slotLeft + spareW * offsetRatio
             val ty = slotBottom + (slotHeight - destH) / 2f
 
             contentStream.transform(Matrix(0f, scale, -scale, 0f, tx + destW, ty))
@@ -394,7 +420,16 @@ object PdfMerger {
             val destW = srcW * scale
             val destH = srcH * scale
 
-            val tx = slotLeft + (slotWidth - destW) / 2f
+            val spareW = (slotWidth - destW).coerceAtLeast(0f)
+            val offsetRatio = if (cols > 1) {
+                val normCol = col.toFloat() / (cols - 1).toFloat()
+                val bias = (normCol - 0.5f) * spaceDistributionMode.factor
+                0.5f + bias
+            } else {
+                0.5f
+            }
+
+            val tx = slotLeft + spareW * offsetRatio
             val ty = slotBottom + (slotHeight - destH) / 2f
 
             contentStream.transform(Matrix(scale, 0f, 0f, scale, tx, ty))
