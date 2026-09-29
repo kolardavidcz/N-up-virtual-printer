@@ -17,6 +17,10 @@ This guide is written 100% for AI coding agents and developers working on the **
    - `FEATURE_ADDED` (Minor): New feature, new layout option, new toggle, new capability (e.g. `2.1.0`).
    - `BUG_FIX` (Patch): Bug fixes, edge case corrections, minor layout adjustments (e.g. `2.1.1`).
 
+3. **Workspace Path & Desktop Cleanliness**:
+   - The authoritative project location is: `C:\Users\kolar\Desktop\windows_native_projects\TwoUpPrintv_v2`.
+   - **NEVER** create junctions, clones, scratch directories, or files directly on the Windows Desktop (`C:\Users\kolar\Desktop\`). All windows-native projects must stay cleanly contained in `windows_native_projects\`.
+
 ---
 
 ## 2. Architecture & Code Map
