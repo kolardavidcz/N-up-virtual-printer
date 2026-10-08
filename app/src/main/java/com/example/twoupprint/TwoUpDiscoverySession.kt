@@ -25,20 +25,25 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
 
         // 1. "Smart" paper size (Default):
         // Automatically optimizes presentation slides, margins, and placement onto an A4 sheet.
-        // Paper size defaults to Portrait (8268 x 11693 mils) so Samsung print dialog defaults to Portrait.
-        val sizeSmart = PrintAttributes.MediaSize(
-            "MEDIA_SMART",
-            "Smart",
-            8268,
-            11693
-        )
-
-        // 2. Standard ISO A4 paper size (single entry to prevent duplicate "ISO A4" in print dialog)
-        val sizeA4 = PrintAttributes.MediaSize.ISO_A4.asPortrait()
+        // Orientation matches the in-app layout configuration (Landscape for 2x1/2x2, Portrait for 1x2/2x3/2x4/notewise).
+        val sizeSmart = if (mode.landscape) {
+            PrintAttributes.MediaSize(
+                "MEDIA_SMART",
+                "Smart",
+                11693,
+                8268
+            )
+        } else {
+            PrintAttributes.MediaSize(
+                "MEDIA_SMART",
+                "Smart",
+                8268,
+                11693
+            )
+        }
 
         val capabilities = PrinterCapabilitiesInfo.Builder(id)
-            .addMediaSize(sizeSmart, true)               // Default: "Smart" (Portrait default)
-            .addMediaSize(sizeA4, false)                 // Standard ISO A4
+            .addMediaSize(sizeSmart, true)               // Default: "Smart" (honors layout orientation)
             .addResolution(
                 PrintAttributes.Resolution("nup_res", "300dpi", 300, 300),
                 true

@@ -1,6 +1,6 @@
 # N-Up Print for Android (Virtual Printer Service)
 
-[![Release](https://img.shields.io/badge/release-v2.2.0-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v2.2.0)
+[![Release](https://img.shields.io/badge/release-v2.2.1-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v2.2.1)
 [![API](https://img.shields.io/badge/API-26%2B-green.svg)](https://android-arsenal.com/api?level=26)
 [![License](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Samsung%20One%20UI-3DDC84.svg)](https://developer.android.com/about/versions/oreo)
@@ -13,8 +13,8 @@ Unlike standard print services that rasterize documents into low-resolution imag
 
 ## 📥 Download APK
 
-- **Latest Release (v2.2.0)**: [Download N-Up Print v2.2.0 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v2.2.0/nup-print-v2.2.0.apk)
-- **Local Mirror**: [`releases/nup-print-v2.2.0.apk`](releases/nup-print-v2.2.0.apk)
+- **Latest Release (v2.2.1)**: [Download N-Up Print v2.2.1 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v2.2.1/nup-print-v2.2.1.apk)
+- **Local Mirror**: [`releases/nup-print-v2.2.1.apk`](releases/nup-print-v2.2.1.apk)
 
 ---
 

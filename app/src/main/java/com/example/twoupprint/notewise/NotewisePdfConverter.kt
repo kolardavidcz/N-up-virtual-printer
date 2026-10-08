@@ -250,8 +250,9 @@ object NotewisePdfConverter {
             val rightP = p.maxX * scaleX
             val bottomP = p.maxY * scaleY
 
-            // Formula: notewise_font_size = max(8, round(pdf_font_pt * scale_y / 3.0))
-            val notewiseFontSize = maxOf(8, (p.dominantFontSize * scaleY / 3.0f).roundToInt())
+            // Formula: notewise_font_size = max(8, round(pdf_font_pt * scale_y / 3.0)) clamped to [8, 72]
+            val baseFontSize = if (p.dominantFontSize > 0f) p.dominantFontSize else 11.0f
+            val notewiseFontSize = (baseFontSize * scaleY / 3.0f).roundToInt().coerceIn(8, 72)
 
             NotewiseTextBlock(
                 text = p.text,

@@ -50,6 +50,7 @@ class NotewiseNotebookBuilder(
 ) {
 
     val docId: String = generateRandomId(24)
+    val rootPageId: String = generateRandomId(24)
     val pageIds = mutableListOf<String>()
     private val pagePayloads = mutableMapOf<String, ByteArray>()
     private val imageAssets = mutableMapOf<String, ByteArray>()
@@ -73,7 +74,6 @@ class NotewiseNotebookBuilder(
         pageIds.add(pageId)
 
         val elements = mutableListOf<PbNode>()
-        var elemIdx = 0
 
         // 1. Add Image Elements FIRST (background graphics beneath text)
         for (img in images) {
@@ -98,11 +98,9 @@ class NotewiseNotebookBuilder(
                 right = img.right,
                 bottom = img.bottom,
                 imgW = imgW,
-                imgH = imgH,
-                elementIdx = elemIdx
+                imgH = imgH
             )
             elements.add(imgElem)
-            elemIdx++
         }
 
         // 2. Add Text Elements SECOND (text stays cleanly visible and selectable on top)
@@ -119,22 +117,19 @@ class NotewiseNotebookBuilder(
                 right = rightP,
                 bottom = bottomP,
                 fontSize = tb.fontSize,
-                isBold = tb.isBold,
-                elementIdx = elemIdx
+                isBold = tb.isBold
             )
             elements.add(textElem)
-            elemIdx++
         }
 
-        // Construct full page message
+        // Construct full page message matching official Notewise wire schema
         val pageSettings = createPageSettings(canvasW, canvasH)
         val pageNodes = listOf(
             PbNode(1, 2, pageId.toByteArray(Charsets.UTF_8)),
             *elements.toTypedArray(),
             pageSettings,
             PbNode(7, 1, encodeDouble(1024.0)),
-            PbNode(9, 0, 1L),
-            PbNode(10, 0, 1L)
+            PbNode(11, 2, rootPageId.toByteArray(Charsets.UTF_8))
         )
 
         val serializedPage = pageNodes.map { it.serialize() }.reduce { acc, bytes -> acc + bytes }
@@ -148,6 +143,14 @@ class NotewiseNotebookBuilder(
      * Packages the entire notebook into a .notewise ZIP archive (DEFLATE).
      */
     fun buildArchive(outputStream: OutputStream) {
+        val effectiveRootId = pageIds.firstOrNull() ?: rootPageId
+        val rootMetaNode = PbNode(11, 2, listOf(
+            PbNode(1, 2, effectiveRootId.toByteArray(Charsets.UTF_8)),
+            PbNode(2, 2, title.toByteArray(Charsets.UTF_8)),
+            PbNode(3, 1, encodeDouble(1024.0)),
+            PbNode(5, 2, byteArrayOf())
+        ))
+
         val noteNodes = mutableListOf<PbNode>(
             PbNode(1, 2, docId.toByteArray(Charsets.UTF_8)),
             PbNode(2, 2, title.toByteArray(Charsets.UTF_8))
@@ -159,6 +162,7 @@ class NotewiseNotebookBuilder(
             noteNodes.add(PbNode(5, 2, iid.toByteArray(Charsets.UTF_8)))
         }
         noteNodes.add(PbNode(7, 0, 5L)) // Document type 5
+        noteNodes.add(rootMetaNode)
 
         val serializedNote = noteNodes.map { it.serialize() }.reduce { acc, bytes -> acc + bytes }
         val b64Note = encodeBase64Mime76(serializedNote)
@@ -197,10 +201,9 @@ class NotewiseNotebookBuilder(
         right: Float,
         bottom: Float,
         fontSize: Int,
-        isBold: Boolean,
-        elementIdx: Int
+        isBold: Boolean
     ): PbNode {
-        val elementId = "TXT_${generateRandomId(16)}"
+        val elementId = generateRandomId(32)
         val transform = listOf(
             makeFloatNode(1, 1.0f),
             makeFloatNode(3, 0.0f),
@@ -219,30 +222,36 @@ class NotewiseNotebookBuilder(
             makeFloatNode(2, 1.0f) // fully opaque alpha
         )
         val fontInfo = listOf(
-            PbNode(1, 0, fontSize.toLong())
+            PbNode(1, 0, fontSize.toLong()),
+            PbNode(2, 2, "gf-roboto".toByteArray(Charsets.UTF_8)),
+            PbNode(3, 2, "Roboto".toByteArray(Charsets.UTF_8))
         )
         val richText = listOf(
             PbNode(1, 2, text.toByteArray(Charsets.UTF_8)),
-            PbNode(2, 0, if (isBold) 1L else 0L),
+            PbNode(2, 0, if (isBold) 7L else 6L), // Style enum: 6 = normal, 7 = bold
             PbNode(3, 2, textColor),
             PbNode(6, 2, fontInfo)
         )
         val content = listOf(
             PbNode(1, 2, richText),
-            PbNode(2, 0, 6L), // alignment: left
+            PbNode(2, 0, 1L), // alignment: left = 1
             PbNode(3, 0, 1L)
         )
         val textData = listOf(
             PbNode(7, 2, frame),
-            PbNode(9, 2, content)
+            PbNode(9, 2, content),
+            PbNode(13, 2, listOf(
+                makeFloatNode(1, left),
+                makeFloatNode(2, top)
+            )),
+            makeFloatNode(14, maxOf(10f, right - left))
         )
         val timestampMs = System.currentTimeMillis()
         val element = listOf(
             PbNode(1, 2, elementId.toByteArray(Charsets.UTF_8)),
             PbNode(2, 0, timestampMs),
             PbNode(3, 2, transform),
-            PbNode(8, 2, textData),
-            PbNode(10, 0, elementIdx.toLong())
+            PbNode(8, 2, textData)
         )
         return PbNode(4, 2, element)
     }
@@ -254,10 +263,9 @@ class NotewiseNotebookBuilder(
         right: Float,
         bottom: Float,
         imgW: Int,
-        imgH: Int,
-        elementIdx: Int
+        imgH: Int
     ): PbNode {
-        val elementId = "IMG_${generateRandomId(16)}"
+        val elementId = generateRandomId(32)
         val widthP = right - left
         val heightP = bottom - top
         val tfNode = listOf(
@@ -282,8 +290,7 @@ class NotewiseNotebookBuilder(
             PbNode(1, 2, elementId.toByteArray(Charsets.UTF_8)),
             PbNode(2, 0, System.currentTimeMillis()),
             PbNode(3, 2, tfNode),
-            PbNode(7, 2, imgRefNode),
-            PbNode(10, 0, elementIdx.toLong())
+            PbNode(7, 2, imgRefNode)
         )
         return PbNode(4, 2, element)
     }
@@ -301,8 +308,9 @@ class NotewiseNotebookBuilder(
         return PbNode(6, 2, listOf(
             PbNode(1, 2, dimMsg),
             PbNode(2, 2, colorMsg),
-            PbNode(7, 0, 7L), // Pattern 7 = blank grid
-            PbNode(8, 0, 1L)
+            PbNode(3, 2, byteArrayOf()), // Empty bytes
+            PbNode(7, 0, 5L),            // Pattern 5
+            PbNode(8, 0, 5L)             // Pattern style 5
         ))
     }
 

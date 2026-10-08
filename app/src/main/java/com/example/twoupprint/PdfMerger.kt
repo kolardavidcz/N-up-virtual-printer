@@ -63,13 +63,13 @@ object PdfMerger {
             val pageCount = srcDoc.numberOfPages
             if (pageCount == 0) return
 
-            // If auto-crop is enabled or presentation mode forced, detect & trim letterbox margins
+            // If auto-crop is enabled, detect & trim letterbox margins if slides are present (never force on regular docs)
             val detectedSlideRatio = if (autoTrimSlideBorders || isPresentationSmart) {
-                PdfContentTrimmer.trimDocumentSlides(srcDoc, forceSlideMode = isPresentationSmart)
+                PdfContentTrimmer.trimDocumentSlides(srcDoc, forceSlideMode = false)
             } else {
                 null
             }
-            val isSlideMode = isPresentationSmart || (detectedSlideRatio != null)
+            val isSlideMode = (detectedSlideRatio != null)
 
             // If text contrast enhancement is enabled, boost text & formulas directly in vector stream
             if (addTextContrast) {
@@ -430,13 +430,8 @@ object PdfMerger {
         val srcIsLandscape = visualW > visualH
         val targetIsLandscape = layout.subPageLandscape
 
-        // In Smart Mode (or when auto-crop slide presentation is active):
-        // NEVER autorotate content! Slides must remain right-side up.
-        val needsRotation = if (isPresentationSmart) {
-            false
-        } else {
-            (srcIsLandscape != targetIsLandscape)
-        }
+        // Content must ALWAYS remain upright in its grid slots. Never autorotate sideways or invert.
+        val needsRotation = false
 
         contentStream.saveGraphicsState()
 

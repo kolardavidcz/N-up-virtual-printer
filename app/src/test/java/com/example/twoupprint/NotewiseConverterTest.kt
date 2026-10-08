@@ -150,7 +150,7 @@ class NotewiseConverterTest {
             assertTrue("Page lines must be <= 76 chars", line.length <= 76)
         }
 
-        // Parse note protobuf
+        // Parse note protobuf and verify field 11 rootPageId linking
         val noteDecoded = Base64.getDecoder().decode(noteRaw.replace("\r", "").replace("\n", ""))
         val noteNodes = parseProtobuf(noteDecoded)
         assertNotNull(noteNodes)
@@ -159,21 +159,50 @@ class NotewiseConverterTest {
         val titleNode = noteNodes.find { it.fieldNumber == 2 }
         assertNotNull("Title must exist in note", titleNode)
         assertEquals("My Test Notebook", String(titleNode!!.value as ByteArray, Charsets.UTF_8))
+        val rootMetaNode = noteNodes.find { it.fieldNumber == 11 }
+        assertNotNull("Root metadata (field 11) must exist in note", rootMetaNode)
 
-        // Parse page protobuf and verify sequential element indexing in field 10
+        // Parse page protobuf and verify Roboto font, anchors, and root linking in field 11
         val pageDecoded = Base64.getDecoder().decode(pageRaw.replace("\r", "").replace("\n", ""))
         val pageNodes = parseProtobuf(pageDecoded)
-        val elementNodes = pageNodes.filter { it.fieldNumber == 4 }
+        val pageRootNode = pageNodes.find { it.fieldNumber == 11 }
+        assertNotNull("Page must contain rootPageId link in field 11", pageRootNode)
 
+        val elementNodes = pageNodes.filter { it.fieldNumber == 4 }
         // We have 1 image + 3 text elements = 4 elements total
         assertEquals(4, elementNodes.size)
 
-        for (i in elementNodes.indices) {
+        // Check text elements for Roboto font and field 13 / 14
+        val textElements = elementNodes.drop(1) // first is image
+        for (te in textElements) {
             @Suppress("UNCHECKED_CAST")
-            val elemSubNodes = elementNodes[i].value as List<PbNode>
-            val idxNode = elemSubNodes.find { it.fieldNumber == 10 }
-            assertNotNull("Element index field 10 must exist", idxNode)
-            assertEquals("Element index must be sequential ($i)", i.toLong(), idxNode!!.value as Long)
+            val subNodes = te.value as List<PbNode>
+            val textDataNode = subNodes.find { it.fieldNumber == 8 }
+            assertNotNull("TextData (field 8) must exist", textDataNode)
+            @Suppress("UNCHECKED_CAST")
+            val tdSub = textDataNode!!.value as List<PbNode>
+
+            // Field 13 (anchor) and Field 14 (width) must exist
+            val anchorNode = tdSub.find { it.fieldNumber == 13 }
+            val widthNode = tdSub.find { it.fieldNumber == 14 }
+            assertNotNull("Field 13 (anchor) must exist", anchorNode)
+            assertNotNull("Field 14 (width) must exist", widthNode)
+
+            // Content -> RichText -> FontInfo must have Roboto
+            val contentNode = tdSub.find { it.fieldNumber == 9 }
+            @Suppress("UNCHECKED_CAST")
+            val contentSub = contentNode!!.value as List<PbNode>
+            val richTextNode = contentSub.find { it.fieldNumber == 1 }
+            @Suppress("UNCHECKED_CAST")
+            val richTextSub = richTextNode!!.value as List<PbNode>
+            val fontInfoNode = richTextSub.find { it.fieldNumber == 6 }
+            @Suppress("UNCHECKED_CAST")
+            val fontInfoSub = fontInfoNode!!.value as List<PbNode>
+
+            val fontIdNode = fontInfoSub.find { it.fieldNumber == 2 }
+            val fontFamNode = fontInfoSub.find { it.fieldNumber == 3 }
+            assertEquals("gf-roboto", String(fontIdNode!!.value as ByteArray, Charsets.UTF_8))
+            assertEquals("Roboto", String(fontFamNode!!.value as ByteArray, Charsets.UTF_8))
         }
     }
 
