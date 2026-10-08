@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var layoutCardsContainer: LinearLayout
     private lateinit var switchTextContrast: MaterialSwitch
     private lateinit var switchEnableLinks: MaterialSwitch
+    private lateinit var switchNotewiseExport: MaterialSwitch
     private lateinit var switchAutoCrop: MaterialSwitch
     private lateinit var marginPreviewView: MarginPreviewView
     private lateinit var toggleGroupMarginTop: com.google.android.material.button.MaterialButtonToggleGroup
@@ -118,6 +119,13 @@ class MainActivity : AppCompatActivity() {
         switchEnableLinks.isChecked = LayoutRegistry.isLinksEnabled(this)
         switchEnableLinks.setOnCheckedChangeListener { _, isChecked ->
             LayoutRegistry.setLinksEnabled(this, isChecked)
+        }
+
+        // Notewise Export Switch Listener
+        switchNotewiseExport = findViewById(R.id.switchNotewiseExport)
+        switchNotewiseExport.isChecked = LayoutRegistry.isNotewiseExportEnabled(this)
+        switchNotewiseExport.setOnCheckedChangeListener { _, isChecked ->
+            LayoutRegistry.setNotewiseExportEnabled(this, isChecked)
         }
 
         // Page & Slot Margins
@@ -282,9 +290,10 @@ class MainActivity : AppCompatActivity() {
             pathText.text = "Downloads/TwoUpPrint/ (default)"
         }
 
-        // Contrast, links, and margin states
+        // Contrast, links, notewise, and margin states
         switchTextContrast.isChecked = LayoutRegistry.isTextContrastEnabled(this)
         switchEnableLinks.isChecked = LayoutRegistry.isLinksEnabled(this)
+        switchNotewiseExport.isChecked = LayoutRegistry.isNotewiseExportEnabled(this)
         refreshMarginsUI()
 
         // Battery status

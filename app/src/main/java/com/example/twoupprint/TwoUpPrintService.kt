@@ -78,7 +78,15 @@ class TwoUpPrintService : PrintService() {
         // Extract website / page title from print job metadata if available
         val docName = extractCleanDocumentName(printJob)
 
-        val fileName = if (docName != null) {
+        val isNotewiseLayout = layout.printerId == "nup_notewise"
+        val fileName = if (isNotewiseLayout) {
+            if (docName != null) {
+                "$docName.notewise"
+            } else {
+                val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                "notewise_$stamp.notewise"
+            }
+        } else if (docName != null) {
             "${docName}_${layout.cols}x${layout.rows}.pdf"
         } else {
             val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
@@ -117,9 +125,10 @@ class TwoUpPrintService : PrintService() {
         if (savedDirUriStr != null) {
             try {
                 val dirUri = Uri.parse(savedDirUriStr)
+                val mimeType = if (isNotewiseLayout) "application/octet-stream" else "application/pdf"
                 val docUri = androidx.documentfile.provider.DocumentFile
                     .fromTreeUri(applicationContext, dirUri)
-                    ?.createFile("application/pdf", fileName)
+                    ?.createFile(mimeType, fileName)
                     ?.uri
 
                 destinationUri = docUri

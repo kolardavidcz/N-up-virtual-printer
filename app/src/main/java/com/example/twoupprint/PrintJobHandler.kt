@@ -16,13 +16,16 @@ import android.printservice.PrintJob
 import android.provider.MediaStore
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.example.twoupprint.notewise.NotewisePdfConverter
+import com.tom_roush.pdfbox.pdmodel.PDDocument
 import java.io.File
 import java.io.OutputStream
 
 /**
- * Runs off the main thread to process the PDF document.
- * Merges pages into a true vector PDF and streams
- * the result to Downloads/TwoUpPrint/ via MediaStore (Android 10+) or direct file I/O.
+ * Runs off the main thread to process print jobs:
+ * - Direct .notewise notebook export (when printerId == "nup_notewise")
+ * - N-up PDF merging with optional companion .notewise notebook export
+ * - Streams output to Downloads/TwoUpPrint/ via MediaStore (Android 10+) or SAF / direct file I/O.
  */
 class PrintJobHandler(
     private val context: Context,
@@ -68,33 +71,15 @@ class PrintJobHandler(
                 }
             }
 
-            val outStream: OutputStream
-            val resultUri: Uri
-            val displayLocation: String
+            val isNotewise = (layout.printerId == "nup_notewise")
+            val baseDocName = fileName.replace(Regex("(?i)\\.(notewise|pdf)$"), "")
 
-            if (destinationUri != null) {
-                // User provided a specific destination via SAF
-                outStream = context.contentResolver.openOutputStream(destinationUri)
-                    ?: throw IllegalStateException("Could not open destination stream")
-                resultUri = destinationUri
-                displayLocation = "Selected Location"
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // Android 10+: Use MediaStore to write to Downloads (no permissions needed)
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                    put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
-                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/TwoUpPrint")
-                    put(MediaStore.Downloads.IS_PENDING, 1)
-                }
-                val uri = context.contentResolver.insert(
-                    MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues
-                ) ?: throw IllegalStateException("Could not create MediaStore entry")
-                outStream = context.contentResolver.openOutputStream(uri)
-                    ?: throw IllegalStateException("Could not open MediaStore output stream")
-                resultUri = uri
-
-                // Mark as complete after writing
-                outStream.use { output ->
+            val writeOutput: (OutputStream) -> Unit = { output ->
+                if (isNotewise) {
+                    PDDocument.load(tempSource).use { doc ->
+                        NotewisePdfConverter.convert(doc, output, title = baseDocName)
+                    }
+                } else {
                     tempSource.inputStream().use { input ->
                         PdfMerger.mergeNUp(
                             input, output, layout, addTextContrast, enableLinks, bestFit,
@@ -106,22 +91,43 @@ class PrintJobHandler(
                         }
                     }
                 }
-                tempSource.delete()
+            }
+
+            val outStream: OutputStream
+            val resultUri: Uri
+            val displayLocation: String
+
+            if (destinationUri != null) {
+                // User provided a specific destination via SAF
+                outStream = context.contentResolver.openOutputStream(destinationUri)
+                    ?: throw IllegalStateException("Could not open destination stream")
+                resultUri = destinationUri
+                displayLocation = "Selected Location"
+
+                outStream.use { writeOutput(it) }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Android 10+: Use MediaStore to write to Downloads (no permissions needed)
+                val mimeType = if (isNotewise) "application/octet-stream" else "application/pdf"
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                    put(MediaStore.Downloads.MIME_TYPE, mimeType)
+                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/TwoUpPrint")
+                    put(MediaStore.Downloads.IS_PENDING, 1)
+                }
+                val uri = context.contentResolver.insert(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues
+                ) ?: throw IllegalStateException("Could not create MediaStore entry")
+                outStream = context.contentResolver.openOutputStream(uri)
+                    ?: throw IllegalStateException("Could not open MediaStore output stream")
+                resultUri = uri
+
+                outStream.use { writeOutput(it) }
 
                 val updateValues = ContentValues().apply {
                     put(MediaStore.Downloads.IS_PENDING, 0)
                 }
                 context.contentResolver.update(uri, updateValues, null, null)
                 displayLocation = "Downloads/TwoUpPrint/$fileName"
-
-                mainHandler.post {
-                    if (job.isStarted) {
-                        job.complete()
-                    }
-                }
-                showCompleteNotification(displayLocation, resultUri)
-                Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (addTextContrast=$addTextContrast, enableLinks=$enableLinks, bestFit=$bestFit, margins=T:$marginTopMm B:$marginBottomMm L:$marginLeftMm R:$marginRightMm, autoTrim=$autoTrimSlideBorders)")
-                return
             } else {
                 // Legacy: direct file I/O to Downloads
                 val dir = File(
@@ -137,20 +143,15 @@ class PrintJobHandler(
                     outputFile
                 )
                 displayLocation = "Downloads/TwoUpPrint/$fileName"
+
+                outStream.use { writeOutput(it) }
             }
 
-            outStream.use { output ->
-                tempSource.inputStream().use { input ->
-                    PdfMerger.mergeNUp(
-                        input, output, layout, addTextContrast, enableLinks, bestFit,
-                        marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
-                        autoTrimSlideBorders, isPresentationSmart,
-                        spaceDistributionMode
-                    ) { current, total ->
-                        updateProgressNotification(current, total, false)
-                    }
-                }
+            // If this was an N-up PDF job and the user enabled dual Notewise export, generate companion .notewise
+            if (!isNotewise && LayoutRegistry.isNotewiseExportEnabled(context)) {
+                exportCompanionNotewise(tempSource, baseDocName)
             }
+
             tempSource.delete()
 
             mainHandler.post {
@@ -160,16 +161,82 @@ class PrintJobHandler(
             }
 
             showCompleteNotification(displayLocation, resultUri)
-            Log.i("TwoUpPrint", "N-up PDF written to $displayLocation (addTextContrast=$addTextContrast)")
+            Log.i("TwoUpPrint", "Print job written to $displayLocation (isNotewise=$isNotewise, addTextContrast=$addTextContrast)")
         } catch (e: Exception) {
-            Log.e("TwoUpPrint", "Failed to produce N-up PDF", e)
-            val errorMessage = e.message ?: "N-up merge failed"
+            Log.e("TwoUpPrint", "Failed to process print job", e)
+            val errorMessage = e.message ?: "Print processing failed"
             notificationManager.cancel(NOTIF_ID)
             mainHandler.post {
                 if (job.isStarted) {
                     job.fail(errorMessage)
                 }
             }
+        }
+    }
+
+    private fun exportCompanionNotewise(sourcePdf: File, baseName: String) {
+        try {
+            val notewiseFileName = "$baseName.notewise"
+            val prefs = context.getSharedPreferences("twoupprint_prefs", Context.MODE_PRIVATE)
+            val savedDirUriStr = prefs.getString("save_directory_uri", null)
+
+            var companionStream: OutputStream? = null
+            var companionUri: Uri? = null
+
+            if (savedDirUriStr != null) {
+                try {
+                    val dirUri = Uri.parse(savedDirUriStr)
+                    val docFile = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, dirUri)
+                    val created = docFile?.createFile("application/octet-stream", notewiseFileName)
+                    if (created != null) {
+                        companionUri = created.uri
+                        companionStream = context.contentResolver.openOutputStream(companionUri)
+                    }
+                } catch (e: Exception) {
+                    Log.w("TwoUpPrint", "Could not create companion notewise file in custom dir", e)
+                }
+            }
+
+            if (companionStream == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val cv = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, notewiseFileName)
+                    put(MediaStore.Downloads.MIME_TYPE, "application/octet-stream")
+                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/TwoUpPrint")
+                    put(MediaStore.Downloads.IS_PENDING, 1)
+                }
+                val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv)
+                if (uri != null) {
+                    companionUri = uri
+                    companionStream = context.contentResolver.openOutputStream(uri)
+                }
+            }
+
+            if (companionStream == null) {
+                val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "TwoUpPrint")
+                if (!dir.exists()) dir.mkdirs()
+                val outFile = File(dir, notewiseFileName)
+                companionStream = outFile.outputStream()
+                companionUri = androidx.core.content.FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    outFile
+                )
+            }
+
+            companionStream?.use { out ->
+                PDDocument.load(sourcePdf).use { doc ->
+                    NotewisePdfConverter.convert(doc, out, title = baseName)
+                }
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && companionUri != null && savedDirUriStr == null) {
+                val cvUpdate = ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }
+                context.contentResolver.update(companionUri, cvUpdate, null, null)
+            }
+
+            Log.i("TwoUpPrint", "Successfully exported companion Notewise notebook: $notewiseFileName")
+        } catch (e: Exception) {
+            Log.w("TwoUpPrint", "Failed to export companion Notewise notebook", e)
         }
     }
 
@@ -180,16 +247,21 @@ class PrintJobHandler(
                 "N-Up Print Progress",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Shows progress while generating N-up PDF files"
+                description = "Shows progress while generating N-up PDF or Notewise files"
             }
             notificationManager.createNotificationChannel(channel)
         }
     }
 
     private fun updateProgressNotification(current: Int, total: Int, indeterminate: Boolean) {
+        val titleText = if (layout.printerId == "nup_notewise") {
+            "Generating Notewise Notebook..."
+        } else {
+            "Generating ${layout.cols}×${layout.rows} PDF..."
+        }
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_download)
-            .setContentTitle("Generating ${layout.cols}×${layout.rows} PDF...")
+            .setContentTitle(titleText)
             .setContentText(if (indeterminate) "Preparing document..." else "Processing page $current of $total")
             .setProgress(total, current, indeterminate)
             .setOngoing(true)
@@ -199,8 +271,13 @@ class PrintJobHandler(
     }
 
     private fun showCompleteNotification(location: String, fileUri: Uri) {
+        val isNotewise = fileName.endsWith(".notewise", ignoreCase = true)
+        val mimeType = if (isNotewise) "*/*" else "application/pdf"
+        val title = if (isNotewise) "Notewise Notebook Saved: $fileName" else "${layout.cols}×${layout.rows} PDF Saved: $fileName"
+        val actionText = if (isNotewise) "Open Notebook" else "Open PDF"
+
         val viewIntent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(fileUri, "application/pdf")
+            setDataAndType(fileUri, mimeType)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
@@ -213,12 +290,12 @@ class PrintJobHandler(
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle("${layout.cols}×${layout.rows} PDF Saved: $fileName")
+            .setContentTitle(title)
             .setContentText("Saved to $location — Tap to open")
             .setContentIntent(pendingIntent)
             .addAction(
                 android.R.drawable.ic_menu_directions,
-                "Open PDF",
+                actionText,
                 pendingIntent
             )
             .setOngoing(false)

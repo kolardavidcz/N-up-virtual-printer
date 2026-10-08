@@ -1,6 +1,6 @@
 # N-Up Print for Android (Virtual Printer Service)
 
-[![Release](https://img.shields.io/badge/release-v2.1.2-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v2.1.2)
+[![Release](https://img.shields.io/badge/release-v2.2.0-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v2.2.0)
 [![API](https://img.shields.io/badge/API-26%2B-green.svg)](https://android-arsenal.com/api?level=26)
 [![License](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Samsung%20One%20UI-3DDC84.svg)](https://developer.android.com/about/versions/oreo)
@@ -13,8 +13,8 @@ Unlike standard print services that rasterize documents into low-resolution imag
 
 ## 📥 Download APK
 
-- **Latest Release (v2.1.2)**: [Download N-Up Print v2.1.2 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v2.1.2/nup-print-v2.1.2.apk)
-- **Local Mirror**: [`releases/nup-print-v2.1.2.apk`](releases/nup-print-v2.1.2.apk)
+- **Latest Release (v2.2.0)**: [Download N-Up Print v2.2.0 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v2.2.0/nup-print-v2.2.0.apk)
+- **Local Mirror**: [`releases/nup-print-v2.2.0.apk`](releases/nup-print-v2.2.0.apk)
 
 ---
 
@@ -28,6 +28,10 @@ Unlike standard print services that rasterize documents into low-resolution imag
 
 ## ✨ Features & Capabilities
 
+- 📓 **Native On-Device Notewise Notebook Export (`.notewise`)**: Directly creates editable Notewise tablet notebooks on-device without external tools or Python:
+  - **Dedicated Virtual Printer**: Select **Notewise Notebook (.notewise)** directly in Android's system print spooler from any app.
+  - **Companion Export Toggle**: Turn on *Export .notewise notebook alongside PDF* to automatically generate both the N-up merged `.pdf` and the `.notewise` notebook file side by side.
+  - **Zero-Dependency Protobuf & MIME-76 Engine**: Full compliance with Notewise binary specifications, including 76-character Base64 wrapping, sequential field 10 indexing, 300 DPI coordinate mapping, dominant font size scaling, and SHA-256 WebP image deduplication.
 - 📄 **True Vector PDF N-Up Merging**: Combines 2, 4, 6, 8, or arbitrary N-up pages onto a single sheet without rasterizing to bitmaps. Text is 100% selectable and vector paths remain sharp.
 - 📐 **Middle Space Distribution (Center, 2:1 Middle, Max Middle)**: Solves the issue where adding margins or printing scaled slides creates excessive outer white space. Users can choose:
   - **Center**: Balanced 1:1 distribution across margins and internal gutter.

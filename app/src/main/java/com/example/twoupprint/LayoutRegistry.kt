@@ -50,6 +50,7 @@ object LayoutRegistry {
     private const val KEY_COLOR_PROCESSING_MODE = "global_color_processing_mode"
     private const val KEY_BW_ALGORITHM = "global_bw_algorithm"
     private const val KEY_SPACE_DISTRIBUTION_MODE = "space_distribution_mode"
+    private const val KEY_NOTEWISE_EXPORT_ENABLED = "notewise_export_enabled"
 
     /**
      * Default configurations:
@@ -58,13 +59,15 @@ object LayoutRegistry {
      *   2×2  →  sub-page Landscape, final sheet Landscape
      *   2×3  →  sub-page Landscape, final sheet Portrait
      *   2×4  →  sub-page Landscape, final sheet Portrait
+     *   notewise → single-page vector note (.notewise)
      */
     val builtInLayouts = listOf(
         PrintLayout("nup_2x1", "2-Up Side by Side (2×1)", 2, 1, landscape = true,  subPageLandscape = false, R.drawable.ic_layout_2x1),
         PrintLayout("nup_1x2", "2-Up Stacked (1×2)",      1, 2, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_1x2),
         PrintLayout("nup_2x2", "4-Up Grid (2×2)",         2, 2, landscape = true,  subPageLandscape = true,  R.drawable.ic_layout_2x2),
         PrintLayout("nup_2x3", "6-Up Grid (2×3)",         2, 3, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x3),
-        PrintLayout("nup_2x4", "8-Up Grid (2×4)",         2, 4, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x4)
+        PrintLayout("nup_2x4", "8-Up Grid (2×4)",         2, 4, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x4),
+        PrintLayout("nup_notewise", "Notewise Notebook (.notewise)", 1, 1, landscape = false, subPageLandscape = false, R.drawable.ic_layout_notewise)
     )
 
     fun getAllLayouts(context: Context): List<PrintLayout> {
@@ -159,6 +162,18 @@ object LayoutRegistry {
     fun setAutoTrimEnabled(context: Context, enabled: Boolean) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putBoolean("enable_auto_trim_letterbox", enabled).apply()
+    }
+
+    // --- "Export .notewise notebook alongside PDF" setting ---
+
+    fun isNotewiseExportEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_NOTEWISE_EXPORT_ENABLED, false) // default false
+    }
+
+    fun setNotewiseExportEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_NOTEWISE_EXPORT_ENABLED, enabled).apply()
     }
 
     // --- "Page & Slot Margins" setting (Top, Bottom, Left, Right) ---

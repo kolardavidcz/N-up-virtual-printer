@@ -13,6 +13,7 @@ drawable ic_layout_2x2
 drawable ic_layout_2x3
 drawable ic_layout_2x4
 drawable ic_layout_custom
+drawable ic_layout_notewise
 id batteryCard
 id batterySub
 id batteryTitle
@@ -49,6 +50,7 @@ id promptSwitch
 id spaceDistributionDescriptionText
 id switchAutoCrop
 id switchEnableLinks
+id switchNotewiseExport
 id switchTextContrast
 id toggleGroupMarginBottom
 id toggleGroupMarginLeft

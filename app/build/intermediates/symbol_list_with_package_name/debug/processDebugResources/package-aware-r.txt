@@ -2917,6 +2917,7 @@ drawable ic_layout_2x2
 drawable ic_layout_2x3
 drawable ic_layout_2x4
 drawable ic_layout_custom
+drawable ic_layout_notewise
 drawable ic_m3_chip_check
 drawable ic_m3_chip_checked_circle
 drawable ic_m3_chip_close
@@ -3422,6 +3423,7 @@ id submenuarrow
 id submit_area
 id switchAutoCrop
 id switchEnableLinks
+id switchNotewiseExport
 id switchTextContrast
 id tabMode
 id tag_accessibility_actions

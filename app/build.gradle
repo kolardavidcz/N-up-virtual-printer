@@ -11,8 +11,8 @@ android {
         applicationId "com.example.twoupprint"
         minSdk 26
         targetSdk 34
-        versionCode 13
-        versionName "2.1.2"
+        versionCode 14
+        versionName "2.2.0"
     }
 
     buildTypes {
