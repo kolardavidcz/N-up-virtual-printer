@@ -143,9 +143,8 @@ class NotewiseNotebookBuilder(
      * Packages the entire notebook into a .notewise ZIP archive (DEFLATE).
      */
     fun buildArchive(outputStream: OutputStream) {
-        val effectiveRootId = pageIds.firstOrNull() ?: rootPageId
         val rootMetaNode = PbNode(11, 2, listOf(
-            PbNode(1, 2, effectiveRootId.toByteArray(Charsets.UTF_8)),
+            PbNode(1, 2, rootPageId.toByteArray(Charsets.UTF_8)),
             PbNode(2, 2, title.toByteArray(Charsets.UTF_8)),
             PbNode(3, 1, encodeDouble(1024.0)),
             PbNode(5, 2, byteArrayOf())
@@ -203,7 +202,7 @@ class NotewiseNotebookBuilder(
         fontSize: Int,
         isBold: Boolean
     ): PbNode {
-        val elementId = generateRandomId(32)
+        val elementId = generateRandomId(30)
         val transform = listOf(
             makeFloatNode(1, 1.0f),
             makeFloatNode(3, 0.0f),
@@ -226,12 +225,16 @@ class NotewiseNotebookBuilder(
             PbNode(2, 2, "gf-roboto".toByteArray(Charsets.UTF_8)),
             PbNode(3, 2, "Roboto".toByteArray(Charsets.UTF_8))
         )
-        val richText = listOf(
+        val richText = mutableListOf(
             PbNode(1, 2, text.toByteArray(Charsets.UTF_8)),
-            PbNode(2, 0, if (isBold) 7L else 6L), // Style enum: 6 = normal, 7 = bold
-            PbNode(3, 2, textColor),
-            PbNode(6, 2, fontInfo)
+            PbNode(2, 0, 6L), // Style mode 6
+            PbNode(3, 2, textColor)
         )
+        if (isBold) {
+            richText.add(PbNode(4, 0, 1L))
+        }
+        richText.add(PbNode(6, 2, fontInfo))
+
         val content = listOf(
             PbNode(1, 2, richText),
             PbNode(2, 0, 1L), // alignment: left = 1
@@ -248,7 +251,7 @@ class NotewiseNotebookBuilder(
         )
         val timestampMs = System.currentTimeMillis()
         val element = listOf(
-            PbNode(1, 2, elementId.toByteArray(Charsets.UTF_8)),
+            PbNode(1, 2, listOf(PbNode(8, 2, elementId.toByteArray(Charsets.UTF_8)))),
             PbNode(2, 0, timestampMs),
             PbNode(3, 2, transform),
             PbNode(8, 2, textData)
@@ -265,7 +268,7 @@ class NotewiseNotebookBuilder(
         imgW: Int,
         imgH: Int
     ): PbNode {
-        val elementId = generateRandomId(32)
+        val elementId = generateRandomId(30)
         val widthP = right - left
         val heightP = bottom - top
         val tfNode = listOf(
@@ -287,7 +290,7 @@ class NotewiseNotebookBuilder(
             makeFloatNode(10, 1.0f)
         )
         val element = listOf(
-            PbNode(1, 2, elementId.toByteArray(Charsets.UTF_8)),
+            PbNode(1, 2, listOf(PbNode(8, 2, elementId.toByteArray(Charsets.UTF_8)))),
             PbNode(2, 0, System.currentTimeMillis()),
             PbNode(3, 2, tfNode),
             PbNode(7, 2, imgRefNode)

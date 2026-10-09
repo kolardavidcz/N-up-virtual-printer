@@ -177,6 +177,13 @@ class NotewiseConverterTest {
         for (te in textElements) {
             @Suppress("UNCHECKED_CAST")
             val subNodes = te.value as List<PbNode>
+            val uidNode = subNodes.find { it.fieldNumber == 1 }
+            assertNotNull("Element UID (field 1) must exist", uidNode)
+            @Suppress("UNCHECKED_CAST")
+            val uidSub = uidNode!!.value as List<PbNode>
+            val uidTag8 = uidSub.find { it.fieldNumber == 8 }
+            assertNotNull("Element UID must have tag 8 submessage", uidTag8)
+
             val textDataNode = subNodes.find { it.fieldNumber == 8 }
             assertNotNull("TextData (field 8) must exist", textDataNode)
             @Suppress("UNCHECKED_CAST")
@@ -312,5 +319,31 @@ class NotewiseConverterTest {
         val p2Height = p2DimSubNodes.find { it.fieldNumber == 4 }?.value as? Long
         assertEquals("Page 2 width should be 3508 (landscape)", 3508L, p2Width)
         assertEquals("Page 2 height should be 2480 (landscape)", 2480L, p2Height)
+    }
+
+    @Test
+    fun testEndToEndMolekulovaPdfConversion() {
+        val srcPdf = listOf(java.io.File("molekulova.pdf"), java.io.File("../molekulova.pdf")).firstOrNull { it.exists() }
+        org.junit.Assert.assertNotNull("molekulova.pdf must exist", srcPdf)
+
+        val outDir = if (java.io.File("molekulova.pdf").exists()) java.io.File(".") else java.io.File("..")
+        val outFile = java.io.File(outDir, "molekulova_v221.notewise")
+        NotewisePdfConverter.convert(srcPdf!!, outFile, title = "Molekulova Genetika")
+
+        assertTrue("Output notewise file must exist", outFile.exists())
+        assertTrue("Output notewise file must be non-empty", outFile.length() > 1000)
+
+        // Verify it contains note and 9 pages
+        ZipInputStream(java.io.FileInputStream(outFile)).use { zis ->
+            val entries = mutableListOf<String>()
+            var e = zis.nextEntry
+            while (e != null) {
+                entries.add(e.name)
+                e = zis.nextEntry
+            }
+            assertTrue("Must contain note entry", entries.contains("note"))
+            val pageEntries = entries.filter { it.startsWith("page/") }
+            assertEquals("Must have 9 converted pages", 9, pageEntries.size)
+        }
     }
 }

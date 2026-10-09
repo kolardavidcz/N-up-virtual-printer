@@ -271,6 +271,82 @@ class MainActivity : AppCompatActivity() {
         }
 
         checkAndRequestPermissions()
+        handleTestIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleTestIntent(intent)
+    }
+
+    private fun handleTestIntent(intent: Intent?) {
+        if (intent == null) return
+        val testAction = intent.getStringExtra("test_action") ?: return
+        android.util.Log.i("TwoUpPrintTest", "Received test_action: $testAction")
+
+        Thread {
+            try {
+                PdfMerger.init(applicationContext)
+
+                if (testAction == "convert_pdf" || testAction == "e2e_full") {
+                    val inputPath = intent.getStringExtra("input_path")
+                        ?: "/sdcard/Download/molekulova.pdf"
+                    val inputFile = java.io.File(inputPath)
+                    if (!inputFile.exists()) {
+                        android.util.Log.e("TwoUpPrintTest", "Input file does not exist: $inputPath")
+                        return@Thread
+                    }
+
+                    val outDir = java.io.File("/sdcard/Download/TwoUpPrint")
+                    if (!outDir.exists()) outDir.mkdirs()
+
+                    // 1. Notewise export test
+                    val outNotewiseName = intent.getStringExtra("output_notewise_name") ?: "Molekulova_E2E_v222.notewise"
+                    val outNotewise = java.io.File(outDir, outNotewiseName)
+                    outNotewise.outputStream().use { outStream ->
+                        com.tom_roush.pdfbox.pdmodel.PDDocument.load(inputFile).use { doc ->
+                            com.example.twoupprint.notewise.NotewisePdfConverter.convert(
+                                doc, outStream, title = "Molekulova E2E Test"
+                            )
+                        }
+                    }
+                    android.util.Log.i("TwoUpPrintTest", "Generated ${outNotewise.name} (${outNotewise.length()} bytes)")
+
+                    // 2. 2x1 N-up PDF merge test (Landscape A4, margins 3mm top+bottom)
+                    val outPdfName = intent.getStringExtra("output_pdf_name") ?: "Molekulova_E2E_2x1.pdf"
+                    val outPdf = java.io.File(outDir, outPdfName)
+                    val layout2x1 = LayoutRegistry.findLayoutById(applicationContext, "nup_2x1")
+                    val marginTopMm = LayoutRegistry.getMarginTopMm(applicationContext)
+                    val marginBottomMm = LayoutRegistry.getMarginBottomMm(applicationContext)
+                    val marginLeftMm = LayoutRegistry.getMarginLeftMm(applicationContext)
+                    val marginRightMm = LayoutRegistry.getMarginRightMm(applicationContext)
+                    val spaceMode = LayoutRegistry.getSpaceDistributionMode(applicationContext)
+
+                    inputFile.inputStream().use { inStream ->
+                        outPdf.outputStream().use { outStream ->
+                            PdfMerger.mergeNUp(
+                                inStream, outStream, layout2x1,
+                                addTextContrast = false,
+                                enableLinks = false,
+                                bestFit = false,
+                                marginTopMm = marginTopMm,
+                                marginBottomMm = marginBottomMm,
+                                marginLeftMm = marginLeftMm,
+                                marginRightMm = marginRightMm,
+                                autoTrimSlideBorders = false,
+                                isPresentationSmart = false,
+                                spaceDistributionMode = spaceMode
+                            )
+                        }
+                    }
+                    android.util.Log.i("TwoUpPrintTest", "Generated ${outPdf.name} (${outPdf.length()} bytes)")
+                    android.util.Log.i("TwoUpPrintTest", "E2E_TEST_COMPLETED_SUCCESSFULLY")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("TwoUpPrintTest", "Error in handleTestIntent", e)
+            }
+        }.start()
     }
 
     override fun onResume() {

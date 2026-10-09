@@ -122,72 +122,76 @@ object NotewisePdfConverter {
     ): List<NotewiseTextBlock> {
         val lines = mutableListOf<RawLine>()
 
-        val stripper = object : PDFTextStripper() {
-            init {
-                startPage = pageIndex + 1
-                endPage = pageIndex + 1
-                sortByPosition = true
-            }
-
-            override fun writeString(text: String, textPositions: List<TextPosition>) {
-                val trimmed = text.trim()
-                if (trimmed.isEmpty() || textPositions.isEmpty()) return
-
-                var minX = Float.MAX_VALUE
-                var maxX = -Float.MAX_VALUE
-                var minY = Float.MAX_VALUE
-                var maxY = -Float.MAX_VALUE
-
-                var boldCount = 0
-                val sizeCounts = mutableMapOf<Int, Int>()
-
-                for (tp in textPositions) {
-                    val x = tp.xDirAdj
-                    val y = tp.yDirAdj
-                    val w = tp.widthDirAdj
-                    val h = maxOf(tp.heightDir, tp.fontSizeInPt)
-
-                    if (x < minX) minX = x
-                    if (x + w > maxX) maxX = x + w
-                    if (y - h < minY) minY = y - h
-                    if (y > maxY) maxY = y
-
-                    val roundedSize = (tp.fontSizeInPt * 10f).roundToInt()
-                    sizeCounts[roundedSize] = (sizeCounts[roundedSize] ?: 0) + 1
-
-                    if (tp.font?.name?.contains("bold", ignoreCase = true) == true) {
-                        boldCount++
-                    }
-                }
-
-                val dominantSize = if (sizeCounts.isNotEmpty()) {
-                    val maxEntry = sizeCounts.maxByOrNull { it.value }!!
-                    maxEntry.key / 10f
-                } else {
-                    12.0f
-                }
-
-                val isBold = boldCount > (textPositions.size / 2)
-                val isBullet = BULLET_REGEX.containsMatchIn(trimmed)
-
-                lines.add(
-                    RawLine(
-                        text = trimmed,
-                        minX = minX,
-                        minY = minY,
-                        maxX = maxX,
-                        maxY = maxY,
-                        dominantFontSize = dominantSize,
-                        isBold = isBold,
-                        isBullet = isBullet
-                    )
-                )
-            }
-        }
-
         try {
+            val stripper = object : PDFTextStripper() {
+                init {
+                    startPage = pageIndex + 1
+                    endPage = pageIndex + 1
+                    sortByPosition = true
+                }
+
+                override fun writeString(text: String, textPositions: List<TextPosition>) {
+                    val trimmed = text.trim()
+                    if (trimmed.isEmpty() || textPositions.isEmpty()) return
+
+                    var minX = Float.MAX_VALUE
+                    var maxX = -Float.MAX_VALUE
+                    var minY = Float.MAX_VALUE
+                    var maxY = -Float.MAX_VALUE
+
+                    var boldCount = 0
+                    val sizeCounts = mutableMapOf<Int, Int>()
+
+                    for (tp in textPositions) {
+                        val x = tp.xDirAdj
+                        val y = tp.yDirAdj
+                        val w = tp.widthDirAdj
+                        val h = maxOf(tp.heightDir, tp.fontSizeInPt)
+
+                        if (x < minX) minX = x
+                        if (x + w > maxX) maxX = x + w
+                        if (y - h < minY) minY = y - h
+                        if (y > maxY) maxY = y
+
+                        val roundedSize = (tp.fontSizeInPt * 10f).roundToInt()
+                        sizeCounts[roundedSize] = (sizeCounts[roundedSize] ?: 0) + 1
+
+                        if (tp.font?.name?.contains("bold", ignoreCase = true) == true) {
+                            boldCount++
+                        }
+                    }
+
+                    val dominantSize = if (sizeCounts.isNotEmpty()) {
+                        val maxEntry = sizeCounts.maxByOrNull { it.value }!!
+                        maxEntry.key / 10f
+                    } else {
+                        12.0f
+                    }
+
+                    val isBold = boldCount > (textPositions.size / 2)
+                    val isBullet = BULLET_REGEX.containsMatchIn(trimmed)
+
+                    lines.add(
+                        RawLine(
+                            text = trimmed,
+                            minX = minX,
+                            minY = minY,
+                            maxX = maxX,
+                            maxY = maxY,
+                            dominantFontSize = dominantSize,
+                            isBold = isBold,
+                            isBullet = isBullet
+                        )
+                    )
+                }
+            }
             stripper.getText(doc)
-        } catch (_: Exception) {
+        } catch (t: Throwable) {
+            try {
+                android.util.Log.w("NotewisePdfConverter", "Text extraction note on page $pageIndex: ${t.message}")
+            } catch (_: Throwable) {
+                System.err.println("NotewisePdfConverter: Text extraction note on page $pageIndex: ${t.message}")
+            }
             return emptyList()
         }
 
