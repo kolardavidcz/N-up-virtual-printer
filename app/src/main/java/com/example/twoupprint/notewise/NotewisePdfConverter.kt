@@ -302,16 +302,20 @@ object NotewisePdfConverter {
         return paragraphs.map { p ->
             val leftP = p.minX * scaleX
             val topP = p.minY * scaleY
-            val rightP = p.maxX * scaleX
-            val bottomP = p.maxY * scaleY
+            val rightP = maxOf(p.maxX * scaleX + 45.0f, leftP + 120.0f)
+            val bottomP = maxOf(p.maxY * scaleY + 15.0f, topP + 25.0f)
 
             val notewiseFontSize = when (p.headingLevel) {
-                1 -> 34
-                2 -> 26
-                3 -> 20
+                1 -> 28
+                2 -> 20
+                3 -> 16
                 else -> {
-                    val baseFontSize = if (p.dominantFontSize > 0f) p.dominantFontSize else 11.0f
-                    (baseFontSize * scaleY / 3.0f).roundToInt().coerceIn(10, 72)
+                    // Normal body text aligns cleanly across multi-part lines at font size 12
+                    if (p.dominantFontSize in 1.0f..9.0f) {
+                        p.dominantFontSize.roundToInt().coerceAtLeast(8)
+                    } else {
+                        12
+                    }
                 }
             }
             val effectiveBold = if (p.headingLevel > 0) true else p.isBold
