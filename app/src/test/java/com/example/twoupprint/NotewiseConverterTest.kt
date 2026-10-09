@@ -202,9 +202,14 @@ class NotewiseConverterTest {
             val richTextNode = contentSub.find { it.fieldNumber == 1 }
             @Suppress("UNCHECKED_CAST")
             val richTextSub = richTextNode!!.value as List<PbNode>
+            val tag2Node = richTextSub.find { it.fieldNumber == 2 }
+            assertNotNull("RichText Tag 2 must exist", tag2Node)
             val fontInfoNode = richTextSub.find { it.fieldNumber == 6 }
             @Suppress("UNCHECKED_CAST")
             val fontInfoSub = fontInfoNode!!.value as List<PbNode>
+
+            val fontSizeNode = fontInfoSub.find { it.fieldNumber == 1 }
+            assertEquals("RichText Tag 2 must match font size", fontSizeNode!!.value, tag2Node!!.value)
 
             val fontIdNode = fontInfoSub.find { it.fieldNumber == 2 }
             val fontFamNode = fontInfoSub.find { it.fieldNumber == 3 }

@@ -18,7 +18,12 @@ data class NotewiseTextBlock(
     val bottom: Float,
     val fontSize: Int,
     val isBold: Boolean = false,
-    val isBullet: Boolean = false
+    val isItalic: Boolean = false,
+    val isUnderline: Boolean = false,
+    val isStrikethrough: Boolean = false,
+    val colorHex: String = "#000000",
+    val isBullet: Boolean = false,
+    val headingLevel: Int = 0
 )
 
 /**
@@ -107,8 +112,8 @@ class NotewiseNotebookBuilder(
         for (tb in textBlocks) {
             val leftP = tb.left
             val topP = tb.top
-            val rightP = maxOf(tb.right + 20.0f, leftP + 50.0f)
-            val bottomP = maxOf(tb.bottom + 12.0f, topP + 20.0f)
+            val rightP = maxOf(tb.right + 35.0f, leftP + 100.0f)
+            val bottomP = maxOf(tb.bottom + 12.0f, topP + 25.0f)
 
             val textElem = createTextElement(
                 text = tb.text,
@@ -117,7 +122,11 @@ class NotewiseNotebookBuilder(
                 right = rightP,
                 bottom = bottomP,
                 fontSize = tb.fontSize,
-                isBold = tb.isBold
+                isBold = tb.isBold,
+                isItalic = tb.isItalic,
+                isUnderline = tb.isUnderline,
+                isStrikethrough = tb.isStrikethrough,
+                colorHex = tb.colorHex
             )
             elements.add(textElem)
         }
@@ -200,7 +209,11 @@ class NotewiseNotebookBuilder(
         right: Float,
         bottom: Float,
         fontSize: Int,
-        isBold: Boolean
+        isBold: Boolean,
+        isItalic: Boolean = false,
+        isUnderline: Boolean = false,
+        isStrikethrough: Boolean = false,
+        colorHex: String = "#000000"
     ): PbNode {
         val elementId = generateRandomId(30)
         val transform = listOf(
@@ -217,7 +230,7 @@ class NotewiseNotebookBuilder(
             makeFloatNode(4, bottom)
         )
         val textColor = listOf(
-            PbNode(1, 2, "#000000".toByteArray(Charsets.UTF_8)),
+            PbNode(1, 2, colorHex.toByteArray(Charsets.UTF_8)),
             makeFloatNode(2, 1.0f) // fully opaque alpha
         )
         val fontInfo = listOf(
@@ -227,11 +240,20 @@ class NotewiseNotebookBuilder(
         )
         val richText = mutableListOf(
             PbNode(1, 2, text.toByteArray(Charsets.UTF_8)),
-            PbNode(2, 0, 6L), // Style mode 6
+            PbNode(2, 0, fontSize.toLong()), // Run font size in Notewise
             PbNode(3, 2, textColor)
         )
         if (isBold) {
             richText.add(PbNode(4, 0, 1L))
+        }
+        if (isItalic) {
+            richText.add(PbNode(5, 0, 1L))
+        }
+        if (isUnderline) {
+            richText.add(PbNode(7, 0, 1L))
+        }
+        if (isStrikethrough) {
+            richText.add(PbNode(8, 0, 1L))
         }
         richText.add(PbNode(6, 2, fontInfo))
 

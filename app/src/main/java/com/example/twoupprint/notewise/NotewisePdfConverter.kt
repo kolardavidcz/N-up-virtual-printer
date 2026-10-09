@@ -26,7 +26,9 @@ import kotlin.math.roundToInt
 object NotewisePdfConverter {
 
     // Matches bullet symbols (•, -, *, etc.), numbered items (1., 1)), or lettered items (a., a))
-    val BULLET_REGEX: Regex = Regex("^(?:[•\\-*–—▪▫‣\\u25cf\\u25cb\\u25e6\\uf0b7]|\\d+[.)]|[a-zA-Z][.)])\\s+")
+    val BULLET_REGEX: Regex = Regex("^(?:[•\\-*–—▪▫‣\\u25cf\\u25cb\\u25e6\\uf0b7]|\\d+[.)]|[a-zA-Z][.)]|[ivxLCDM]+[.)])\\s+")
+    val H2_REGEX: Regex = Regex("^(?:##\\s+|BLOK\\s+\\d+)")
+    val H3_REGEX: Regex = Regex("^(?:###\\s+|\\d+\\.\\d+\\s+[A-Z\\u00C0-\\u017E])")
 
     data class RawLine(
         val text: String,
@@ -36,7 +38,12 @@ object NotewisePdfConverter {
         val maxY: Float,
         val dominantFontSize: Float,
         val isBold: Boolean,
-        val isBullet: Boolean
+        val isItalic: Boolean,
+        val isBullet: Boolean,
+        val isH1: Boolean,
+        val isH2: Boolean,
+        val isH3: Boolean,
+        val isHeading: Boolean
     )
 
     data class MutableParagraph(
@@ -47,7 +54,13 @@ object NotewisePdfConverter {
         var maxY: Float,
         var dominantFontSize: Float,
         var isBold: Boolean,
-        var isBullet: Boolean
+        var isItalic: Boolean,
+        var isBullet: Boolean,
+        var isH1: Boolean,
+        var isH2: Boolean,
+        var isH3: Boolean,
+        var isHeading: Boolean,
+        var headingLevel: Int
     )
 
     /**
@@ -140,6 +153,7 @@ object NotewisePdfConverter {
                     var maxY = -Float.MAX_VALUE
 
                     var boldCount = 0
+                    var italicCount = 0
                     val sizeCounts = mutableMapOf<Int, Int>()
 
                     for (tp in textPositions) {
@@ -156,8 +170,12 @@ object NotewisePdfConverter {
                         val roundedSize = (tp.fontSizeInPt * 10f).roundToInt()
                         sizeCounts[roundedSize] = (sizeCounts[roundedSize] ?: 0) + 1
 
-                        if (tp.font?.name?.contains("bold", ignoreCase = true) == true) {
+                        val fName = tp.font?.name?.lowercase() ?: ""
+                        if (fName.contains("bold")) {
                             boldCount++
+                        }
+                        if (fName.contains("italic") || fName.contains("oblique")) {
+                            italicCount++
                         }
                     }
 
@@ -168,7 +186,12 @@ object NotewisePdfConverter {
                         12.0f
                     }
 
-                    val isBold = boldCount > (textPositions.size / 2)
+                    val isH1 = dominantSize >= 21.0f || trimmed.startsWith("# ")
+                    val isH2 = (dominantSize in 16.5f..21.0f) || H2_REGEX.containsMatchIn(trimmed)
+                    val isH3 = H3_REGEX.containsMatchIn(trimmed)
+                    val isHeading = isH1 || isH2 || isH3
+                    val isBold = isHeading || (boldCount > textPositions.size / 2)
+                    val isItalic = italicCount > (textPositions.size / 2)
                     val isBullet = BULLET_REGEX.containsMatchIn(trimmed)
 
                     lines.add(
@@ -180,7 +203,12 @@ object NotewisePdfConverter {
                             maxY = maxY,
                             dominantFontSize = dominantSize,
                             isBold = isBold,
-                            isBullet = isBullet
+                            isItalic = isItalic,
+                            isBullet = isBullet,
+                            isH1 = isH1,
+                            isH2 = isH2,
+                            isH3 = isH3,
+                            isHeading = isHeading
                         )
                     )
                 }
@@ -197,12 +225,13 @@ object NotewisePdfConverter {
 
         if (lines.isEmpty()) return emptyList()
 
-        // Group lines into coherent paragraphs or individual bullet blocks
+        // Group lines into coherent paragraphs, multi-line headings, or individual bullet blocks
         val paragraphs = mutableListOf<MutableParagraph>()
         var current: MutableParagraph? = null
 
         for (line in lines) {
             if (current == null) {
+                val headingLvl = if (line.isH1) 1 else if (line.isH2) 2 else if (line.isH3) 3 else 0
                 current = MutableParagraph(
                     text = line.text,
                     minX = line.minX,
@@ -211,26 +240,42 @@ object NotewisePdfConverter {
                     maxY = line.maxY,
                     dominantFontSize = line.dominantFontSize,
                     isBold = line.isBold,
-                    isBullet = line.isBullet
+                    isItalic = line.isItalic,
+                    isBullet = line.isBullet,
+                    isH1 = line.isH1,
+                    isH2 = line.isH2,
+                    isH3 = line.isH3,
+                    isHeading = line.isHeading,
+                    headingLevel = headingLvl
                 )
                 continue
             }
 
-            val startsNewBullet = splitBullets && line.isBullet
-            val fontSizeDiff = abs(line.dominantFontSize - current.dominantFontSize)
             val verticalGap = line.minY - current.maxY
-            val isSameParagraph = !startsNewBullet &&
-                    fontSizeDiff <= 2.5f &&
-                    verticalGap <= (current.dominantFontSize * 1.8f) &&
-                    verticalGap >= -2.0f
+            val fontSizeDiff = abs(line.dominantFontSize - current.dominantFontSize)
 
-            if (isSameParagraph) {
+            val isHeadingCont = current.isHeading && verticalGap <= 22.0f && (
+                (current.isH1 && (line.isH1 || line.text.startsWith("["))) ||
+                (current.isH2 && (line.isH2 || line.text.startsWith("["))) ||
+                (current.isH3 && (line.isH3 || line.text.startsWith("[")))
+            )
+
+            val canMergeBody = !current.isHeading &&
+                    !line.isHeading &&
+                    !(splitBullets && line.isBullet) &&
+                    fontSizeDiff <= 1.5f &&
+                    verticalGap <= (current.dominantFontSize * 1.5f) &&
+                    verticalGap >= -3.0f &&
+                    abs(line.minX - current.minX) <= 25.0f
+
+            if (isHeadingCont || canMergeBody) {
                 current.text += " " + line.text
                 current.minX = minOf(current.minX, line.minX)
                 current.maxX = maxOf(current.maxX, line.maxX)
                 current.maxY = maxOf(current.maxY, line.maxY)
             } else {
                 paragraphs.add(current)
+                val headingLvl = if (line.isH1) 1 else if (line.isH2) 2 else if (line.isH3) 3 else 0
                 current = MutableParagraph(
                     text = line.text,
                     minX = line.minX,
@@ -239,7 +284,13 @@ object NotewisePdfConverter {
                     maxY = line.maxY,
                     dominantFontSize = line.dominantFontSize,
                     isBold = line.isBold,
-                    isBullet = line.isBullet
+                    isItalic = line.isItalic,
+                    isBullet = line.isBullet,
+                    isH1 = line.isH1,
+                    isH2 = line.isH2,
+                    isH3 = line.isH3,
+                    isHeading = line.isHeading,
+                    headingLevel = headingLvl
                 )
             }
         }
@@ -254,9 +305,16 @@ object NotewisePdfConverter {
             val rightP = p.maxX * scaleX
             val bottomP = p.maxY * scaleY
 
-            // Formula: notewise_font_size = max(8, round(pdf_font_pt * scale_y / 3.0)) clamped to [8, 72]
-            val baseFontSize = if (p.dominantFontSize > 0f) p.dominantFontSize else 11.0f
-            val notewiseFontSize = (baseFontSize * scaleY / 3.0f).roundToInt().coerceIn(8, 72)
+            val notewiseFontSize = when (p.headingLevel) {
+                1 -> 34
+                2 -> 26
+                3 -> 20
+                else -> {
+                    val baseFontSize = if (p.dominantFontSize > 0f) p.dominantFontSize else 11.0f
+                    (baseFontSize * scaleY / 3.0f).roundToInt().coerceIn(10, 72)
+                }
+            }
+            val effectiveBold = if (p.headingLevel > 0) true else p.isBold
 
             NotewiseTextBlock(
                 text = p.text,
@@ -265,8 +323,10 @@ object NotewisePdfConverter {
                 right = rightP,
                 bottom = bottomP,
                 fontSize = notewiseFontSize,
-                isBold = p.isBold,
-                isBullet = p.isBullet
+                isBold = effectiveBold,
+                isItalic = p.isItalic,
+                isBullet = p.isBullet,
+                headingLevel = p.headingLevel
             )
         }
     }
