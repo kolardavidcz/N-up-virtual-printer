@@ -36,12 +36,12 @@ class PrintJobHandler(
     private val fileName: String = "nup_output.pdf",
     private val addTextContrast: Boolean = false,
     private val enableLinks: Boolean = false,
-    private val bestFit: Boolean = true,
+    private val bestFit: Boolean = false,
     private val marginTopMm: Int = 0,
     private val marginBottomMm: Int = 0,
     private val marginLeftMm: Int = 0,
     private val marginRightMm: Int = 0,
-    private val autoTrimSlideBorders: Boolean = true,
+    private val autoTrimSlideBorders: Boolean = false,
     private val isPresentationSmart: Boolean = false,
     private val spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
 ) : Thread("NUpPrintJob") {

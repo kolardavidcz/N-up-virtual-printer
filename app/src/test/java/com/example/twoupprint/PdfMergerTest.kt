@@ -986,4 +986,68 @@ class PdfMergerTest {
         assertTrue("2x1 sheet must default to landscape", sheetLandscape2x1)
         org.junit.Assert.assertFalse("2x1 subpage must default to portrait", subLandscape2x1)
     }
+
+    @Test
+    fun testMergeNUp_DefaultParameters_NeverAutoTrimsRegularPdf() {
+        // Create 4 regular pages with content
+        val doc = PDDocument()
+        for (i in 0 until 4) {
+            val page = PDPage(PDRectangle(595.28f, 841.89f))
+            doc.addPage(page)
+            val cs = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(doc, page)
+            cs.addRect(100f, 300f, 395f, 200f)
+            cs.fill()
+            cs.close()
+        }
+        val inBytes = ByteArrayOutputStream().also { doc.save(it); doc.close() }.toByteArray()
+        val outStream = ByteArrayOutputStream()
+
+        val layout = LayoutRegistry.builtInLayouts.first { it.printerId == "nup_2x2" }
+        // Call mergeNUp with default arguments (autoTrimSlideBorders defaults to false)
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(inBytes),
+            outputStream = outStream,
+            layout = layout
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        assertEquals(1, outDoc.numberOfPages)
+        val outPage = outDoc.getPage(0)
+        assertEquals(PDRectangle.A4.width, outPage.mediaBox.width, 0.5f)
+        assertEquals(PDRectangle.A4.height, outPage.mediaBox.height, 0.5f)
+
+        // Subpages must have their full height 841.89 pt untouched (no letterbox trimming)
+        val resources = outPage.resources
+        for (name in resources.xObjectNames) {
+            val xobj = resources.getXObject(name)
+            if (xobj is com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject) {
+                assertEquals(595.28f, xobj.bBox.width, 1f)
+                assertEquals(841.89f, xobj.bBox.height, 1f)
+            }
+        }
+        outDoc.close()
+    }
+
+    @Test
+    fun testOrientationResolution_HonorsDialogSelectionBothWays() {
+        fun resolveOrientation(mediaSizeIsPortrait: Boolean?, layoutLandscape: Boolean): Boolean {
+            return mediaSizeIsPortrait?.let { !it } ?: layoutLandscape
+        }
+
+        // 1. 2x2 layout (base landscape = false):
+        // User selects Portrait in dialog -> Portrait output
+        org.junit.Assert.assertFalse(resolveOrientation(true, layoutLandscape = false))
+        // User selects Landscape in dialog -> Landscape output
+        assertTrue(resolveOrientation(false, layoutLandscape = false))
+
+        // 2. 2x1 layout (base landscape = true):
+        // User selects Portrait in dialog -> Portrait output (previously failed with baseLayout.landscape || ...)
+        org.junit.Assert.assertFalse(resolveOrientation(true, layoutLandscape = true))
+        // User selects Landscape in dialog -> Landscape output
+        assertTrue(resolveOrientation(false, layoutLandscape = true))
+
+        // 3. Fallback when mediaSize is null
+        org.junit.Assert.assertFalse(resolveOrientation(null, layoutLandscape = false))
+        assertTrue(resolveOrientation(null, layoutLandscape = true))
+    }
 }

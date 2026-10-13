@@ -29,12 +29,12 @@ object PendingPrintJobManager {
     private var activeFileName: String = "nup_output.pdf"
     private var activeAddTextContrast: Boolean = false
     private var activeEnableLinks: Boolean = false
-    private var activeBestFit: Boolean = true
+    private var activeBestFit: Boolean = false
     private var activeMarginTopMm: Int = 0
     private var activeMarginBottomMm: Int = 0
     private var activeMarginLeftMm: Int = 0
     private var activeMarginRightMm: Int = 0
-    private var activeAutoTrimSlideBorders: Boolean = true
+    private var activeAutoTrimSlideBorders: Boolean = false
     private var activeIsPresentationSmart: Boolean = false
     private var activeSpaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
 
@@ -55,12 +55,12 @@ object PendingPrintJobManager {
         fileName: String,
         addTextContrast: Boolean = false,
         enableLinks: Boolean = false,
-        bestFit: Boolean = true,
+        bestFit: Boolean = false,
         marginTopMm: Int = 0,
         marginBottomMm: Int = 0,
         marginLeftMm: Int = 0,
         marginRightMm: Int = 0,
-        autoTrimSlideBorders: Boolean = true,
+        autoTrimSlideBorders: Boolean = false,
         isPresentationSmart: Boolean = false,
         spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
     ) {

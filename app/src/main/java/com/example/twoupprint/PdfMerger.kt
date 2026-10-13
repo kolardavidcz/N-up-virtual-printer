@@ -50,7 +50,7 @@ object PdfMerger {
         marginBottomMm: Int = 0,
         marginLeftMm: Int = 0,
         marginRightMm: Int = 0,
-        autoTrimSlideBorders: Boolean = true,
+        autoTrimSlideBorders: Boolean = false,
         isPresentationSmart: Boolean = false,
         spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
@@ -192,7 +192,7 @@ object PdfMerger {
         enableLinks: Boolean = false,
         bestFit: Boolean = true,
         marginMm: Int = 0,
-        autoTrimSlideBorders: Boolean = true,
+        autoTrimSlideBorders: Boolean = false,
         isPresentationSmart: Boolean = false,
         spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
@@ -297,7 +297,7 @@ object PdfMerger {
         marginBottomMm: Int = 0,
         marginLeftMm: Int = 0,
         marginRightMm: Int = 0,
-        autoTrimSlideBorders: Boolean = true,
+        autoTrimSlideBorders: Boolean = false,
         isPresentationSmart: Boolean = false,
         spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
@@ -326,7 +326,7 @@ object PdfMerger {
         enableLinks: Boolean = false,
         bestFit: Boolean = true,
         marginMm: Int = 0,
-        autoTrimSlideBorders: Boolean = true,
+        autoTrimSlideBorders: Boolean = false,
         isPresentationSmart: Boolean = false,
         spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
@@ -432,56 +432,27 @@ object PdfMerger {
         }
         form.cosObject.setItem(COSName.MATRIX, matrixArray)
 
-        val srcIsLandscape = visualW > visualH
-        val targetIsLandscape = layout.subPageLandscape
-
         // Content must ALWAYS remain upright in its grid slots. Never autorotate sideways or invert.
-        val needsRotation = false
-
         contentStream.saveGraphicsState()
 
-        if (needsRotation) {
-            val rotatedW = visualH
-            val rotatedH = visualW
-            val scale = Math.min(slotWidth / rotatedW, slotHeight / rotatedH)
+        val scale = Math.min(slotWidth / visualW, slotHeight / visualH)
 
-            val destW = rotatedW * scale
-            val destH = rotatedH * scale
+        val destW = visualW * scale
+        val destH = visualH * scale
 
-            val spareW = (slotWidth - destW).coerceAtLeast(0f)
-            val offsetRatio = if (hasMargins && cols > 1) {
-                val normCol = col.toFloat() / (cols - 1).toFloat()
-                val bias = (normCol - 0.5f) * spaceDistributionMode.factor
-                0.5f + bias
-            } else {
-                0.5f
-            }
-
-            val tx = slotLeft + spareW * offsetRatio
-            val ty = slotBottom + (slotHeight - destH) / 2f
-
-            contentStream.transform(Matrix(0f, scale, -scale, 0f, tx + destW, ty))
+        val spareW = (slotWidth - destW).coerceAtLeast(0f)
+        val offsetRatio = if (hasMargins && cols > 1) {
+            val normCol = col.toFloat() / (cols - 1).toFloat()
+            val bias = (normCol - 0.5f) * spaceDistributionMode.factor
+            0.5f + bias
         } else {
-            val scale = Math.min(slotWidth / visualW, slotHeight / visualH)
-
-            val destW = visualW * scale
-            val destH = visualH * scale
-
-            val spareW = (slotWidth - destW).coerceAtLeast(0f)
-            val offsetRatio = if (hasMargins && cols > 1) {
-                val normCol = col.toFloat() / (cols - 1).toFloat()
-                val bias = (normCol - 0.5f) * spaceDistributionMode.factor
-                0.5f + bias
-            } else {
-                0.5f
-            }
-
-            val tx = slotLeft + spareW * offsetRatio
-            val ty = slotBottom + (slotHeight - destH) / 2f
-
-            contentStream.transform(Matrix(scale, 0f, 0f, scale, tx, ty))
+            0.5f
         }
 
+        val tx = slotLeft + spareW * offsetRatio
+        val ty = slotBottom + (slotHeight - destH) / 2f
+
+        contentStream.transform(Matrix(scale, 0f, 0f, scale, tx, ty))
         contentStream.drawForm(form)
         contentStream.restoreGraphicsState()
     }

@@ -25,13 +25,22 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
 
         // 1. "Smart" paper size (Default):
         // Automatically optimizes placement onto an A4 sheet.
-        // Default orientation in printing dialog is ALWAYS initialized to Portrait (8268 x 11693 mils).
-        val sizeSmart = PrintAttributes.MediaSize(
-            "MEDIA_SMART",
-            "Smart",
-            8268,
-            11693
-        )
+        // Default orientation in printing dialog matches layout configuration (Portrait for 2x2, 1x2, 2x3, 2x4, notewise; Landscape for 2x1).
+        val sizeSmart = if (mode.landscape) {
+            PrintAttributes.MediaSize(
+                "MEDIA_SMART",
+                "Smart",
+                11693,
+                8268
+            )
+        } else {
+            PrintAttributes.MediaSize(
+                "MEDIA_SMART",
+                "Smart",
+                8268,
+                11693
+            )
+        }
 
         val capabilities = PrinterCapabilitiesInfo.Builder(id)
             .addMediaSize(sizeSmart, true)               // Default: "Smart" (honors layout orientation)

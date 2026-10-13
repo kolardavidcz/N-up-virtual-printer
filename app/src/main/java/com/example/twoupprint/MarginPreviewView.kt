@@ -115,18 +115,18 @@ class MarginPreviewView @JvmOverloads constructor(
         canvas.drawRoundRect(sheetRect, sheetCorner, sheetCorner, sheetPaint)
         canvas.drawRoundRect(sheetRect, sheetCorner, sheetCorner, sheetBorderPaint)
 
-        // Calculate visual margins per side
-        val vTop = mmToVisualPx(marginTopMm)
-        val vBottom = mmToVisualPx(marginBottomMm)
-        val vLeft = mmToVisualPx(marginLeftMm)
-        val vRight = mmToVisualPx(marginRightMm)
-
         val hasMargins = (marginTopMm > 0 || marginBottomMm > 0 || marginLeftMm > 0 || marginRightMm > 0)
 
-        // Internal gutters (adjusted by space distribution mode only when there are margins)
-        val baseGutterX = if (hasMargins) ((vLeft + vRight) / 2f).coerceAtLeast(1.5f * density) else (1.5f * density)
-        val vGutterX = if (hasMargins) (baseGutterX * spaceDistributionMode.gutterMultiplier).coerceAtLeast(1.5f * density) else (1.5f * density)
-        val vGutterY = if (hasMargins) ((vTop + vBottom) / 2f).coerceAtLeast(1.5f * density) else (1.5f * density)
+        // Calculate visual margins per side (strictly 0 when no margins configured)
+        val vTop = if (hasMargins) mmToVisualPx(marginTopMm) else 0f
+        val vBottom = if (hasMargins) mmToVisualPx(marginBottomMm) else 0f
+        val vLeft = if (hasMargins) mmToVisualPx(marginLeftMm) else 0f
+        val vRight = if (hasMargins) mmToVisualPx(marginRightMm) else 0f
+
+        // Internal gutters (strictly 0 when no margins configured)
+        val baseGutterX = if (hasMargins) ((vLeft + vRight) / 2f) else 0f
+        val vGutterX = if (hasMargins) (baseGutterX * spaceDistributionMode.gutterMultiplier) else 0f
+        val vGutterY = if (hasMargins) ((vTop + vBottom) / 2f) else 0f
 
         val printableW = (sheetW - (vLeft + vRight)).coerceAtLeast(20f)
         val printableH = (sheetH - (vTop + vBottom)).coerceAtLeast(20f)
@@ -175,7 +175,7 @@ class MarginPreviewView @JvmOverloads constructor(
 
     private fun mmToVisualPx(mm: Int): Float {
         return when (mm) {
-            0 -> 1.5f * density
+            0 -> 0f
             3 -> 6.5f * density
             6 -> 12f * density
             else -> mm * 2f * density

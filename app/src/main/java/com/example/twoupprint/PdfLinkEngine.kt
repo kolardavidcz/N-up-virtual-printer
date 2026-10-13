@@ -254,9 +254,6 @@ object PdfLinkEngine {
         val visualW = if (isRot90or270) rawH else rawW
         val visualH = if (isRot90or270) rawW else rawH
 
-        // Content must ALWAYS remain upright in its grid slots matching PdfMerger
-        val needsRotation = false
-
         // 1. Transform raw [x1, y1, x2, y2] to visual upright space in [0, 0, visualW, visualH]
         val rx1 = srcRect.lowerLeftX
         val ry1 = srcRect.lowerLeftY
@@ -279,67 +276,34 @@ object PdfLinkEngine {
         val vyMin = Math.min(p1.second, p2.second)
         val vyMax = Math.max(p1.second, p2.second)
 
-        // 2. Transform visual rectangle into slot
-        if (needsRotation) {
-            val rotatedW = visualH
-            val rotatedH = visualW
-            val scale = Math.min(slotWidth / rotatedW, slotHeight / rotatedH)
+        // 2. Transform visual rectangle into slot (strictly upright matching PdfMerger)
+        val scale = Math.min(slotWidth / visualW, slotHeight / visualH)
 
-            val destW = rotatedW * scale
-            val destH = rotatedH * scale
+        val destW = visualW * scale
+        val destH = visualH * scale
 
-            val spareW = (slotWidth - destW).coerceAtLeast(0f)
-            val offsetRatio = if (hasMargins && cols > 1) {
-                val normCol = col.toFloat() / (cols - 1).toFloat()
-                val bias = (normCol - 0.5f) * spaceDistributionMode.factor
-                0.5f + bias
-            } else {
-                0.5f
-            }
-
-            val tx = slotLeft + spareW * offsetRatio
-            val ty = slotBottom + (slotHeight - destH) / 2f
-
-            val xA = tx + destW - scale * vyMin
-            val xB = tx + destW - scale * vyMax
-            val yA = ty + scale * vxMin
-            val yB = ty + scale * vxMax
-
-            return PDRectangle().apply {
-                lowerLeftX = Math.min(xA, xB)
-                lowerLeftY = Math.min(yA, yB)
-                upperRightX = Math.max(xA, xB)
-                upperRightY = Math.max(yA, yB)
-            }
+        val spareW = (slotWidth - destW).coerceAtLeast(0f)
+        val offsetRatio = if (hasMargins && cols > 1) {
+            val normCol = col.toFloat() / (cols - 1).toFloat()
+            val bias = (normCol - 0.5f) * spaceDistributionMode.factor
+            0.5f + bias
         } else {
-            val scale = Math.min(slotWidth / visualW, slotHeight / visualH)
+            0.5f
+        }
 
-            val destW = visualW * scale
-            val destH = visualH * scale
+        val tx = slotLeft + spareW * offsetRatio
+        val ty = slotBottom + (slotHeight - destH) / 2f
 
-            val spareW = (slotWidth - destW).coerceAtLeast(0f)
-            val offsetRatio = if (hasMargins && cols > 1) {
-                val normCol = col.toFloat() / (cols - 1).toFloat()
-                val bias = (normCol - 0.5f) * spaceDistributionMode.factor
-                0.5f + bias
-            } else {
-                0.5f
-            }
+        val minX = tx + vxMin * scale
+        val maxX = tx + vxMax * scale
+        val minY = ty + vyMin * scale
+        val maxY = ty + vyMax * scale
 
-            val tx = slotLeft + spareW * offsetRatio
-            val ty = slotBottom + (slotHeight - destH) / 2f
-
-            val minX = tx + vxMin * scale
-            val maxX = tx + vxMax * scale
-            val minY = ty + vyMin * scale
-            val maxY = ty + vyMax * scale
-
-            return PDRectangle().apply {
-                lowerLeftX = minX
-                lowerLeftY = minY
-                upperRightX = maxX
-                upperRightY = maxY
-            }
+        return PDRectangle().apply {
+            lowerLeftX = minX
+            lowerLeftY = minY
+            upperRightX = maxX
+            upperRightY = maxY
         }
     }
 

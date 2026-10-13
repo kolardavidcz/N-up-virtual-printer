@@ -45,10 +45,9 @@ class TwoUpPrintService : PrintService() {
         val isSmart = mediaSize?.id == "MEDIA_SMART" || mediaSize?.id == "MEDIA_PRESENTATION_SMART" || mediaSize?.id == "MEDIA_MATCH_SIZE"
         val isPresentationSmart = (mediaSize?.id == "MEDIA_PRESENTATION_SMART")
 
-        // Orientation strictly follows the configured layout setting (e.g. 2x1 is Landscape, 2x2 is Portrait).
-        // If the user explicitly selected Landscape in the system print dialog, honor it.
-        val userSelectedLandscape = (mediaSize != null && !mediaSize.isPortrait)
-        val sheetLandscape: Boolean = baseLayout.landscape || userSelectedLandscape
+        // Orientation strictly follows the user selection in the system print dialog if available,
+        // otherwise falls back to the configured layout setting.
+        val sheetLandscape: Boolean = mediaSize?.let { !it.isPortrait } ?: baseLayout.landscape
 
         // Layout preserves configured sheet orientation and sub-page orientation from in-app settings
         val layout = baseLayout.copy(
