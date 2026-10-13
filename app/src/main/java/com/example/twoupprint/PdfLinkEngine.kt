@@ -52,6 +52,7 @@ object PdfLinkEngine {
         col: Int = 0,
         cols: Int = 1,
         spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
+        hasMargins: Boolean = false,
         isPresentationSmart: Boolean = false
     ) {
         val cropBox = srcPage.cropBox ?: srcPage.mediaBox ?: return
@@ -81,6 +82,7 @@ object PdfLinkEngine {
                             col = col,
                             cols = cols,
                             spaceDistributionMode = spaceDistributionMode,
+                            hasMargins = hasMargins,
                             pageRotation = srcPage.rotation,
                             isPresentationSmart = isPresentationSmart
                         )
@@ -238,6 +240,7 @@ object PdfLinkEngine {
         col: Int = 0,
         cols: Int = 1,
         spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
+        hasMargins: Boolean = false,
         pageRotation: Int = 0,
         isPresentationSmart: Boolean = false
     ): PDRectangle {
@@ -251,9 +254,8 @@ object PdfLinkEngine {
         val visualW = if (isRot90or270) rawH else rawW
         val visualH = if (isRot90or270) rawW else rawH
 
-        val srcIsLandscape = visualW > visualH
-        val targetIsLandscape = layout.subPageLandscape
-        val needsRotation = if (isPresentationSmart) false else (srcIsLandscape != targetIsLandscape)
+        // Content must ALWAYS remain upright in its grid slots matching PdfMerger
+        val needsRotation = false
 
         // 1. Transform raw [x1, y1, x2, y2] to visual upright space in [0, 0, visualW, visualH]
         val rx1 = srcRect.lowerLeftX
@@ -287,7 +289,7 @@ object PdfLinkEngine {
             val destH = rotatedH * scale
 
             val spareW = (slotWidth - destW).coerceAtLeast(0f)
-            val offsetRatio = if (cols > 1) {
+            val offsetRatio = if (hasMargins && cols > 1) {
                 val normCol = col.toFloat() / (cols - 1).toFloat()
                 val bias = (normCol - 0.5f) * spaceDistributionMode.factor
                 0.5f + bias
@@ -316,7 +318,7 @@ object PdfLinkEngine {
             val destH = visualH * scale
 
             val spareW = (slotWidth - destW).coerceAtLeast(0f)
-            val offsetRatio = if (cols > 1) {
+            val offsetRatio = if (hasMargins && cols > 1) {
                 val normCol = col.toFloat() / (cols - 1).toFloat()
                 val bias = (normCol - 0.5f) * spaceDistributionMode.factor
                 0.5f + bias

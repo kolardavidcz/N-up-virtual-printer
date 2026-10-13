@@ -56,7 +56,7 @@ object LayoutRegistry {
      * Default configurations:
      *   2×1  →  sub-page Portrait,  final sheet Landscape
      *   1×2  →  sub-page Landscape, final sheet Portrait
-     *   2×2  →  sub-page Landscape, final sheet Landscape
+     *   2×2  →  sub-page Portrait,   final sheet Portrait (Regular PDF optimal grid)
      *   2×3  →  sub-page Landscape, final sheet Portrait
      *   2×4  →  sub-page Landscape, final sheet Portrait
      *   notewise → single-page vector note (.notewise)
@@ -64,13 +64,22 @@ object LayoutRegistry {
     val builtInLayouts = listOf(
         PrintLayout("nup_2x1", "2-Up Side by Side (2×1)", 2, 1, landscape = true,  subPageLandscape = false, R.drawable.ic_layout_2x1),
         PrintLayout("nup_1x2", "2-Up Stacked (1×2)",      1, 2, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_1x2),
-        PrintLayout("nup_2x2", "4-Up Grid (2×2)",         2, 2, landscape = true,  subPageLandscape = true,  R.drawable.ic_layout_2x2),
+        PrintLayout("nup_2x2", "4-Up Grid (2×2)",         2, 2, landscape = false, subPageLandscape = false, R.drawable.ic_layout_2x2),
         PrintLayout("nup_2x3", "6-Up Grid (2×3)",         2, 3, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x3),
         PrintLayout("nup_2x4", "8-Up Grid (2×4)",         2, 4, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x4),
         PrintLayout("nup_notewise", "Notewise Notebook (.notewise)", 1, 1, landscape = false, subPageLandscape = false, R.drawable.ic_layout_notewise)
     )
 
     fun getAllLayouts(context: Context): List<PrintLayout> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        if (prefs.getInt("prefs_schema_version", 0) < 2) {
+            prefs.edit()
+                .remove("orientation_nup_2x2")
+                .remove("subpage_orientation_nup_2x2")
+                .putInt("prefs_schema_version", 2)
+                .apply()
+        }
+
         val rawList = builtInLayouts + getCustomLayouts(context)
         return rawList.map { layout ->
             val effectiveLandscape = getLayoutOrientation(context, layout.printerId, layout.landscape)
@@ -156,7 +165,7 @@ object LayoutRegistry {
 
     fun isAutoTrimEnabled(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getBoolean("enable_auto_trim_letterbox", true) // default true
+        return prefs.getBoolean("enable_auto_trim_letterbox", false) // default false (safe for regular PDFs)
     }
 
     fun setAutoTrimEnabled(context: Context, enabled: Boolean) {
@@ -294,8 +303,9 @@ object LayoutRegistry {
                 val obj = array.getJSONObject(i)
                 val cols = obj.getInt("cols")
                 val rows = obj.getInt("rows")
-                val defaultLandscape = obj.optBoolean("landscape", cols >= rows)
-                val subPageLandscape = obj.optBoolean("subPageLandscape", cols < rows)
+                val (inferredLandscape, inferredSubLandscape) = inferDefaults(cols, rows)
+                val defaultLandscape = obj.optBoolean("landscape", inferredLandscape)
+                val subPageLandscape = obj.optBoolean("subPageLandscape", inferredSubLandscape)
                 val totalPages = cols * rows
                 val id = "custom_${cols}x${rows}"
                 val name = "${totalPages}-Up Custom (${cols}×${rows})"
@@ -369,13 +379,18 @@ object LayoutRegistry {
 
     /**
      * Infers sensible defaults for a given grid:
-     *   cols >= rows → Landscape sheet, Portrait sub-pages (e.g. 2×1, 3×2)
+     *   cols == rows → Portrait sheet,  Portrait sub-pages (e.g. 2×2, 3×3 square grids on portrait sheet)
+     *   cols > rows  → Landscape sheet, Portrait sub-pages (e.g. 2×1, 3×2)
      *   rows > cols  → Portrait sheet,  Landscape sub-pages (e.g. 1×2, 2×3)
      */
     fun inferDefaults(cols: Int, rows: Int): Pair<Boolean, Boolean> {
-        val sheetLandscape = cols >= rows
-        val subLandscape = !sheetLandscape
-        return Pair(sheetLandscape, subLandscape)
+        return if (cols == rows) {
+            Pair(false, false)
+        } else if (cols > rows) {
+            Pair(true, false)
+        } else {
+            Pair(false, true)
+        }
     }
 
     fun findLayoutById(context: Context, printerId: String?): PrintLayout {

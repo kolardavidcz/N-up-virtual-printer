@@ -844,4 +844,146 @@ class PdfMergerTest {
 
         outDoc.close()
     }
+
+    @Test
+    fun test2x2_PortraitDocumentOnPortraitA4Sheet_ZeroMargins_ZeroOffset() {
+        // Create 4 regular A4 portrait pages (595.28 x 841.89 pt)
+        val srcBytes = createTestPresentation(4, 595.28f, 841.89f)
+        val outStream = ByteArrayOutputStream()
+
+        val layout = LayoutRegistry.builtInLayouts.first { it.printerId == "nup_2x2" }
+        assertEquals(2, layout.cols)
+        assertEquals(2, layout.rows)
+        org.junit.Assert.assertFalse("2x2 sheet must default to Portrait for regular PDFs", layout.landscape)
+        org.junit.Assert.assertFalse("2x2 subpages must default to Portrait for regular PDFs", layout.subPageLandscape)
+
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(srcBytes),
+            outputStream = outStream,
+            layout = layout,
+            addTextContrast = false,
+            enableLinks = false,
+            bestFit = false,
+            marginTopMm = 0,
+            marginBottomMm = 0,
+            marginLeftMm = 0,
+            marginRightMm = 0,
+            autoTrimSlideBorders = false,
+            spaceDistributionMode = SpaceDistributionMode.MAX_MIDDLE
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        assertEquals(1, outDoc.numberOfPages)
+
+        val outPage = outDoc.getPage(0)
+        // Output must strictly be A4 Portrait: width ~595.28 pt, height ~841.89 pt
+        assertEquals(PDRectangle.A4.width, outPage.mediaBox.width, 0.5f)
+        assertEquals(PDRectangle.A4.height, outPage.mediaBox.height, 0.5f)
+        assertTrue("MediaBox must be portrait", outPage.mediaBox.height > outPage.mediaBox.width)
+
+        // 4 Form XObjects must be present and upright portrait
+        val resources = outPage.resources
+        var xobjCount = 0
+        for (name in resources.xObjectNames) {
+            val xobj = resources.getXObject(name)
+            if (xobj is com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject) {
+                xobjCount++
+                assertEquals(595.28f, xobj.bBox.width, 1f)
+                assertEquals(841.89f, xobj.bBox.height, 1f)
+            }
+        }
+        assertEquals(4, xobjCount)
+
+        outDoc.close()
+    }
+
+    @Test
+    fun testOffsetsAppliedOnlyWhenMarginsPresent() {
+        val srcBytes = createTestPresentation(2, 595.28f, 841.89f)
+        val layout = LayoutRegistry.builtInLayouts.first { it.printerId == "nup_2x1" }
+
+        // Test 1: Zero margins with MAX_MIDDLE mode -> No offset/gutter applied (flush center)
+        val outZeroStream = ByteArrayOutputStream()
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(srcBytes),
+            outputStream = outZeroStream,
+            layout = layout,
+            bestFit = false,
+            marginTopMm = 0,
+            marginBottomMm = 0,
+            marginLeftMm = 0,
+            marginRightMm = 0,
+            spaceDistributionMode = SpaceDistributionMode.MAX_MIDDLE
+        )
+        val docZero = PDDocument.load(ByteArrayInputStream(outZeroStream.toByteArray()))
+        val pageZero = docZero.getPage(0)
+        assertEquals(PDRectangle.A4.height, pageZero.mediaBox.width, 0.5f)
+        assertEquals(PDRectangle.A4.width, pageZero.mediaBox.height, 0.5f)
+        docZero.close()
+
+        // Test 2: Margins present -> Gutter and offset correctly applied
+        val outMarginStream = ByteArrayOutputStream()
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(srcBytes),
+            outputStream = outMarginStream,
+            layout = layout,
+            bestFit = false,
+            marginTopMm = 6,
+            marginBottomMm = 6,
+            marginLeftMm = 6,
+            marginRightMm = 6,
+            spaceDistributionMode = SpaceDistributionMode.MAX_MIDDLE
+        )
+        val docMargin = PDDocument.load(ByteArrayInputStream(outMarginStream.toByteArray()))
+        assertEquals(1, docMargin.numberOfPages)
+        docMargin.close()
+    }
+
+    @Test
+    fun testPdfContentTrimmer_DoesNotCropRegularMultiPagePdf() {
+        val doc = PDDocument()
+
+        // Page 0: Title page with content in the middle (Y=300 to 500)
+        val p0 = PDPage(PDRectangle(595.28f, 841.89f))
+        doc.addPage(p0)
+        val cs0 = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(doc, p0)
+        cs0.addRect(50f, 300f, 400f, 200f)
+        cs0.fill()
+        cs0.close()
+
+        // Page 1: Full-page article with header at Y=820 and footer at Y=50
+        val p1 = PDPage(PDRectangle(595.28f, 841.89f))
+        doc.addPage(p1)
+        val cs1 = com.tom_roush.pdfbox.pdmodel.PDPageContentStream(doc, p1)
+        cs1.addRect(50f, 820f, 400f, 15f) // Top header
+        cs1.addRect(50f, 50f, 400f, 15f)  // Bottom footer
+        cs1.fill()
+        cs1.close()
+
+        // Trimmer must NOT detect this multi-page document as a slide presentation!
+        val detected = PdfContentTrimmer.trimDocumentSlides(doc, forceSlideMode = false)
+        org.junit.Assert.assertNull("Must not trim regular multi-page document!", detected)
+
+        val crop0 = p0.cropBox ?: p0.mediaBox
+        val crop1 = p1.cropBox ?: p1.mediaBox
+        assertEquals(841.89f, crop0.height, 0.5f)
+        assertEquals(841.89f, crop1.height, 0.5f)
+
+        doc.close()
+    }
+
+    @Test
+    fun testInferDefaults_SquareGridIsPortrait() {
+        val (sheetLandscape2x2, subLandscape2x2) = LayoutRegistry.inferDefaults(2, 2)
+        org.junit.Assert.assertFalse("2x2 sheet must default to portrait", sheetLandscape2x2)
+        org.junit.Assert.assertFalse("2x2 subpage must default to portrait", subLandscape2x2)
+
+        val (sheetLandscape3x3, subLandscape3x3) = LayoutRegistry.inferDefaults(3, 3)
+        org.junit.Assert.assertFalse("3x3 sheet must default to portrait", sheetLandscape3x3)
+        org.junit.Assert.assertFalse("3x3 subpage must default to portrait", subLandscape3x3)
+
+        val (sheetLandscape2x1, subLandscape2x1) = LayoutRegistry.inferDefaults(2, 1)
+        assertTrue("2x1 sheet must default to landscape", sheetLandscape2x1)
+        org.junit.Assert.assertFalse("2x1 subpage must default to portrait", subLandscape2x1)
+    }
 }

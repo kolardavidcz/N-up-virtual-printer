@@ -33,12 +33,12 @@ enum class LayoutMode(
         iconResId = R.drawable.ic_layout_1x2
     ),
 
-    /** 4 pages in a 2×2 grid on a landscape sheet */
+    /** 4 pages in a 2×2 grid on a portrait sheet */
     GRID_2x2(
         printerId = "nup_2x2",
         displayName = "4-Up ▸ Grid (2×2)",
         cols = 2, rows = 2,
-        landscape = true,
+        landscape = false,
         iconResId = R.drawable.ic_layout_2x2
     ),
 

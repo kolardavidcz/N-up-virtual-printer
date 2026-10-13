@@ -43,9 +43,12 @@ class TwoUpPrintService : PrintService() {
 
         // "Smart" mode (Default):
         val isSmart = mediaSize?.id == "MEDIA_SMART" || mediaSize?.id == "MEDIA_PRESENTATION_SMART" || mediaSize?.id == "MEDIA_MATCH_SIZE"
+        val isPresentationSmart = (mediaSize?.id == "MEDIA_PRESENTATION_SMART")
 
-        // Orientation strictly follows the configured layout setting (e.g. 2x1 is Landscape, 1x2 is Portrait)
-        val sheetLandscape: Boolean = baseLayout.landscape
+        // Orientation strictly follows the configured layout setting (e.g. 2x1 is Landscape, 2x2 is Portrait).
+        // If the user explicitly selected Landscape in the system print dialog, honor it.
+        val userSelectedLandscape = (mediaSize != null && !mediaSize.isPortrait)
+        val sheetLandscape: Boolean = baseLayout.landscape || userSelectedLandscape
 
         // Layout preserves configured sheet orientation and sub-page orientation from in-app settings
         val layout = baseLayout.copy(
@@ -66,7 +69,7 @@ class TwoUpPrintService : PrintService() {
         val spaceDistributionMode = LayoutRegistry.getSpaceDistributionMode(applicationContext)
 
         val autoTrimEnabled = LayoutRegistry.isAutoTrimEnabled(applicationContext)
-        val autoTrimSlideBorders = isSmart || autoTrimEnabled
+        val autoTrimSlideBorders = autoTrimEnabled || isPresentationSmart
 
         // Extract website / page title from print job metadata if available
         val docName = extractCleanDocumentName(printJob)
@@ -105,7 +108,7 @@ class TwoUpPrintService : PrintService() {
                 marginLeftMm,
                 marginRightMm,
                 autoTrimSlideBorders,
-                isSmart,
+                isPresentationSmart,
                 spaceDistributionMode
             )
             return
@@ -136,7 +139,7 @@ class TwoUpPrintService : PrintService() {
             layout, fileName, addTextContrast, enableLinks,
             bestFit,
             marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
-            autoTrimSlideBorders, isSmart,
+            autoTrimSlideBorders, isPresentationSmart,
             spaceDistributionMode
         ).start()
     }

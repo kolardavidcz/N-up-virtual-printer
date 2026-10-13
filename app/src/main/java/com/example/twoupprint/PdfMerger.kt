@@ -89,9 +89,11 @@ object PdfMerger {
             val marginLeftPt = marginLeftMm * mmToPt
             val marginRightPt = marginRightMm * mmToPt
 
-            val baseGutterX = ((marginLeftPt + marginRightPt) / 2f).coerceAtLeast(0f)
-            val gutterX = (baseGutterX * spaceDistributionMode.gutterMultiplier).coerceAtLeast(0f)
-            val gutterY = ((marginTopPt + marginBottomPt) / 2f).coerceAtLeast(0f)
+            val hasMargins = (marginTopMm > 0 || marginBottomMm > 0 || marginLeftMm > 0 || marginRightMm > 0)
+
+            val baseGutterX = if (hasMargins) ((marginLeftPt + marginRightPt) / 2f).coerceAtLeast(0f) else 0f
+            val gutterX = if (hasMargins) (baseGutterX * spaceDistributionMode.gutterMultiplier).coerceAtLeast(0f) else 0f
+            val gutterY = if (hasMargins) ((marginTopPt + marginBottomPt) / 2f).coerceAtLeast(0f) else 0f
 
             // Sheet dimensions for output (adaptive Best Fit or fixed A4)
             val sheetRect = calculateSheetRectangle(
@@ -139,6 +141,7 @@ object PdfMerger {
                             col = col,
                             cols = cols,
                             spaceDistributionMode = spaceDistributionMode,
+                            hasMargins = hasMargins,
                             isPresentationSmart = isSlideMode
                         )
 
@@ -158,6 +161,7 @@ object PdfMerger {
                                 col = col,
                                 cols = cols,
                                 spaceDistributionMode = spaceDistributionMode,
+                                hasMargins = hasMargins,
                                 isPresentationSmart = isSlideMode
                             )
                         }
@@ -365,6 +369,7 @@ object PdfMerger {
         col: Int = 0,
         cols: Int = 1,
         spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
+        hasMargins: Boolean = false,
         isPresentationSmart: Boolean = false
     ) {
         val form = layerUtility.importPageAsForm(srcDoc, pageIndex)
@@ -444,7 +449,7 @@ object PdfMerger {
             val destH = rotatedH * scale
 
             val spareW = (slotWidth - destW).coerceAtLeast(0f)
-            val offsetRatio = if (cols > 1) {
+            val offsetRatio = if (hasMargins && cols > 1) {
                 val normCol = col.toFloat() / (cols - 1).toFloat()
                 val bias = (normCol - 0.5f) * spaceDistributionMode.factor
                 0.5f + bias
@@ -463,7 +468,7 @@ object PdfMerger {
             val destH = visualH * scale
 
             val spareW = (slotWidth - destW).coerceAtLeast(0f)
-            val offsetRatio = if (cols > 1) {
+            val offsetRatio = if (hasMargins && cols > 1) {
                 val normCol = col.toFloat() / (cols - 1).toFloat()
                 val bias = (normCol - 0.5f) * spaceDistributionMode.factor
                 0.5f + bias

@@ -121,16 +121,18 @@ class MarginPreviewView @JvmOverloads constructor(
         val vLeft = mmToVisualPx(marginLeftMm)
         val vRight = mmToVisualPx(marginRightMm)
 
-        // Internal gutters (adjusted by space distribution mode)
-        val baseGutterX = ((vLeft + vRight) / 2f).coerceAtLeast(1.5f * density)
-        val vGutterX = (baseGutterX * spaceDistributionMode.gutterMultiplier).coerceAtLeast(1.5f * density)
-        val vGutterY = ((vTop + vBottom) / 2f).coerceAtLeast(1.5f * density)
+        val hasMargins = (marginTopMm > 0 || marginBottomMm > 0 || marginLeftMm > 0 || marginRightMm > 0)
+
+        // Internal gutters (adjusted by space distribution mode only when there are margins)
+        val baseGutterX = if (hasMargins) ((vLeft + vRight) / 2f).coerceAtLeast(1.5f * density) else (1.5f * density)
+        val vGutterX = if (hasMargins) (baseGutterX * spaceDistributionMode.gutterMultiplier).coerceAtLeast(1.5f * density) else (1.5f * density)
+        val vGutterY = if (hasMargins) ((vTop + vBottom) / 2f).coerceAtLeast(1.5f * density) else (1.5f * density)
 
         val printableW = (sheetW - (vLeft + vRight)).coerceAtLeast(20f)
         val printableH = (sheetH - (vTop + vBottom)).coerceAtLeast(20f)
 
         // Draw printable boundary guideline if any margin is > 0
-        if (marginTopMm > 0 || marginBottomMm > 0 || marginLeftMm > 0 || marginRightMm > 0) {
+        if (hasMargins) {
             canvas.drawRect(
                 sheetLeft + vLeft,
                 sheetTop + vTop,
@@ -157,9 +159,9 @@ class MarginPreviewView @JvmOverloads constructor(
                 canvas.drawRoundRect(slotRect, slotCorner, slotCorner, slotBorderPaint)
 
                 // Mini content lines inside each slot for realistic slide preview
-                // Shifted outward when spaceDistributionMode favors middle space
+                // Shifted outward when spaceDistributionMode favors middle space ONLY when there are margins
                 val normCol = if (cols > 1) c.toFloat() / (cols - 1).toFloat() else 0.5f
-                val shiftBias = (normCol - 0.5f) * spaceDistributionMode.factor
+                val shiftBias = if (hasMargins) (normCol - 0.5f) * spaceDistributionMode.factor else 0f
                 val lineShiftX = (slotW * 0.14f) * (shiftBias * 2f)
 
                 val lineInsetX = slotW * 0.2f

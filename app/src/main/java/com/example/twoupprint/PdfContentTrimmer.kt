@@ -96,11 +96,20 @@ class PdfContentTrimmer {
             return null
         }
 
-        // 2. Apply trimmed crop box to every page in the document
+        // 2. Apply trimmed crop box to every page in the document without clipping content
         for (i in 0 until pageCount) {
             val page = doc.getPage(i)
             val trimmedBox = calculateTrimmedBoxForRatio(page, detectedRatio)
-            page.cropBox = trimmedBox
+            val content = detectContentBounds(doc, page, i)
+            if (content.hasContent) {
+                val safeMinY = min(trimmedBox.lowerLeftY, content.minY)
+                val safeMaxY = max(trimmedBox.upperRightY, content.maxY)
+                val safeMinX = min(trimmedBox.lowerLeftX, content.minX)
+                val safeMaxX = max(trimmedBox.upperRightX, content.maxX)
+                page.cropBox = PDRectangle(safeMinX, safeMinY, safeMaxX - safeMinX, safeMaxY - safeMinY)
+            } else {
+                page.cropBox = trimmedBox
+            }
         }
 
         return detectedRatio
@@ -111,28 +120,53 @@ class PdfContentTrimmer {
      */
     fun detectDocumentSlideRatio(doc: PDDocument, forceSlideMode: Boolean = false): Float? {
         val pageCount = doc.numberOfPages
+        if (pageCount == 0) return null
+
         val sampleSize = min(pageCount, 5)
 
+        // Step 1: Pre-check all sample pages. If ANY sample page has content extending near top or bottom,
+        // it is unequivocally a regular document (e.g. multi-page text notes, articles). NEVER crop!
         for (i in 0 until sampleSize) {
             val page = doc.getPage(i)
-            val ratio = detectPageSlideRatio(doc, page, i)
-            if (ratio != null) {
-                return ratio
-            }
-            // Check if page clearly has full-page content (not a letterboxed slide)
             val content = detectContentBounds(doc, page, i)
             if (content.hasContent) {
                 val origBox = page.cropBox ?: page.mediaBox ?: PDRectangle.A4
                 val emptyBottom = content.minY - origBox.lowerLeftY
                 val emptyTop = origBox.upperRightY - content.maxY
-                val minMargin = origBox.height * 0.12f
+                val isLandscape = origBox.width > origBox.height
+                val minMargin = if (isLandscape) 20f else (origBox.height * 0.12f)
                 if (emptyBottom < minMargin || emptyTop < minMargin) {
-                    // Content extends near top or bottom: unequivocally a regular document, never crop!
                     return null
                 }
             }
         }
-        return if (forceSlideMode) (16f / 9f) else null
+
+        // If forceSlideMode is true and borders are clear, return 16:9 default
+        if (forceSlideMode) return (16f / 9f)
+
+        // Step 2: Ensure consistency across sample pages.
+        var candidateRatio: Float? = null
+        var matchCount = 0
+
+        for (i in 0 until sampleSize) {
+            val page = doc.getPage(i)
+            val ratio = detectPageSlideRatio(doc, page, i)
+            if (ratio != null) {
+                if (candidateRatio == null) {
+                    candidateRatio = ratio
+                    matchCount++
+                } else if (abs(candidateRatio - ratio) < 0.05f) {
+                    matchCount++
+                } else {
+                    // Conflicting ratios between pages -> regular document, do not crop
+                    return null
+                }
+            }
+        }
+
+        // Require positive confirmation: for single-page doc, 1 match; for multi-page doc, at least 2 matches
+        val requiredMatches = if (sampleSize <= 1) 1 else 2
+        return if (matchCount >= requiredMatches) candidateRatio else null
     }
 
     /**
