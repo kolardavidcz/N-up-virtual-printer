@@ -22,9 +22,12 @@ object CustomLayoutDialogHelper {
         context: Context,
         onLayoutAdded: (cols: Int, rows: Int) -> Unit
     ) {
+        val density = context.resources.displayMetrics.density
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(48, 24, 48, 24)
+            val padH = (20 * density).toInt()
+            val padV = (10 * density).toInt()
+            setPadding(padH, padV, padH, padV)
         }
 
         val colsInput = EditText(context).apply {
@@ -41,12 +44,12 @@ object CustomLayoutDialogHelper {
 
         val sheetSwitch = MaterialSwitch(context).apply {
             text = "Landscape output sheet"
-            setPadding(0, 16, 0, 0)
+            setPadding(0, (12 * density).toInt(), 0, 0)
         }
 
         val subPageSwitch = MaterialSwitch(context).apply {
             text = "Landscape sub-pages"
-            setPadding(0, 8, 0, 0)
+            setPadding(0, (6 * density).toInt(), 0, 0)
         }
 
         fun updateSuitableOrientation() {
@@ -77,7 +80,7 @@ object CustomLayoutDialogHelper {
         container.addView(TextView(context).apply {
             text = "Rows (Y):"
             setTextColor(Color.parseColor("#D0BCFF"))
-            setPadding(0, 16, 0, 0)
+            setPadding(0, (12 * density).toInt(), 0, 0)
         })
         container.addView(rowsInput)
         container.addView(sheetSwitch)
@@ -87,17 +90,27 @@ object CustomLayoutDialogHelper {
             .setTitle("Add Custom Layout")
             .setView(container)
             .setPositiveButton("Add Printer") { _, _ ->
-                val cols = colsInput.text.toString().toIntOrNull() ?: 2
-                val rows = rowsInput.text.toString().toIntOrNull() ?: 2
+                val cols = colsInput.text.toString().toIntOrNull() ?: 3
+                val rows = rowsInput.text.toString().toIntOrNull() ?: 3
                 val landscape = sheetSwitch.isChecked
                 val subLandscape = subPageSwitch.isChecked
 
+                if (cols !in 1..10 || rows !in 1..10 || cols * rows < 2) {
+                    Toast.makeText(context, "Grid dimensions must be 1..10 and produce at least 2 pages", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                if (LayoutRegistry.builtInLayouts.any { !it.isSplit && it.cols == cols && it.rows == rows }) {
+                    Toast.makeText(context, "${cols}×${rows} already exists as a built-in layout", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
                 val added = LayoutRegistry.addCustomLayout(context, cols, rows, landscape, subLandscape)
                 if (added) {
-                    Toast.makeText(context, "Added ${cols}x${rows} printer layout", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Added ${cols}×${rows} printer layout", Toast.LENGTH_SHORT).show()
                     onLayoutAdded(cols, rows)
                 } else {
-                    Toast.makeText(context, "Layout already exists or invalid values", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Custom layout ${cols}×${rows} already exists", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)

@@ -262,4 +262,62 @@ object PdfPageGeometry {
             upperRightY = placement.ty + vRect.maxY * placement.scale
         }
     }
+
+    /**
+     * Computes upright visual sub-bounds for a tile in a grid division of [cols] x [rows],
+     * in standard reading order (row: 0=top to rows-1=bottom, col: 0=left to cols-1=right).
+     */
+    fun calculateTileVisualBounds(
+        visualW: Float,
+        visualH: Float,
+        col: Int,
+        row: Int,
+        cols: Int,
+        rows: Int
+    ): VisualRect {
+        val tileW = visualW / cols.toFloat()
+        val tileH = visualH / rows.toFloat()
+        val vxMin = col * tileW
+        val vxMax = (col + 1) * tileW
+        val vyMin = visualH - (row + 1) * tileH
+        val vyMax = visualH - row * tileH
+        return VisualRect(vxMin, vyMin, vxMax, vyMax)
+    }
+
+    /**
+     * Computes translation shift (shiftX, shiftY) to position Form XObject
+     * so that [tileBounds] maps directly to [placement.tx, placement.ty] scaled by [placement.scale].
+     */
+    fun calculateTileShift(placement: SlotPlacement, tileBounds: VisualRect): Pair<Float, Float> {
+        val shiftX = placement.tx - tileBounds.minX * placement.scale
+        val shiftY = placement.ty - tileBounds.minY * placement.scale
+        return Pair(shiftX, shiftY)
+    }
+
+    /**
+     * Intersects an upright visual rectangle [vRect] with [tileBounds],
+     * and if overlapping, maps the clipped intersection to tile destination coordinates on the output sheet.
+     * Returns null if there is no positive 2D intersection.
+     */
+    fun transformVisualRectToTile(
+        vRect: VisualRect,
+        tileBounds: VisualRect,
+        destLeft: Float,
+        destBottom: Float,
+        scale: Float
+    ): PDRectangle? {
+        val ox1 = Math.max(vRect.minX, tileBounds.minX)
+        val ox2 = Math.min(vRect.maxX, tileBounds.maxX)
+        val oy1 = Math.max(vRect.minY, tileBounds.minY)
+        val oy2 = Math.min(vRect.maxY, tileBounds.maxY)
+
+        if (ox2 <= ox1 || oy2 <= oy1) return null
+
+        return PDRectangle().apply {
+            lowerLeftX = destLeft + (ox1 - tileBounds.minX) * scale
+            lowerLeftY = destBottom + (oy1 - tileBounds.minY) * scale
+            upperRightX = destLeft + (ox2 - tileBounds.minX) * scale
+            upperRightY = destBottom + (oy2 - tileBounds.minY) * scale
+        }
+    }
 }

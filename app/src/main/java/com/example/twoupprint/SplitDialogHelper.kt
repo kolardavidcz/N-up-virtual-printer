@@ -108,10 +108,12 @@ object SplitDialogHelper {
             .setPositiveButton("Apply") { _, _ ->
                 val cols = colsInput.text.toString().toIntOrNull() ?: 2
                 val rows = rowsInput.text.toString().toIntOrNull() ?: 1
-                if (cols in 1..10 && rows in 1..10) {
+                if (cols in 1..10 && rows in 1..10 && (cols * rows) >= 2) {
                     LayoutRegistry.setSplitGrid(context, cols, rows)
                     onSplitUpdated()
                     Toast.makeText(context, "Page split set to ${cols}×${rows} (${cols * rows} pages)", Toast.LENGTH_SHORT).show()
+                } else if (cols in 1..10 && rows in 1..10) {
+                    Toast.makeText(context, "Page split division must produce at least 2 sub-pages (e.g. 2×1)", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(context, "Columns and rows must be between 1 and 10", Toast.LENGTH_SHORT).show()
                 }

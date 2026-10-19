@@ -195,6 +195,24 @@ object LayoutRegistry {
         PrintPreferences.removeCustomLayout(context, printerId)
     }
 
+    fun getSaveDirectoryUri(context: Context): String? = PrintPreferences.getSaveDirectoryUri(context)
+
+    fun setSaveDirectoryUri(context: Context, uri: String) {
+        PrintPreferences.setSaveDirectoryUri(context, uri)
+    }
+
+    fun clearSaveDirectoryUri(context: Context) {
+        PrintPreferences.clearSaveDirectoryUri(context)
+    }
+
+    fun isPromptEachPrintEnabled(context: Context): Boolean = PrintPreferences.isPromptEachPrintEnabled(context)
+
+    fun setPromptEachPrintEnabled(context: Context, enabled: Boolean) {
+        PrintPreferences.setPromptEachPrintEnabled(context, enabled)
+    }
+
+    fun findBuiltInLayoutById(printerId: String?): PrintLayout? = builtInLayouts.find { it.printerId == printerId }
+
     fun findLayoutById(context: Context, printerId: String?): PrintLayout =
         PrintPreferences.findLayoutById(context, printerId)
 }

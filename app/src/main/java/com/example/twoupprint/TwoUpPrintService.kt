@@ -95,8 +95,7 @@ class TwoUpPrintService : PrintService() {
         }
 
         // Check if prompt_each_print is enabled
-        val prefs = getSharedPreferences("twoupprint_prefs", Context.MODE_PRIVATE)
-        val isPromptEachPrint = prefs.getBoolean("prompt_each_print", false)
+        val isPromptEachPrint = PrintPreferences.isPromptEachPrintEnabled(applicationContext)
 
         if (isPromptEachPrint) {
             PendingPrintJobManager.enqueuePromptJob(
@@ -121,7 +120,7 @@ class TwoUpPrintService : PrintService() {
         }
 
         // Check if the user has set a preferred save directory in the app settings
-        val savedDirUriStr = prefs.getString("save_directory_uri", null)
+        val savedDirUriStr = PrintPreferences.getSaveDirectoryUri(applicationContext)
 
         var destinationUri: Uri? = null
         if (savedDirUriStr != null) {

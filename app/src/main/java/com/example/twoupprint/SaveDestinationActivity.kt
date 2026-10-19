@@ -34,6 +34,8 @@ class SaveDestinationActivity : ComponentActivity() {
         createDocumentLauncher.launch(safIntent)
     }
 
+    @Suppress("DEPRECATION")
+    @Deprecated("Deprecated in Java", ReplaceWith("onBackPressedDispatcher.onBackPressed()"))
     override fun onBackPressed() {
         super.onBackPressed()
         PendingPrintJobManager.processDestination(this, null)

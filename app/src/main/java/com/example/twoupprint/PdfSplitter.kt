@@ -3,9 +3,6 @@ package com.example.twoupprint
 import android.content.Context
 import android.util.Log
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.cos.COSArray
-import com.tom_roush.pdfbox.cos.COSFloat
-import com.tom_roush.pdfbox.cos.COSName
 import com.tom_roush.pdfbox.multipdf.LayerUtility
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
@@ -97,30 +94,22 @@ object PdfSplitter {
                 val visualW = bounds.visualW
                 val visualH = bounds.visualH
 
-                val tileW = visualW / cols.toFloat()
-                val tileH = visualH / rows.toFloat()
-
                 // Standard reading order: top-to-bottom (row 0 to rows - 1), left-to-right (col 0 to cols - 1)
                 for (r in 0 until rows) {
                     for (c in 0 until cols) {
                         val outPage = PDPage(sheetRect)
                         outDoc.addPage(outPage)
 
-                        // Tile bounds in upright visual coordinates [0, 0, visualW, visualH]
-                        val vxMin = c * tileW
-                        val vxMax = (c + 1) * tileW
-                        val vyMin = visualH - (r + 1) * tileH
-                        val vyMax = visualH - r * tileH
-
-                        val scale = Math.min(printableW / tileW, printableH / tileH)
-                        val destW = tileW * scale
-                        val destH = tileH * scale
-
-                        val tx = marginLeftPt + (printableW - destW) / 2f
-                        val ty = marginBottomPt + (printableH - destH) / 2f
-
-                        val shiftX = tx - vxMin * scale
-                        val shiftY = ty - vyMin * scale
+                        val tileBounds = PdfPageGeometry.calculateTileVisualBounds(visualW, visualH, c, r, cols, rows)
+                        val placement = PdfPageGeometry.calculateSlotPlacement(
+                            visualW = tileBounds.width,
+                            visualH = tileBounds.height,
+                            slotLeft = marginLeftPt,
+                            slotBottom = marginBottomPt,
+                            slotWidth = printableW,
+                            slotHeight = printableH
+                        )
+                        val (shiftX, shiftY) = PdfPageGeometry.calculateTileShift(placement, tileBounds)
 
                         val contentStream = PDPageContentStream(
                             outDoc,
@@ -131,9 +120,9 @@ object PdfSplitter {
                         )
                         contentStream.saveGraphicsState()
                         // Clip strictly to destination slot
-                        contentStream.addRect(tx, ty, destW, destH)
+                        contentStream.addRect(placement.tx, placement.ty, placement.destW, placement.destH)
                         contentStream.clip()
-                        contentStream.transform(Matrix(scale, 0f, 0f, scale, shiftX, shiftY))
+                        contentStream.transform(Matrix(placement.scale, 0f, 0f, placement.scale, shiftX, shiftY))
                         contentStream.drawForm(form)
                         contentStream.restoreGraphicsState()
                         contentStream.close()
@@ -144,13 +133,10 @@ object PdfSplitter {
                                 srcPage = srcPage,
                                 pageIndex = srcIdx,
                                 outPage = outPage,
-                                vxMin = vxMin,
-                                vyMin = vyMin,
-                                vxMax = vxMax,
-                                vyMax = vyMax,
-                                destLeft = tx,
-                                destBottom = ty,
-                                scale = scale
+                                tileBounds = tileBounds,
+                                destLeft = placement.tx,
+                                destBottom = placement.ty,
+                                scale = placement.scale
                             )
                         }
 

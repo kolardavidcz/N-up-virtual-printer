@@ -33,6 +33,7 @@ class PrintPreferencesTest {
             proxy
         } as SharedPreferences.Editor
 
+        @Suppress("UNCHECKED_CAST")
         val prefsProxy = Proxy.newProxyInstance(
             SharedPreferences::class.java.classLoader,
             arrayOf(SharedPreferences::class.java)
@@ -86,5 +87,48 @@ class PrintPreferencesTest {
         assertFalse(PrintPreferences.isPromptEachPrintEnabled(context))
         PrintPreferences.setPromptEachPrintEnabled(context, true)
         assertTrue(PrintPreferences.isPromptEachPrintEnabled(context))
+
+        // Test Custom Layout Validation and Persistence
+        // 1. 1x1 should be rejected (< 2 pages)
+        val rejected1x1 = PrintPreferences.addCustomLayout(context, 1, 1, landscape = false, subPageLandscape = false)
+        assertFalse("1x1 grid must be rejected", rejected1x1)
+
+        // 2. 2x1 should be rejected (matches built-in layout)
+        val rejected2x1 = PrintPreferences.addCustomLayout(context, 2, 1, landscape = true, subPageLandscape = false)
+        assertFalse("2x1 built-in duplicate must be rejected", rejected2x1)
+
+        // 3. 3x3 should be accepted
+        val accepted3x3 = PrintPreferences.addCustomLayout(context, 3, 3, landscape = false, subPageLandscape = false)
+        assertTrue("3x3 custom layout must be accepted", accepted3x3)
+        val customLayouts = PrintPreferences.getCustomLayouts(context)
+        assertEquals(1, customLayouts.size)
+        assertEquals("custom_3x3", customLayouts[0].printerId)
+        assertEquals(9, customLayouts[0].pagesPerSheet)
+
+        // 4. Duplicate 3x3 should be rejected
+        val duplicate3x3 = PrintPreferences.addCustomLayout(context, 3, 3, landscape = false, subPageLandscape = false)
+        assertFalse("Duplicate 3x3 custom layout must be rejected", duplicate3x3)
+
+        // 5. Remove custom layout and verify cleanup
+        PrintPreferences.setLayoutOrientation(context, "custom_3x3", true)
+        assertEquals(true, PrintPreferences.getLayoutOrientation(context, "custom_3x3", false))
+        PrintPreferences.removeCustomLayout(context, "custom_3x3")
+        assertTrue(PrintPreferences.getCustomLayouts(context).isEmpty())
+        assertFalse("Removed custom layout orientation should be cleaned up", storage.containsKey("orientation_custom_3x3"))
+    }
+
+    @Test
+    fun testPrintJobHandlerExecutorProperties() {
+        val executor = PrintJobHandler.getExecutor()
+        assertNotNull("PrintJobHandler background executor must not be null", executor)
+        assertFalse("PrintJobHandler background executor must not be shut down", executor.isShutdown)
+
+        // Verify task dispatch returns a Future
+        var ran = false
+        val future = executor.submit {
+            ran = true
+        }
+        future.get(1, java.util.concurrent.TimeUnit.SECONDS)
+        assertTrue("Task submitted to executor should run", ran)
     }
 }

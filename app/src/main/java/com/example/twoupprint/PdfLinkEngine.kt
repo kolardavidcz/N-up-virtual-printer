@@ -373,7 +373,7 @@ object PdfLinkEngine {
 
     /**
      * Extracts existing link annotations and plain-text URLs on [srcPage] that overlap
-     * the sub-region [vxMin, vyMin, vxMax, vyMax], transforms their bounding boxes
+     * the sub-region [tileBounds], transforms their bounding boxes
      * to the tile slot [destLeft, destBottom], and attaches them to [outPage].
      */
     fun processAndTransferLinksForTile(
@@ -381,10 +381,7 @@ object PdfLinkEngine {
         srcPage: PDPage,
         pageIndex: Int,
         outPage: PDPage,
-        vxMin: Float,
-        vyMin: Float,
-        vxMax: Float,
-        vyMax: Float,
+        tileBounds: VisualRect,
         destLeft: Float,
         destBottom: Float,
         scale: Float
@@ -404,27 +401,12 @@ object PdfLinkEngine {
                     if (annot is PDAnnotationLink) {
                         val srcRect = annot.rectangle ?: continue
                         val vRect = PdfPageGeometry.mapRectToVisual(srcRect, cropBox, srcPage.rotation)
-                        val lVxMin = vRect.minX
-                        val lVxMax = vRect.maxX
-                        val lVyMin = vRect.minY
-                        val lVyMax = vRect.maxY
-
-                        val ox1 = Math.max(lVxMin, vxMin)
-                        val ox2 = Math.min(lVxMax, vxMax)
-                        val oy1 = Math.max(lVyMin, vyMin)
-                        val oy2 = Math.min(lVyMax, vyMax)
-
-                        if (ox2 > ox1 && oy2 > oy1) {
+                        val outRect = PdfPageGeometry.transformVisualRectToTile(vRect, tileBounds, destLeft, destBottom, scale)
+                        if (outRect != null) {
                             existingLinkRects.add(srcRect)
                             val targetAction = annot.action
                             val targetDest = annot.destination
                             if (targetAction != null || targetDest != null) {
-                                val outRect = PDRectangle().apply {
-                                    lowerLeftX = destLeft + (ox1 - vxMin) * scale
-                                    lowerLeftY = destBottom + (oy1 - vyMin) * scale
-                                    upperRightX = destLeft + (ox2 - vxMin) * scale
-                                    upperRightY = destBottom + (oy2 - vyMin) * scale
-                                }
                                 val newLink = PDAnnotationLink().apply {
                                     rectangle = outRect
                                     action = targetAction
@@ -457,17 +439,8 @@ object PdfLinkEngine {
             for ((rawUrl, srcRect) in plainTextLinks) {
                 if (isOverlappingExisting(srcRect, existingLinkRects)) continue
                 val vRect = PdfPageGeometry.mapRectToVisual(srcRect, cropBox, srcPage.rotation)
-                val lVxMin = vRect.minX
-                val lVxMax = vRect.maxX
-                val lVyMin = vRect.minY
-                val lVyMax = vRect.maxY
-
-                val ox1 = Math.max(lVxMin, vxMin)
-                val ox2 = Math.min(lVxMax, vxMax)
-                val oy1 = Math.max(lVyMin, vyMin)
-                val oy2 = Math.min(lVyMax, vyMax)
-
-                if (ox2 > ox1 && oy2 > oy1) {
+                val outRect = PdfPageGeometry.transformVisualRectToTile(vRect, tileBounds, destLeft, destBottom, scale)
+                if (outRect != null) {
                     val normalizedUrl = if (rawUrl.startsWith("http://", ignoreCase = true) ||
                         rawUrl.startsWith("https://", ignoreCase = true)
                     ) {
@@ -478,12 +451,6 @@ object PdfLinkEngine {
                         "https://$rawUrl"
                     }
 
-                    val outRect = PDRectangle().apply {
-                        lowerLeftX = destLeft + (ox1 - vxMin) * scale
-                        lowerLeftY = destBottom + (oy1 - vyMin) * scale
-                        upperRightX = destLeft + (ox2 - vxMin) * scale
-                        upperRightY = destBottom + (oy2 - vyMin) * scale
-                    }
                     val newLink = PDAnnotationLink().apply {
                         rectangle = outRect
                         action = PDActionURI().apply { uri = normalizedUrl }
@@ -506,5 +473,28 @@ object PdfLinkEngine {
         } catch (e: Exception) {
             Log.w(TAG, "Error discovering plain-text URLs for tile: ${e.message}")
         }
+    }
+
+    /**
+     * Backward-compatible overload accepting raw tile coordinate floats.
+     */
+    fun processAndTransferLinksForTile(
+        srcDoc: PDDocument,
+        srcPage: PDPage,
+        pageIndex: Int,
+        outPage: PDPage,
+        vxMin: Float,
+        vyMin: Float,
+        vxMax: Float,
+        vyMax: Float,
+        destLeft: Float,
+        destBottom: Float,
+        scale: Float
+    ) {
+        processAndTransferLinksForTile(
+            srcDoc, srcPage, pageIndex, outPage,
+            VisualRect(vxMin, vyMin, vxMax, vyMax),
+            destLeft, destBottom, scale
+        )
     }
 }

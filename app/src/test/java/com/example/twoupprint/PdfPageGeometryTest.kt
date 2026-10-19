@@ -130,4 +130,84 @@ class PdfPageGeometryTest {
         // Center offset for Y = 50 + (200 - 200) / 2 = 50
         assertEquals(50f, placement.ty, 0.001f)
     }
+
+    @Test
+    fun testCalculateTileVisualBounds() {
+        val visualW = 600f
+        val visualH = 400f
+        val cols = 2
+        val rows = 2
+
+        // Row 0 (top), Col 0 (left)
+        val topLeft = PdfPageGeometry.calculateTileVisualBounds(visualW, visualH, col = 0, row = 0, cols = cols, rows = rows)
+        assertEquals(0f, topLeft.minX, 0.001f)
+        assertEquals(300f, topLeft.maxX, 0.001f)
+        assertEquals(200f, topLeft.minY, 0.001f)
+        assertEquals(400f, topLeft.maxY, 0.001f)
+
+        // Row 0 (top), Col 1 (right)
+        val topRight = PdfPageGeometry.calculateTileVisualBounds(visualW, visualH, col = 1, row = 0, cols = cols, rows = rows)
+        assertEquals(300f, topRight.minX, 0.001f)
+        assertEquals(600f, topRight.maxX, 0.001f)
+        assertEquals(200f, topRight.minY, 0.001f)
+        assertEquals(400f, topRight.maxY, 0.001f)
+
+        // Row 1 (bottom), Col 0 (left)
+        val bottomLeft = PdfPageGeometry.calculateTileVisualBounds(visualW, visualH, col = 0, row = 1, cols = cols, rows = rows)
+        assertEquals(0f, bottomLeft.minX, 0.001f)
+        assertEquals(300f, bottomLeft.maxX, 0.001f)
+        assertEquals(0f, bottomLeft.minY, 0.001f)
+        assertEquals(200f, bottomLeft.maxY, 0.001f)
+
+        // Row 1 (bottom), Col 1 (right)
+        val bottomRight = PdfPageGeometry.calculateTileVisualBounds(visualW, visualH, col = 1, row = 1, cols = cols, rows = rows)
+        assertEquals(300f, bottomRight.minX, 0.001f)
+        assertEquals(600f, bottomRight.maxX, 0.001f)
+        assertEquals(0f, bottomRight.minY, 0.001f)
+        assertEquals(200f, bottomRight.maxY, 0.001f)
+    }
+
+    @Test
+    fun testCalculateTileShift() {
+        val tileBounds = VisualRect(minX = 100f, minY = 200f, maxX = 300f, maxY = 400f)
+        val placement = SlotPlacement(scale = 2.0f, destW = 400f, destH = 400f, tx = 50f, ty = 80f)
+
+        val (shiftX, shiftY) = PdfPageGeometry.calculateTileShift(placement, tileBounds)
+        // shiftX = tx - minX * scale = 50 - 100 * 2 = -150
+        assertEquals(-150f, shiftX, 0.001f)
+        // shiftY = ty - minY * scale = 80 - 200 * 2 = -320
+        assertEquals(-320f, shiftY, 0.001f)
+    }
+
+    @Test
+    fun testTransformVisualRectToTile() {
+        val tileBounds = VisualRect(minX = 100f, minY = 100f, maxX = 300f, maxY = 300f)
+        val destLeft = 50f
+        val destBottom = 50f
+        val scale = 1.5f
+
+        // Case 1: Fully inside tile
+        val insideRect = VisualRect(minX = 120f, minY = 120f, maxX = 180f, maxY = 180f)
+        val outInside = PdfPageGeometry.transformVisualRectToTile(insideRect, tileBounds, destLeft, destBottom, scale)
+        org.junit.Assert.assertNotNull(outInside)
+        // lowerLeftX = destLeft + (ox1 - tileBounds.minX) * scale = 50 + (120 - 100) * 1.5 = 50 + 30 = 80
+        assertEquals(80f, outInside!!.lowerLeftX, 0.001f)
+        assertEquals(80f, outInside.lowerLeftY, 0.001f)
+        // upperRightX = destLeft + (ox2 - tileBounds.minX) * scale = 50 + (180 - 100) * 1.5 = 50 + 120 = 170
+        assertEquals(170f, outInside.upperRightX, 0.001f)
+        assertEquals(170f, outInside.upperRightY, 0.001f)
+
+        // Case 2: Completely outside tile
+        val outsideRect = VisualRect(minX = 400f, minY = 400f, maxX = 500f, maxY = 500f)
+        val outOutside = PdfPageGeometry.transformVisualRectToTile(outsideRect, tileBounds, destLeft, destBottom, scale)
+        org.junit.Assert.assertNull(outOutside)
+
+        // Case 3: Partially overlapping tile (spanning across right edge)
+        val partialRect = VisualRect(minX = 250f, minY = 150f, maxX = 350f, maxY = 250f)
+        val outPartial = PdfPageGeometry.transformVisualRectToTile(partialRect, tileBounds, destLeft, destBottom, scale)
+        org.junit.Assert.assertNotNull(outPartial)
+        // ox1 = 250, ox2 = 300 (clipped to tileBounds.maxX)
+        assertEquals(50f + (250f - 100f) * 1.5f, outPartial!!.lowerLeftX, 0.001f)
+        assertEquals(50f + (300f - 100f) * 1.5f, outPartial.upperRightX, 0.001f)
+    }
 }

@@ -1,11 +1,7 @@
 package com.example.twoupprint
 
 import android.content.Context
-import android.graphics.Bitmap
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.cos.COSArray
-import com.tom_roush.pdfbox.cos.COSFloat
-import com.tom_roush.pdfbox.cos.COSName
 import com.tom_roush.pdfbox.multipdf.LayerUtility
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage

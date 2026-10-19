@@ -107,42 +107,51 @@ object LayoutCardViewBinder {
             val prefix = if (layout.isSplit) "Output: " else "Sheet: "
             text = if (isLandscape) "${prefix}Landscape" else "${prefix}Portrait"
             setTextColor(Color.parseColor("#D0BCFF"))
+            this.isEnabled = isEnabled
             setOnClickListener {
                 callbacks.onToggleOrientation(layout)
             }
         }
         actionRow.addView(btnOrientation)
 
+        var btnSubPageOrSplit: MaterialButton? = null
         if (layout.isSplit) {
             val btnSplitDivision = createBorderlessButton(context, btnPadH, btnPadV).apply {
                 val count = layout.cols * layout.rows
                 text = "Split: ${layout.cols}×${layout.rows} ($count pages)"
                 setTextColor(Color.parseColor("#CCC2DC"))
+                this.isEnabled = isEnabled
                 setOnClickListener {
                     callbacks.onConfigureSplit(layout)
                 }
             }
+            btnSubPageOrSplit = btnSplitDivision
             actionRow.addView(btnSplitDivision)
         } else {
             val btnSubPage = createBorderlessButton(context, btnPadH, btnPadV).apply {
                 val isSubLandscape = layout.subPageLandscape
                 text = if (isSubLandscape) "Subpages: Landscape" else "Subpages: Portrait"
                 setTextColor(Color.parseColor("#CCC2DC"))
+                this.isEnabled = isEnabled
                 setOnClickListener {
                     callbacks.onToggleSubPageOrientation(layout)
                 }
             }
+            btnSubPageOrSplit = btnSubPage
             actionRow.addView(btnSubPage)
         }
 
+        var btnRemoveRef: MaterialButton? = null
         if (layout.isCustom) {
             val btnRemove = createBorderlessButton(context, btnPadH, btnPadV).apply {
                 text = "Remove"
                 setTextColor(Color.parseColor("#F2B8B5"))
+                this.isEnabled = isEnabled
                 setOnClickListener {
                     callbacks.onRemoveCustomLayout(layout)
                 }
             }
+            btnRemoveRef = btnRemove
             actionRow.addView(btnRemove)
         }
 
@@ -153,9 +162,15 @@ object LayoutCardViewBinder {
         val enableSwitch = MaterialSwitch(context).apply {
             isChecked = isEnabled
             setOnCheckedChangeListener { _, checked ->
+                card.alpha = if (checked) 1.0f else 0.55f
+                btnOrientation.isEnabled = checked
+                btnSubPageOrSplit?.isEnabled = checked
+                btnRemoveRef?.isEnabled = checked
                 callbacks.onToggleEnabled(layout, checked)
             }
         }
+
+        card.alpha = if (isEnabled) 1.0f else 0.55f
 
         cardContent.addView(iconView)
         cardContent.addView(textContainer)

@@ -55,17 +55,20 @@ class PrintJobHandler(
             2,
             ThreadFactory { runnable ->
                 Thread(runnable, "NUpPrintJobWorker").apply {
-                    isDaemon = true
+                    isDaemon = false
                 }
             }
         )
+
+        fun getExecutor(): ExecutorService = backgroundExecutor
     }
 
     /**
      * Dispatches the print job to the managed background executor pool.
+     * Returns the [java.util.concurrent.Future] representing the pending task.
      */
-    fun start() {
-        backgroundExecutor.execute(this)
+    fun start(): java.util.concurrent.Future<*> {
+        return backgroundExecutor.submit(this)
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())

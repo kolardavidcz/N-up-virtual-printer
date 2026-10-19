@@ -76,10 +76,7 @@ class MainActivity : AppCompatActivity() {
                         uri,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                     )
-                    getSharedPreferences("twoupprint_prefs", Context.MODE_PRIVATE)
-                        .edit()
-                        .putString("save_directory_uri", uri.toString())
-                        .apply()
+                    PrintPreferences.setSaveDirectoryUri(this, uri.toString())
                     updateUIState()
                 }
             }
@@ -257,17 +254,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnResetLocation.setOnClickListener {
-            getSharedPreferences("twoupprint_prefs", Context.MODE_PRIVATE)
-                .edit()
-                .remove("save_directory_uri")
-                .apply()
+            PrintPreferences.clearSaveDirectoryUri(this)
             updateUIState()
         }
 
-        val prefs = getSharedPreferences("twoupprint_prefs", Context.MODE_PRIVATE)
-        promptSwitch.isChecked = prefs.getBoolean("prompt_each_print", false)
+        promptSwitch.isChecked = PrintPreferences.isPromptEachPrintEnabled(this)
         promptSwitch.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("prompt_each_print", isChecked).apply()
+            PrintPreferences.setPromptEachPrintEnabled(this, isChecked)
         }
 
         batteryCard.setOnClickListener {
@@ -374,8 +367,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUIState() {
-        val prefs = getSharedPreferences("twoupprint_prefs", Context.MODE_PRIVATE)
-        val savedUriStr = prefs.getString("save_directory_uri", null)
+        val savedUriStr = PrintPreferences.getSaveDirectoryUri(this)
 
         if (savedUriStr != null) {
             val uri = Uri.parse(savedUriStr)
