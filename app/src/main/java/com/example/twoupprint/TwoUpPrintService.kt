@@ -38,20 +38,24 @@ class TwoUpPrintService : PrintService() {
         val localId = printJob.info.printerId?.localId
         val baseLayout = LayoutRegistry.findLayoutById(applicationContext, localId)
 
-        // Read media size and orientation requested by the user in the system print dialog
+        // Read media size requested by the user in the system print dialog
         val mediaSize = printJob.info?.attributes?.mediaSize
 
-        // "Smart" mode (Default):
-        val isSmart = mediaSize?.id == "MEDIA_SMART" || mediaSize?.id == "MEDIA_PRESENTATION_SMART" || mediaSize?.id == "MEDIA_MATCH_SIZE"
+        // Resolve target paper size:
+        // If the user explicitly selected ISO A4 or ISO A5 in the print dialog, honor it.
+        // Otherwise ("Smart" or unspecified), use the configured Smart Base Paper Size from app settings.
+        val targetPaper = when {
+            mediaSize?.id == "ISO_A5" || (mediaSize != null && mediaSize.widthMils == TargetPaperSize.A5.widthMils && mediaSize.heightMils == TargetPaperSize.A5.heightMils) -> TargetPaperSize.A5
+            mediaSize?.id == "ISO_A4" || (mediaSize != null && mediaSize.widthMils == TargetPaperSize.A4.widthMils && mediaSize.heightMils == TargetPaperSize.A4.heightMils) -> TargetPaperSize.A4
+            else -> LayoutRegistry.getSmartBasePaperSize(applicationContext)
+        }
+
         val isPresentationSmart = (mediaSize?.id == "MEDIA_PRESENTATION_SMART")
 
-        // Orientation strictly follows the user selection in the system print dialog if available,
-        // otherwise falls back to the configured layout setting.
-        val sheetLandscape: Boolean = mediaSize?.let { !it.isPortrait } ?: baseLayout.landscape
-
-        // Layout preserves configured sheet orientation and sub-page orientation from in-app settings
+        // Final merged sheet orientation is determined strictly by in-app layout configuration (baseLayout.landscape).
+        // The print dialog orientation controls how the source application formats raw pages (defaulting to portrait).
         val layout = baseLayout.copy(
-            landscape = sheetLandscape,
+            landscape = baseLayout.landscape,
             subPageLandscape = baseLayout.subPageLandscape
         )
 
@@ -73,15 +77,7 @@ class TwoUpPrintService : PrintService() {
         // Extract website / page title from print job metadata if available
         val docName = extractCleanDocumentName(printJob)
 
-        val isNotewiseLayout = layout.printerId == "nup_notewise"
-        val fileName = if (isNotewiseLayout) {
-            if (docName != null) {
-                "$docName.notewise"
-            } else {
-                val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-                "notewise_$stamp.notewise"
-            }
-        } else if (docName != null) {
+        val fileName = if (docName != null) {
             "${docName}_${layout.cols}x${layout.rows}.pdf"
         } else {
             val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
@@ -108,7 +104,8 @@ class TwoUpPrintService : PrintService() {
                 marginRightMm,
                 autoTrimSlideBorders,
                 isPresentationSmart,
-                spaceDistributionMode
+                spaceDistributionMode,
+                targetPaper
             )
             return
         }
@@ -120,10 +117,9 @@ class TwoUpPrintService : PrintService() {
         if (savedDirUriStr != null) {
             try {
                 val dirUri = Uri.parse(savedDirUriStr)
-                val mimeType = if (isNotewiseLayout) "application/octet-stream" else "application/pdf"
                 val docUri = androidx.documentfile.provider.DocumentFile
                     .fromTreeUri(applicationContext, dirUri)
-                    ?.createFile(mimeType, fileName)
+                    ?.createFile("application/pdf", fileName)
                     ?.uri
 
                 destinationUri = docUri
@@ -139,7 +135,8 @@ class TwoUpPrintService : PrintService() {
             bestFit,
             marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
             autoTrimSlideBorders, isPresentationSmart,
-            spaceDistributionMode
+            spaceDistributionMode,
+            targetPaper
         ).start()
     }
 

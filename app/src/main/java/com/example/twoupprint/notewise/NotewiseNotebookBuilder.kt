@@ -112,8 +112,8 @@ class NotewiseNotebookBuilder(
         for (tb in textBlocks) {
             val leftP = tb.left
             val topP = tb.top
-            val rightP = maxOf(tb.right + 35.0f, leftP + 100.0f)
-            val bottomP = maxOf(tb.bottom + 12.0f, topP + 25.0f)
+            val rightP = maxOf(tb.right, leftP + 1.0f)
+            val bottomP = maxOf(tb.bottom, topP + 1.0f)
 
             val textElem = createTextElement(
                 text = tb.text,

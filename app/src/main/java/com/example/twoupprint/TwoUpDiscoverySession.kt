@@ -23,27 +23,38 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
     private fun buildPrinterInfo(mode: PrintLayout): PrinterInfo {
         val id: PrinterId = service.generatePrinterId(mode.printerId)
 
+        val smartBase = LayoutRegistry.getSmartBasePaperSize(service)
+
         // 1. "Smart" paper size (Default):
-        // Automatically optimizes placement onto an A4 sheet.
-        // Default orientation in printing dialog matches layout configuration (Portrait for 2x2, 1x2, 2x3, 2x4, notewise; Landscape for 2x1).
-        val sizeSmart = if (mode.landscape) {
-            PrintAttributes.MediaSize(
-                "MEDIA_SMART",
-                "Smart",
-                11693,
-                8268
-            )
-        } else {
-            PrintAttributes.MediaSize(
-                "MEDIA_SMART",
-                "Smart",
-                8268,
-                11693
-            )
-        }
+        // Automatically optimizes placement onto sheet based on in-app setting (A4 vs A5).
+        // Default orientation in Samsung/system printing dialog is strictly Portrait (width < height).
+        val sizeSmart = PrintAttributes.MediaSize(
+            "MEDIA_SMART",
+            "Smart",
+            smartBase.widthMils,
+            smartBase.heightMils
+        )
+
+        // 2. Explicit ISO A4 (Portrait: 8268 x 11693 mils)
+        val sizeA4 = PrintAttributes.MediaSize(
+            "ISO_A4",
+            "ISO A4",
+            TargetPaperSize.A4.widthMils,
+            TargetPaperSize.A4.heightMils
+        )
+
+        // 3. Explicit ISO A5 (Portrait: 5827 x 8268 mils)
+        val sizeA5 = PrintAttributes.MediaSize(
+            "ISO_A5",
+            "ISO A5",
+            TargetPaperSize.A5.widthMils,
+            TargetPaperSize.A5.heightMils
+        )
 
         val capabilities = PrinterCapabilitiesInfo.Builder(id)
-            .addMediaSize(sizeSmart, true)               // Default: "Smart" (honors layout orientation)
+            .addMediaSize(sizeSmart, true)               // Default: "Smart" (honors in-app smart base paper size)
+            .addMediaSize(sizeA4, false)                  // Explicit ISO A4
+            .addMediaSize(sizeA5, false)                  // Explicit ISO A5
             .addResolution(
                 PrintAttributes.Resolution("nup_res", "300dpi", 300, 300),
                 true

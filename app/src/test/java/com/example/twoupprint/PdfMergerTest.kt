@@ -1029,25 +1029,79 @@ class PdfMergerTest {
     }
 
     @Test
-    fun testOrientationResolution_HonorsDialogSelectionBothWays() {
-        fun resolveOrientation(mediaSizeIsPortrait: Boolean?, layoutLandscape: Boolean): Boolean {
-            return mediaSizeIsPortrait?.let { !it } ?: layoutLandscape
+    fun testOrientationAndPaperSizeResolution_HonorsAppSettingsAndDialogPaperSize() {
+        fun resolveSheetOrientation(layoutLandscape: Boolean): Boolean {
+            return layoutLandscape
         }
 
-        // 1. 2x2 layout (base landscape = false):
-        // User selects Portrait in dialog -> Portrait output
-        org.junit.Assert.assertFalse(resolveOrientation(true, layoutLandscape = false))
-        // User selects Landscape in dialog -> Landscape output
-        assertTrue(resolveOrientation(false, layoutLandscape = false))
+        fun resolveTargetPaperSize(mediaSizeId: String?, defaultSmartBase: TargetPaperSize): TargetPaperSize {
+            return when (mediaSizeId) {
+                "ISO_A5" -> TargetPaperSize.A5
+                "ISO_A4" -> TargetPaperSize.A4
+                else -> defaultSmartBase
+            }
+        }
 
-        // 2. 2x1 layout (base landscape = true):
-        // User selects Portrait in dialog -> Portrait output (previously failed with baseLayout.landscape || ...)
-        org.junit.Assert.assertFalse(resolveOrientation(true, layoutLandscape = true))
-        // User selects Landscape in dialog -> Landscape output
-        assertTrue(resolveOrientation(false, layoutLandscape = true))
+        // 1. Output sheet orientation is strictly determined by in-app layout configuration
+        org.junit.Assert.assertFalse("2x2 sheet orientation is Portrait from app setting", resolveSheetOrientation(false))
+        assertTrue("2x1 sheet orientation is Landscape from app setting", resolveSheetOrientation(true))
 
-        // 3. Fallback when mediaSize is null
-        org.junit.Assert.assertFalse(resolveOrientation(null, layoutLandscape = false))
-        assertTrue(resolveOrientation(null, layoutLandscape = true))
+        // 2. Paper size resolution: explicit selection in dialog
+        assertEquals(TargetPaperSize.A5, resolveTargetPaperSize("ISO_A5", TargetPaperSize.A4))
+        assertEquals(TargetPaperSize.A4, resolveTargetPaperSize("ISO_A4", TargetPaperSize.A5))
+
+        // 3. Paper size resolution: Smart default follows in-app smart base paper size setting
+        assertEquals(TargetPaperSize.A4, resolveTargetPaperSize("MEDIA_SMART", TargetPaperSize.A4))
+        assertEquals(TargetPaperSize.A5, resolveTargetPaperSize("MEDIA_SMART", TargetPaperSize.A5))
+        assertEquals(TargetPaperSize.A4, resolveTargetPaperSize(null, TargetPaperSize.A4))
+        assertEquals(TargetPaperSize.A5, resolveTargetPaperSize(null, TargetPaperSize.A5))
+    }
+
+    @Test
+    fun testMergeNUp_A5PaperSize_GeneratesExactA5Dimensions() {
+        val srcBytes = createTestPresentation(4, 595.28f, 841.89f)
+        val outStream = ByteArrayOutputStream()
+
+        val layout = LayoutRegistry.builtInLayouts.first { it.printerId == "nup_2x2" }
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(srcBytes),
+            outputStream = outStream,
+            layout = layout,
+            bestFit = false,
+            targetPaper = TargetPaperSize.A5
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        assertEquals(1, outDoc.numberOfPages)
+        val page = outDoc.getPage(0)
+        // A5 Portrait: width 419.53 pt, height 595.28 pt
+        assertEquals(TargetPaperSize.A5.widthPt, page.mediaBox.width, 0.5f)
+        assertEquals(TargetPaperSize.A5.heightPt, page.mediaBox.height, 0.5f)
+        assertTrue("A5 sheet must be portrait", page.mediaBox.height > page.mediaBox.width)
+        outDoc.close()
+    }
+
+    @Test
+    fun testMergeNUp_A5PaperSize_LandscapeSheet_GeneratesExactA5LandscapeDimensions() {
+        val srcBytes = createTestPresentation(2, 595.28f, 841.89f)
+        val outStream = ByteArrayOutputStream()
+
+        val layout = LayoutRegistry.builtInLayouts.first { it.printerId == "nup_2x1" }
+        PdfMerger.mergeNUp(
+            sourcePdfStream = ByteArrayInputStream(srcBytes),
+            outputStream = outStream,
+            layout = layout,
+            bestFit = false,
+            targetPaper = TargetPaperSize.A5
+        )
+
+        val outDoc = PDDocument.load(ByteArrayInputStream(outStream.toByteArray()))
+        assertEquals(1, outDoc.numberOfPages)
+        val page = outDoc.getPage(0)
+        // A5 Landscape: width 595.28 pt, height 419.53 pt
+        assertEquals(TargetPaperSize.A5.heightPt, page.mediaBox.width, 0.5f)
+        assertEquals(TargetPaperSize.A5.widthPt, page.mediaBox.height, 0.5f)
+        assertTrue("A5 sheet must be landscape", page.mediaBox.width > page.mediaBox.height)
+        outDoc.close()
     }
 }

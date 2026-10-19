@@ -37,6 +37,7 @@ object PendingPrintJobManager {
     private var activeAutoTrimSlideBorders: Boolean = false
     private var activeIsPresentationSmart: Boolean = false
     private var activeSpaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
+    private var activeTargetPaper: TargetPaperSize = TargetPaperSize.A4
 
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val timeoutRunnable = Runnable {
@@ -62,7 +63,8 @@ object PendingPrintJobManager {
         marginRightMm: Int = 0,
         autoTrimSlideBorders: Boolean = false,
         isPresentationSmart: Boolean = false,
-        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER
+        spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
+        targetPaper: TargetPaperSize = TargetPaperSize.A4
     ) {
         // Cancel previous pending job if any
         cancelPendingJob(context)
@@ -81,6 +83,7 @@ object PendingPrintJobManager {
         activeAutoTrimSlideBorders = autoTrimSlideBorders
         activeIsPresentationSmart = isPresentationSmart
         activeSpaceDistributionMode = spaceDistributionMode
+        activeTargetPaper = targetPaper
 
         // Set 2 minute timeout
         timeoutHandler.postDelayed(timeoutRunnable, TIMEOUT_MS)
@@ -107,6 +110,7 @@ object PendingPrintJobManager {
         val autoTrimSlideBorders = activeAutoTrimSlideBorders
         val isPresentationSmart = activeIsPresentationSmart
         val spaceDistributionMode = activeSpaceDistributionMode
+        val targetPaper = activeTargetPaper
 
         activeJob = null
         activeFd = null
@@ -123,7 +127,8 @@ object PendingPrintJobManager {
                 bestFit,
                 marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
                 autoTrimSlideBorders, isPresentationSmart,
-                spaceDistributionMode
+                spaceDistributionMode,
+                targetPaper
             ).start()
         } else {
             if (job.isStarted) {

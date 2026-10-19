@@ -53,6 +53,7 @@ object PdfMerger {
         autoTrimSlideBorders: Boolean = false,
         isPresentationSmart: Boolean = false,
         spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
+        targetPaper: TargetPaperSize = TargetPaperSize.A4,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         val srcDoc = PDDocument.load(sourcePdfStream)
@@ -95,11 +96,12 @@ object PdfMerger {
             val gutterX = if (hasMargins) (baseGutterX * spaceDistributionMode.gutterMultiplier).coerceAtLeast(0f) else 0f
             val gutterY = if (hasMargins) ((marginTopPt + marginBottomPt) / 2f).coerceAtLeast(0f) else 0f
 
-            // Sheet dimensions for output (adaptive Best Fit or fixed A4)
+            // Sheet dimensions for output (adaptive Best Fit or fixed TargetPaperSize)
             val sheetRect = calculateSheetRectangle(
                 srcDoc, layout, bestFit,
                 marginTopPt, marginBottomPt, marginLeftPt, marginRightPt,
-                gutterX, gutterY
+                gutterX, gutterY,
+                targetPaper
             )
             val sheetW = sheetRect.width
             val sheetH = sheetRect.height
@@ -195,6 +197,7 @@ object PdfMerger {
         autoTrimSlideBorders: Boolean = false,
         isPresentationSmart: Boolean = false,
         spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
+        targetPaper: TargetPaperSize = TargetPaperSize.A4,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         mergeNUp(
@@ -207,6 +210,7 @@ object PdfMerger {
             autoTrimSlideBorders = autoTrimSlideBorders,
             isPresentationSmart = isPresentationSmart,
             spaceDistributionMode = spaceDistributionMode,
+            targetPaper = targetPaper,
             onProgress = onProgress
         )
     }
@@ -215,7 +219,7 @@ object PdfMerger {
      * Dynamically calculates output sheet dimensions:
      * - If [bestFit] is true: adapts sheet aspect ratio to match the combined grid ratio of
      *   the source slides (e.g. 16:9, 4:3), completely eliminating letterbox white bars.
-     * - If [bestFit] is false: maintains standard ISO A4 sheet dimensions.
+     * - If [bestFit] is false: maintains standard [targetPaper] (A4 or A5) sheet dimensions.
      */
     private fun calculateSheetRectangle(
         srcDoc: PDDocument,
@@ -226,28 +230,29 @@ object PdfMerger {
         marginLeftPt: Float,
         marginRightPt: Float,
         gutterX: Float,
-        gutterY: Float
+        gutterY: Float,
+        targetPaper: TargetPaperSize = TargetPaperSize.A4
     ): PDRectangle {
-        val a4Long = PDRectangle.A4.height // 841.8898f
-        val a4Short = PDRectangle.A4.width // 595.27563f
+        val paperLong = targetPaper.heightPt // A4: 841.8898f, A5: 595.27563f
+        val paperShort = targetPaper.widthPt // A4: 595.27563f, A5: 419.52756f
 
         if (!bestFit || srcDoc.numberOfPages == 0) {
             return if (layout.landscape) {
-                PDRectangle(a4Long, a4Short)
+                PDRectangle(paperLong, paperShort)
             } else {
-                PDRectangle(a4Short, a4Long)
+                PDRectangle(paperShort, paperLong)
             }
         }
 
         // Determine input slide aspect ratio from page 0
         val firstPage = srcDoc.getPage(0)
-        val cropBox = firstPage.cropBox ?: firstPage.mediaBox ?: PDRectangle.A4
+        val cropBox = firstPage.cropBox ?: firstPage.mediaBox ?: PDRectangle(paperShort, paperLong)
         val pageRot = ((firstPage.rotation % 360) + 360) % 360
         val isRot90or270 = (pageRot == 90 || pageRot == 270)
         val srcW = if (isRot90or270) cropBox.height else cropBox.width
         val srcH = if (isRot90or270) cropBox.width else cropBox.height
         if (srcW <= 0f || srcH <= 0f) {
-            return if (layout.landscape) PDRectangle(a4Long, a4Short) else PDRectangle(a4Short, a4Long)
+            return if (layout.landscape) PDRectangle(paperLong, paperShort) else PDRectangle(paperShort, paperLong)
         }
 
         val subRatio = srcW / srcH
@@ -256,16 +261,16 @@ object PdfMerger {
         val rows = layout.rows
         val gridRatio = (cols.toFloat() / rows.toFloat()) * subRatio
 
-        // For A4 pages or close to A4 (ratio ~1.414 or 0.707), keep A4 standard
-        val a4Ratio = a4Long / a4Short
-        val sheetRatioExpected = if (layout.landscape) a4Ratio else (1f / a4Ratio)
+        // For standard paper pages or close to standard paper (ratio ~1.414 or 0.707), keep standard
+        val paperRatio = paperLong / paperShort
+        val sheetRatioExpected = if (layout.landscape) paperRatio else (1f / paperRatio)
         if (Math.abs(gridRatio - sheetRatioExpected) < 0.03f) {
-            return if (layout.landscape) PDRectangle(a4Long, a4Short) else PDRectangle(a4Short, a4Long)
+            return if (layout.landscape) PDRectangle(paperLong, paperShort) else PDRectangle(paperShort, paperLong)
         }
 
         // Adaptive Best Fit: Size sheet so (slotW / slotH) == subRatio after subtracting margins & gutters
         return if (layout.landscape) {
-            val baseW = a4Long
+            val baseW = paperLong
             val printableW = Math.max(10f, baseW - marginLeftPt - marginRightPt)
             val netW = printableW - (cols - 1) * gutterX
             val netH = netW / gridRatio
@@ -273,7 +278,7 @@ object PdfMerger {
             val sheetH = printableH + marginTopPt + marginBottomPt
             PDRectangle(baseW, sheetH)
         } else {
-            val baseH = a4Long
+            val baseH = paperLong
             val printableH = Math.max(10f, baseH - marginTopPt - marginBottomPt)
             val netH = printableH - (rows - 1) * gutterY
             val netW = netH * gridRatio
@@ -300,6 +305,7 @@ object PdfMerger {
         autoTrimSlideBorders: Boolean = false,
         isPresentationSmart: Boolean = false,
         spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
+        targetPaper: TargetPaperSize = TargetPaperSize.A4,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         sourcePdfFile.inputStream().use { input ->
@@ -309,6 +315,7 @@ object PdfMerger {
                     marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
                     autoTrimSlideBorders, isPresentationSmart,
                     spaceDistributionMode,
+                    targetPaper,
                     onProgress
                 )
             }
@@ -329,6 +336,7 @@ object PdfMerger {
         autoTrimSlideBorders: Boolean = false,
         isPresentationSmart: Boolean = false,
         spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
+        targetPaper: TargetPaperSize = TargetPaperSize.A4,
         onProgress: ((current: Int, total: Int) -> Unit)? = null
     ) {
         mergeNUp(
@@ -341,6 +349,7 @@ object PdfMerger {
             autoTrimSlideBorders = autoTrimSlideBorders,
             isPresentationSmart = isPresentationSmart,
             spaceDistributionMode = spaceDistributionMode,
+            targetPaper = targetPaper,
             onProgress = onProgress
         )
     }

@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var switchTextContrast: MaterialSwitch
     private lateinit var switchEnableLinks: MaterialSwitch
     private lateinit var switchNotewiseExport: MaterialSwitch
+    private lateinit var toggleGroupSmartPaperSize: com.google.android.material.button.MaterialButtonToggleGroup
     private lateinit var switchAutoCrop: MaterialSwitch
     private lateinit var marginPreviewView: MarginPreviewView
     private lateinit var toggleGroupMarginTop: com.google.android.material.button.MaterialButtonToggleGroup
@@ -126,6 +127,22 @@ class MainActivity : AppCompatActivity() {
         switchNotewiseExport.isChecked = LayoutRegistry.isNotewiseExportEnabled(this)
         switchNotewiseExport.setOnCheckedChangeListener { _, isChecked ->
             LayoutRegistry.setNotewiseExportEnabled(this, isChecked)
+        }
+
+        // Smart Paper Size Default (A4 vs A5)
+        toggleGroupSmartPaperSize = findViewById(R.id.toggleGroupSmartPaperSize)
+        val currentSmartPaper = LayoutRegistry.getSmartBasePaperSize(this)
+        if (currentSmartPaper == TargetPaperSize.A5) {
+            toggleGroupSmartPaperSize.check(R.id.btnPaperA5)
+        } else {
+            toggleGroupSmartPaperSize.check(R.id.btnPaperA4)
+        }
+
+        toggleGroupSmartPaperSize.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                val size = if (checkedId == R.id.btnPaperA5) TargetPaperSize.A5 else TargetPaperSize.A4
+                LayoutRegistry.setSmartBasePaperSize(this, size)
+            }
         }
 
         // Page & Slot Margins

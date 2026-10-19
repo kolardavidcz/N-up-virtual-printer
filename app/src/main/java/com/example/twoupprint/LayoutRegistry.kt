@@ -6,16 +6,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Color processing mode for output documents.
- */
-enum class ColorProcessingMode(val displayName: String, val description: String) {
-    COLOR("Color (Original)", "Full color original output with vector preservation"),
-    SMART_HIGH_CONTRAST("Smart High-Contrast", "Boosts faint text & math formulas to solid black (100% selectable text) while preserving colorful images"),
-    GRAYSCALE("Grayscale (8-bit)", "Smooth photographic 256 shades of gray (0-255)"),
-    PURE_BLACK_WHITE("Pure Black & White (1-bit)", "Strictly 0 and 1 (#000000 and #FFFFFF) with zero gray ink/toner")
-}
-
-/**
  * Represents a single N-up page layout configuration (cols x rows).
  *
  * Two independent orientation axes:
@@ -47,10 +37,9 @@ object LayoutRegistry {
     private const val KEY_CUSTOM_LAYOUTS = "custom_layouts_json"
     private const val KEY_DISABLED_LAYOUT_IDS = "disabled_layout_ids_set"
     private const val KEY_ADD_TEXT_CONTRAST = "add_text_contrast"
-    private const val KEY_COLOR_PROCESSING_MODE = "global_color_processing_mode"
-    private const val KEY_BW_ALGORITHM = "global_bw_algorithm"
     private const val KEY_SPACE_DISTRIBUTION_MODE = "space_distribution_mode"
     private const val KEY_NOTEWISE_EXPORT_ENABLED = "notewise_export_enabled"
+    private const val KEY_SMART_BASE_PAPER_SIZE = "smart_base_paper_size"
 
     /**
      * Default configurations:
@@ -59,15 +48,13 @@ object LayoutRegistry {
      *   2×2  →  sub-page Portrait,   final sheet Portrait (Regular PDF optimal grid)
      *   2×3  →  sub-page Landscape, final sheet Portrait
      *   2×4  →  sub-page Landscape, final sheet Portrait
-     *   notewise → single-page vector note (.notewise)
      */
     val builtInLayouts = listOf(
         PrintLayout("nup_2x1", "2-Up Side by Side (2×1)", 2, 1, landscape = true,  subPageLandscape = false, R.drawable.ic_layout_2x1),
         PrintLayout("nup_1x2", "2-Up Stacked (1×2)",      1, 2, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_1x2),
         PrintLayout("nup_2x2", "4-Up Grid (2×2)",         2, 2, landscape = false, subPageLandscape = false, R.drawable.ic_layout_2x2),
         PrintLayout("nup_2x3", "6-Up Grid (2×3)",         2, 3, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x3),
-        PrintLayout("nup_2x4", "8-Up Grid (2×4)",         2, 4, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x4),
-        PrintLayout("nup_notewise", "Notewise Notebook (.notewise)", 1, 1, landscape = false, subPageLandscape = false, R.drawable.ic_layout_notewise)
+        PrintLayout("nup_2x4", "8-Up Grid (2×4)",         2, 4, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x4)
     )
 
     fun getAllLayouts(context: Context): List<PrintLayout> {
@@ -185,6 +172,19 @@ object LayoutRegistry {
         prefs.edit().putBoolean(KEY_NOTEWISE_EXPORT_ENABLED, enabled).apply()
     }
 
+    // --- "Smart base paper size" setting (A4 vs A5) ---
+
+    fun getSmartBasePaperSize(context: Context): TargetPaperSize {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val id = prefs.getString(KEY_SMART_BASE_PAPER_SIZE, TargetPaperSize.A4.id)
+        return TargetPaperSize.fromId(id)
+    }
+
+    fun setSmartBasePaperSize(context: Context, paperSize: TargetPaperSize) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_SMART_BASE_PAPER_SIZE, paperSize.id).apply()
+    }
+
     // --- "Page & Slot Margins" setting (Top, Bottom, Left, Right) ---
 
     fun getMarginTopMm(context: Context): Int {
@@ -256,36 +256,6 @@ object LayoutRegistry {
     fun setSpaceDistributionMode(context: Context, mode: SpaceDistributionMode) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_SPACE_DISTRIBUTION_MODE, mode.id).apply()
-    }
-
-    fun getColorMode(context: Context): ColorProcessingMode {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val name = prefs.getString(KEY_COLOR_PROCESSING_MODE, ColorProcessingMode.COLOR.name)
-        return try {
-            ColorProcessingMode.valueOf(name ?: ColorProcessingMode.COLOR.name)
-        } catch (_: Exception) {
-            ColorProcessingMode.COLOR
-        }
-    }
-
-    fun setColorMode(context: Context, mode: ColorProcessingMode) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_COLOR_PROCESSING_MODE, mode.name).apply()
-    }
-
-    fun getBwAlgorithm(context: Context): BwBinarizer.BwAlgorithm {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val name = prefs.getString(KEY_BW_ALGORITHM, BwBinarizer.BwAlgorithm.TEXT_BOOSTER.name)
-        return try {
-            BwBinarizer.BwAlgorithm.valueOf(name ?: BwBinarizer.BwAlgorithm.TEXT_BOOSTER.name)
-        } catch (_: Exception) {
-            BwBinarizer.BwAlgorithm.TEXT_BOOSTER
-        }
-    }
-
-    fun setBwAlgorithm(context: Context, algorithm: BwBinarizer.BwAlgorithm) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_BW_ALGORITHM, algorithm.name).apply()
     }
 
     fun getEnabledLayouts(context: Context): List<PrintLayout> {

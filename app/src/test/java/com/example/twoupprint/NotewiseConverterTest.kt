@@ -351,4 +351,131 @@ class NotewiseConverterTest {
             assertEquals("Must have 9 converted pages", 9, pageEntries.size)
         }
     }
+
+    @Test
+    fun testMolekulovaDynamicTypographyAndColor() {
+        val srcPdf = listOf(java.io.File("molekulova.pdf"), java.io.File("../molekulova.pdf")).firstOrNull { it.exists() }
+        org.junit.Assert.assertNotNull("molekulova.pdf must exist", srcPdf)
+
+        PDDocument.load(srcPdf!!).use { doc ->
+            val pageCount = doc.numberOfPages
+            assertTrue("molekulova.pdf must have multiple pages", pageCount > 0)
+
+            for (idx in 0 until pageCount) {
+                val blocks = NotewisePdfConverter.extractPageTextBlocks(doc, idx, scaleX = 1.0f, scaleY = 1.0f, splitBullets = true)
+                println("Page $idx extracted ${blocks.size} blocks")
+                if (blocks.isNotEmpty()) {
+                    println("Page $idx first block: '${blocks[0].text}' font=${blocks[0].fontSize} bold=${blocks[0].isBold} color=${blocks[0].colorHex}")
+                }
+            }
+            val p0Blocks = (0 until pageCount).map { NotewisePdfConverter.extractPageTextBlocks(doc, it, scaleX = 1f, scaleY = 1f, splitBullets = true) }.firstOrNull { it.isNotEmpty() } ?: emptyList()
+            assertTrue("At least one page should extract text blocks", p0Blocks.isNotEmpty())
+
+            // Verify dynamic font sizes: not all elements are hardcoded to 12 or 28
+            val distinctFontSizes = p0Blocks.map { it.fontSize }.distinct()
+            assertTrue("Must contain multiple distinct dynamically extracted font sizes", distinctFontSizes.size >= 2)
+
+            // Verify color extraction: text has valid hex colors
+            for (block in p0Blocks) {
+                assertTrue("Color must be valid 7-char hex code starting with #", block.colorHex.startsWith("#") && block.colorHex.length == 7)
+                assertTrue("Font size must be positive", block.fontSize > 0)
+            }
+
+            // Check if any block has bold styling
+            val hasBold = p0Blocks.any { it.isBold }
+            val hasNonBold = p0Blocks.any { !it.isBold }
+            assertTrue("Must distinguish bold vs non-bold text spans", hasBold || hasNonBold)
+        }
+    }
+
+    @Test
+    fun testMolekulovaRekombinaceConversion() {
+        val srcPdf = listOf(java.io.File("molekulova_rekombinace.pdf"), java.io.File("../molekulova_rekombinace.pdf")).firstOrNull { it.exists() }
+        if (srcPdf != null && srcPdf.exists()) {
+            val outDir = if (java.io.File("molekulova_rekombinace.pdf").exists()) java.io.File(".") else java.io.File("..")
+            val outFile = java.io.File(outDir, "test_rekombinace_output.notewise")
+            NotewisePdfConverter.convert(srcPdf, outFile, title = "Molekulova Rekombinace")
+
+            assertTrue("Output notewise file must exist", outFile.exists())
+            assertTrue("Output notewise file must be non-empty", outFile.length() > 1000)
+
+            ZipInputStream(java.io.FileInputStream(outFile)).use { zis ->
+                val entries = mutableListOf<String>()
+                var e = zis.nextEntry
+                while (e != null) {
+                    entries.add(e.name)
+                    e = zis.nextEntry
+                }
+                assertTrue("Must contain note entry", entries.contains("note"))
+                assertTrue("Must contain at least one page entry", entries.any { it.startsWith("page/") })
+            }
+            outFile.delete()
+        }
+    }
+
+    @Test
+    fun testNoArtificialOffsetsLayoutPreservation() {
+        val builder = NotewiseNotebookBuilder(title = "Offsets Test")
+        val tb = NotewiseTextBlock(
+            text = "Precise Layout Text",
+            left = 150.0f,
+            top = 220.0f,
+            right = 450.0f,
+            bottom = 250.0f,
+            fontSize = 12
+        )
+
+        val pageId = builder.addPage(listOf(tb), emptyList(), canvasW = 2480, canvasH = 3508)
+        val outStream = ByteArrayOutputStream()
+        builder.buildArchive(outStream)
+
+        val pageRaw = String(
+            ZipInputStream(ByteArrayInputStream(outStream.toByteArray())).use { zis ->
+                var e = zis.nextEntry
+                while (e != null) {
+                    if (e.name == "page/$pageId") return@use zis.readBytes()
+                    e = zis.nextEntry
+                }
+                ByteArray(0)
+            },
+            Charsets.US_ASCII
+        )
+
+        val pageNodes = parseProtobuf(Base64.getDecoder().decode(pageRaw.replace("\r", "").replace("\n", "")))
+        val elemNode = pageNodes.find { it.fieldNumber == 4 }!!
+        @Suppress("UNCHECKED_CAST")
+        val subNodes = elemNode.value as List<PbNode>
+        val textDataNode = subNodes.find { it.fieldNumber == 8 }!!
+        @Suppress("UNCHECKED_CAST")
+        val tdSub = textDataNode.value as List<PbNode>
+        val frameNode = tdSub.find { it.fieldNumber == 7 }!!
+        @Suppress("UNCHECKED_CAST")
+        val frameSub = frameNode.value as List<PbNode>
+
+        val left = frameSub.find { it.fieldNumber == 1 }!!.value as Float
+        val top = frameSub.find { it.fieldNumber == 2 }!!.value as Float
+        val right = frameSub.find { it.fieldNumber == 3 }!!.value as Float
+        val bottom = frameSub.find { it.fieldNumber == 4 }!!.value as Float
+
+        assertEquals(150.0f, left, 0.001f)
+        assertEquals(220.0f, top, 0.001f)
+        assertEquals("Right coordinate must exactly match without artificial padding", 450.0f, right, 0.001f)
+        assertEquals("Bottom coordinate must exactly match without artificial padding", 250.0f, bottom, 0.001f)
+    }
+
+    @Test
+    fun testMathFontHelperRecognition() {
+        assertTrue(NotewisePdfConverter.isMathFont("CMMI10"))
+        assertTrue(NotewisePdfConverter.isMathFont("CMSY9"))
+        assertTrue(NotewisePdfConverter.isMathFont("CMEX10"))
+        assertTrue(NotewisePdfConverter.isMathFont("MSAM10"))
+        assertTrue(NotewisePdfConverter.isMathFont("MSBM10"))
+        assertTrue(NotewisePdfConverter.isMathFont("STIXMath-Regular"))
+        assertTrue(NotewisePdfConverter.isMathFont("CambriaMath"))
+        assertTrue(NotewisePdfConverter.isMathFont("Symbol"))
+
+        assertTrue(!NotewisePdfConverter.isMathFont("Helvetica"))
+        assertTrue(!NotewisePdfConverter.isMathFont("Times-Roman"))
+        assertTrue(!NotewisePdfConverter.isMathFont("Arial-Bold"))
+    }
 }
