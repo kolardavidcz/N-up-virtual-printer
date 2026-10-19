@@ -2,9 +2,11 @@ package com.example.twoupprint.e2e
 
 import com.example.twoupprint.PdfMerger
 import com.example.twoupprint.PrintLayout
+import com.example.twoupprint.TargetPaperSize
 import com.example.twoupprint.notewise.NotewisePdfConverter
 import com.example.twoupprint.notewise.PbNode
 import com.example.twoupprint.notewise.PbNode.Companion.parseProtobuf
+import com.google.common.truth.Truth.assertThat
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import org.junit.Assert.assertEquals
@@ -241,5 +243,84 @@ class Tier4RealWorldScenariosE2ETest {
                 )
             }
         }
+    }
+
+    @Test
+    fun testScenario6_RegularPdfTo2x2Portrait_ZeroMargins_NoOffsets_NoCropping() {
+        val samplePdf = TestPdfHelper.findSamplePdf("molekulova_rekombinace.pdf")
+        val layout2x2 = PrintLayout(
+            printerId = "nup_2x2",
+            displayName = "4-Up Grid (2×2)",
+            cols = 2,
+            rows = 2,
+            landscape = false,
+            subPageLandscape = false
+        )
+
+        val outStream = ByteArrayOutputStream()
+        FileInputStream(samplePdf).use { input ->
+            PdfMerger.mergeNUp(
+                sourcePdfStream = input,
+                outputStream = outStream,
+                layout = layout2x2,
+                bestFit = false,
+                marginTopMm = 0,
+                marginBottomMm = 0,
+                marginLeftMm = 0,
+                marginRightMm = 0,
+                targetPaper = TargetPaperSize.A4
+            )
+        }
+
+        val outDoc = TestPdfHelper.loadAndValidatePdf(outStream.toByteArray())
+        // 17 source pages / 4 = 5 sheets
+        assertThat(outDoc.numberOfPages).isEqualTo(5)
+
+        val sheet1 = outDoc.getPage(0)
+        assertThat(sheet1.mediaBox.width).isWithin(0.5f).of(TargetPaperSize.A4.widthPt)
+        assertThat(sheet1.mediaBox.height).isWithin(0.5f).of(TargetPaperSize.A4.heightPt)
+        assertThat(sheet1.mediaBox.height).isGreaterThan(sheet1.mediaBox.width)
+
+        // Verify exactly 4 Form XObjects per full sheet, full height/width without cropping
+        val resources = sheet1.resources
+        val xobjNames = resources.xObjectNames.toList()
+        assertThat(xobjNames.size).isEqualTo(4)
+
+        outDoc.close()
+    }
+
+    @Test
+    fun testScenario7_TargetPaperSizeA5_ExactDimensions() {
+        val samplePdf = TestPdfHelper.findSamplePdf("molekulova.pdf")
+        val layout2x2 = PrintLayout(
+            printerId = "nup_2x2",
+            displayName = "4-Up Grid (2×2)",
+            cols = 2,
+            rows = 2,
+            landscape = false,
+            subPageLandscape = false
+        )
+
+        val outStream = ByteArrayOutputStream()
+        FileInputStream(samplePdf).use { input ->
+            PdfMerger.mergeNUp(
+                sourcePdfStream = input,
+                outputStream = outStream,
+                layout = layout2x2,
+                bestFit = false,
+                targetPaper = TargetPaperSize.A5
+            )
+        }
+
+        val outDoc = TestPdfHelper.loadAndValidatePdf(outStream.toByteArray())
+        assertThat(outDoc.numberOfPages).isEqualTo(3)
+
+        val sheet1 = outDoc.getPage(0)
+        // A5 Portrait
+        assertThat(sheet1.mediaBox.width).isWithin(0.5f).of(TargetPaperSize.A5.widthPt)
+        assertThat(sheet1.mediaBox.height).isWithin(0.5f).of(TargetPaperSize.A5.heightPt)
+        assertThat(sheet1.mediaBox.height).isGreaterThan(sheet1.mediaBox.width)
+
+        outDoc.close()
     }
 }

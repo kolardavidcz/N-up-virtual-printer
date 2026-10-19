@@ -75,54 +75,32 @@ class PbNode(
     companion object {
 
         fun encodeVarint(value: Long): ByteArray {
-            val bos = ByteArrayOutputStream()
-            var v = value
-            while (true) {
-                val toWrite = (v and 0x7F).toInt()
-                v = v ushr 7
-                if (v > 0) {
-                    bos.write(toWrite or 0x80)
-                } else {
-                    bos.write(toWrite)
-                    break
-                }
-            }
-            return bos.toByteArray()
+            val size = com.google.protobuf.CodedOutputStream.computeUInt64SizeNoTag(value)
+            val bytes = ByteArray(size)
+            val cos = com.google.protobuf.CodedOutputStream.newInstance(bytes)
+            cos.writeUInt64NoTag(value)
+            return bytes
         }
 
         fun decodeVarint(data: ByteArray, startOffset: Int): Pair<Long, Int> {
-            var result = 0L
-            var shift = 0
-            var offset = startOffset
-            while (offset < data.size) {
-                val b = data[offset].toLong() and 0xFFL
-                result = result or ((b and 0x7FL) shl shift)
-                offset++
-                if ((b and 0x80L) == 0L) {
-                    break
-                }
-                shift += 7
-            }
-            return Pair(result, offset)
+            val cis = com.google.protobuf.CodedInputStream.newInstance(data, startOffset, data.size - startOffset)
+            val value = cis.readRawVarint64()
+            val bytesRead = cis.totalBytesRead
+            return Pair(value, startOffset + bytesRead)
         }
 
         fun encodeFloat(value: Float): ByteArray {
-            val bits = java.lang.Float.floatToRawIntBits(value)
-            return byteArrayOf(
-                (bits and 0xFF).toByte(),
-                ((bits ushr 8) and 0xFF).toByte(),
-                ((bits ushr 16) and 0xFF).toByte(),
-                ((bits ushr 24) and 0xFF).toByte()
-            )
+            val bytes = ByteArray(4)
+            val cos = com.google.protobuf.CodedOutputStream.newInstance(bytes)
+            cos.writeFixed32NoTag(java.lang.Float.floatToRawIntBits(value))
+            return bytes
         }
 
         fun encodeDouble(value: Double): ByteArray {
-            val bits = java.lang.Double.doubleToRawLongBits(value)
-            val buf = ByteArray(8)
-            for (i in 0..7) {
-                buf[i] = ((bits ushr (i * 8)) and 0xFF).toByte()
-            }
-            return buf
+            val bytes = ByteArray(8)
+            val cos = com.google.protobuf.CodedOutputStream.newInstance(bytes)
+            cos.writeFixed64NoTag(java.lang.Double.doubleToRawLongBits(value))
+            return bytes
         }
 
         fun makeFloatNode(fieldNumber: Int, value: Float): PbNode {
