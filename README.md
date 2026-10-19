@@ -1,6 +1,6 @@
 # N-Up Print for Android (Virtual Printer Service)
 
-[![Release](https://img.shields.io/badge/release-v2.3.0-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v2.3.0)
+[![Release](https://img.shields.io/badge/release-v2.4.0-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v2.4.0)
 [![API](https://img.shields.io/badge/API-26%2B-green.svg)](https://android-arsenal.com/api?level=26)
 [![License](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Samsung%20One%20UI-3DDC84.svg)](https://developer.android.com/about/versions/oreo)
@@ -13,8 +13,8 @@ Unlike standard print services that rasterize documents into low-resolution imag
 
 ## 📥 Download APK
 
-- **Latest Release (v2.3.0)**: [Download N-Up Print v2.3.0 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v2.3.0/nup-print-v2.3.0.apk)
-- **Local Mirror**: [`releases/nup-print-v2.3.0.apk`](releases/nup-print-v2.3.0.apk)
+- **Latest Release (v2.4.0)**: [Download N-Up Print v2.4.0 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v2.4.0/nup-print-v2.4.0.apk)
+- **Local Mirror**: [`releases/nup-print-v2.4.0.apk`](releases/nup-print-v2.4.0.apk)
 
 ---
 
@@ -33,6 +33,8 @@ Unlike standard print services that rasterize documents into low-resolution imag
   - **Companion Export Toggle**: Turn on *Export .notewise notebook alongside PDF* to automatically generate both the N-up merged `.pdf` and the `.notewise` notebook file side by side.
   - **Zero-Dependency Protobuf & MIME-76 Engine**: Full compliance with Notewise binary specifications, including 76-character Base64 wrapping, sequential field 10 indexing, 300 DPI coordinate mapping, dominant font size scaling, and SHA-256 WebP image deduplication.
 - 📄 **True Vector PDF N-Up Merging**: Combines 2, 4, 6, 8, or arbitrary N-up pages onto a single sheet without rasterizing to bitmaps. Text is 100% selectable and vector paths remain sharp.
+- 📑 **ISO A4, ISO A5 & Smart Paper Sizing**: Native support for ISO A4 ($595 \times 842\text{ pt}$) and ISO A5 ($420 \times 595\text{ pt}$) paper sheets. In-app settings toggle allows configuring whether "Smart" defaults to A4 or A5.
+- 🧭 **Strict Portrait Default & Decoupled Orientation**: The Android / Samsung system print spooler dialog strictly defaults to Portrait across all virtual printers, while app layout settings govern the final sheet orientation.
 - 📐 **Middle Space Distribution (Center, 2:1 Middle, Max Middle)**: Solves the issue where adding margins or printing scaled slides creates excessive outer white space. Users can choose:
   - **Center**: Balanced 1:1 distribution across margins and internal gutter.
   - **2:1 Middle**: 2:1 ratio prioritizing the middle gutter for handwritten annotations and binding.

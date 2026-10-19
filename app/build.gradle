@@ -11,8 +11,8 @@ android {
         applicationId "com.example.twoupprint"
         minSdk 26
         targetSdk 34
-        versionCode 19
-        versionName "2.3.0"
+        versionCode 20
+        versionName "2.4.0"
     }
 
     testOptions {
@@ -21,6 +21,7 @@ android {
 
     buildTypes {
         release {
+            signingConfig signingConfigs.debug
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
