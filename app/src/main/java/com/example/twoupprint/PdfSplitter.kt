@@ -92,54 +92,10 @@ object PdfSplitter {
                 val srcPage = srcDoc.getPage(srcIdx)
                 val cropBox = srcPage.cropBox ?: srcPage.mediaBox ?: PDRectangle.A4
 
-                val rawW = cropBox.width
-                val rawH = cropBox.height
-                val rawX = cropBox.lowerLeftX
-                val rawY = cropBox.lowerLeftY
-
-                val pageRot = ((srcPage.rotation % 360) + 360) % 360
-                val isRot90or270 = (pageRot == 90 || pageRot == 270)
-                val visualW = if (isRot90or270) rawH else rawW
-                val visualH = if (isRot90or270) rawW else rawH
-
                 val form = layerUtility.importPageAsForm(srcDoc, srcIdx)
-                form.bBox = PDRectangle(visualW, visualH)
-                val matrixArray = COSArray()
-                when (pageRot) {
-                    90 -> {
-                        matrixArray.add(COSFloat(0f))
-                        matrixArray.add(COSFloat(-1f))
-                        matrixArray.add(COSFloat(1f))
-                        matrixArray.add(COSFloat(0f))
-                        matrixArray.add(COSFloat(-rawY))
-                        matrixArray.add(COSFloat(rawX + rawW))
-                    }
-                    180 -> {
-                        matrixArray.add(COSFloat(-1f))
-                        matrixArray.add(COSFloat(0f))
-                        matrixArray.add(COSFloat(0f))
-                        matrixArray.add(COSFloat(-1f))
-                        matrixArray.add(COSFloat(rawX + rawW))
-                        matrixArray.add(COSFloat(rawY + rawH))
-                    }
-                    270 -> {
-                        matrixArray.add(COSFloat(0f))
-                        matrixArray.add(COSFloat(1f))
-                        matrixArray.add(COSFloat(-1f))
-                        matrixArray.add(COSFloat(0f))
-                        matrixArray.add(COSFloat(rawY + rawH))
-                        matrixArray.add(COSFloat(-rawX))
-                    }
-                    else -> {
-                        matrixArray.add(COSFloat(1f))
-                        matrixArray.add(COSFloat(0f))
-                        matrixArray.add(COSFloat(0f))
-                        matrixArray.add(COSFloat(1f))
-                        matrixArray.add(COSFloat(-rawX))
-                        matrixArray.add(COSFloat(-rawY))
-                    }
-                }
-                form.cosObject.setItem(COSName.MATRIX, matrixArray)
+                val bounds = PdfPageGeometry.applyUprightFormNormalization(form, cropBox, srcPage.rotation)
+                val visualW = bounds.visualW
+                val visualH = bounds.visualH
 
                 val tileW = visualW / cols.toFloat()
                 val tileH = visualH / rows.toFloat()

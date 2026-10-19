@@ -244,67 +244,19 @@ object PdfLinkEngine {
         pageRotation: Int = 0,
         isPresentationSmart: Boolean = false
     ): PDRectangle {
-        val pageRot = ((pageRotation % 360) + 360) % 360
-        val isRot90or270 = (pageRot == 90 || pageRot == 270)
-        val rawW = cropBox.width
-        val rawH = cropBox.height
-        val rawX = cropBox.lowerLeftX
-        val rawY = cropBox.lowerLeftY
-
-        val visualW = if (isRot90or270) rawH else rawW
-        val visualH = if (isRot90or270) rawW else rawH
-
-        // 1. Transform raw [x1, y1, x2, y2] to visual upright space in [0, 0, visualW, visualH]
-        val rx1 = srcRect.lowerLeftX
-        val ry1 = srcRect.lowerLeftY
-        val rx2 = srcRect.upperRightX
-        val ry2 = srcRect.upperRightY
-
-        fun mapToVisual(x: Float, y: Float): Pair<Float, Float> {
-            return when (pageRot) {
-                90 -> Pair(y - rawY, rawX + rawW - x)
-                180 -> Pair(rawX + rawW - x, rawY + rawH - y)
-                270 -> Pair(rawY + rawH - y, x - rawX)
-                else -> Pair(x - rawX, y - rawY)
-            }
-        }
-
-        val p1 = mapToVisual(rx1, ry1)
-        val p2 = mapToVisual(rx2, ry2)
-        val vxMin = Math.min(p1.first, p2.first)
-        val vxMax = Math.max(p1.first, p2.first)
-        val vyMin = Math.min(p1.second, p2.second)
-        val vyMax = Math.max(p1.second, p2.second)
-
-        // 2. Transform visual rectangle into slot (strictly upright matching PdfMerger)
-        val scale = Math.min(slotWidth / visualW, slotHeight / visualH)
-
-        val destW = visualW * scale
-        val destH = visualH * scale
-
-        val spareW = (slotWidth - destW).coerceAtLeast(0f)
-        val offsetRatio = if (hasMargins && cols > 1) {
-            val normCol = col.toFloat() / (cols - 1).toFloat()
-            val bias = (normCol - 0.5f) * spaceDistributionMode.factor
-            0.5f + bias
-        } else {
-            0.5f
-        }
-
-        val tx = slotLeft + spareW * offsetRatio
-        val ty = slotBottom + (slotHeight - destH) / 2f
-
-        val minX = tx + vxMin * scale
-        val maxX = tx + vxMax * scale
-        val minY = ty + vyMin * scale
-        val maxY = ty + vyMax * scale
-
-        return PDRectangle().apply {
-            lowerLeftX = minX
-            lowerLeftY = minY
-            upperRightX = maxX
-            upperRightY = maxY
-        }
+        return PdfPageGeometry.transformRectToSlot(
+            srcRect = srcRect,
+            cropBox = cropBox,
+            slotLeft = slotLeft,
+            slotBottom = slotBottom,
+            slotWidth = slotWidth,
+            slotHeight = slotHeight,
+            col = col,
+            cols = cols,
+            spaceDistributionMode = spaceDistributionMode,
+            hasMargins = hasMargins,
+            pageRotation = pageRotation
+        )
     }
 
     /**
@@ -444,21 +396,6 @@ object PdfLinkEngine {
             outPage.annotations = it
         }
 
-        val pageRot = ((srcPage.rotation % 360) + 360) % 360
-        val rawW = cropBox.width
-        val rawH = cropBox.height
-        val rawX = cropBox.lowerLeftX
-        val rawY = cropBox.lowerLeftY
-
-        fun mapToVisual(x: Float, y: Float): Pair<Float, Float> {
-            return when (pageRot) {
-                90 -> Pair(y - rawY, rawX + rawW - x)
-                180 -> Pair(rawX + rawW - x, rawY + rawH - y)
-                270 -> Pair(rawY + rawH - y, x - rawX)
-                else -> Pair(x - rawX, y - rawY)
-            }
-        }
-
         // 1. Existing PDF Link Annotations
         try {
             val srcAnnotations = srcPage.annotations
@@ -466,12 +403,11 @@ object PdfLinkEngine {
                 for (annot in srcAnnotations) {
                     if (annot is PDAnnotationLink) {
                         val srcRect = annot.rectangle ?: continue
-                        val p1 = mapToVisual(srcRect.lowerLeftX, srcRect.lowerLeftY)
-                        val p2 = mapToVisual(srcRect.upperRightX, srcRect.upperRightY)
-                        val lVxMin = Math.min(p1.first, p2.first)
-                        val lVxMax = Math.max(p1.first, p2.first)
-                        val lVyMin = Math.min(p1.second, p2.second)
-                        val lVyMax = Math.max(p1.second, p2.second)
+                        val vRect = PdfPageGeometry.mapRectToVisual(srcRect, cropBox, srcPage.rotation)
+                        val lVxMin = vRect.minX
+                        val lVxMax = vRect.maxX
+                        val lVyMin = vRect.minY
+                        val lVyMax = vRect.maxY
 
                         val ox1 = Math.max(lVxMin, vxMin)
                         val ox2 = Math.min(lVxMax, vxMax)
@@ -520,12 +456,11 @@ object PdfLinkEngine {
             val plainTextLinks = extractPlainTextUrls(srcDoc, pageIndex, cropBox)
             for ((rawUrl, srcRect) in plainTextLinks) {
                 if (isOverlappingExisting(srcRect, existingLinkRects)) continue
-                val p1 = mapToVisual(srcRect.lowerLeftX, srcRect.lowerLeftY)
-                val p2 = mapToVisual(srcRect.upperRightX, srcRect.upperRightY)
-                val lVxMin = Math.min(p1.first, p2.first)
-                val lVxMax = Math.max(p1.first, p2.first)
-                val lVyMin = Math.min(p1.second, p2.second)
-                val lVyMax = Math.max(p1.second, p2.second)
+                val vRect = PdfPageGeometry.mapRectToVisual(srcRect, cropBox, srcPage.rotation)
+                val lVxMin = vRect.minX
+                val lVxMax = vRect.maxX
+                val lVyMin = vRect.minY
+                val lVyMax = vRect.maxY
 
                 val ox1 = Math.max(lVxMin, vxMin)
                 val ox2 = Math.min(lVxMax, vxMax)

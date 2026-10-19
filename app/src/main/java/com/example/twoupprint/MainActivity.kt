@@ -106,7 +106,9 @@ class MainActivity : AppCompatActivity() {
         btnTroubleshoot = findViewById(R.id.btnTroubleshoot)
 
         btnAddLayout.setOnClickListener {
-            showAddCustomLayoutDialog()
+            CustomLayoutDialogHelper.showAddCustomLayoutDialog(this) { _, _ ->
+                updateUIState()
+            }
         }
 
         // Text Contrast Switch Listener
@@ -413,340 +415,46 @@ class MainActivity : AppCompatActivity() {
     private fun renderLayoutCards() {
         layoutCardsContainer.removeAllViews()
         val allLayouts = LayoutRegistry.getAllLayouts(this)
-        val density = resources.displayMetrics.density
+
+        val callbacks = LayoutCardViewBinder.Callbacks(
+            onToggleOrientation = { layout ->
+                LayoutRegistry.setLayoutOrientation(this, layout.printerId, !layout.landscape)
+                updateUIState()
+            },
+            onToggleSubPageOrientation = { layout ->
+                LayoutRegistry.setSubPageOrientation(this, layout.printerId, !layout.subPageLandscape)
+                updateUIState()
+            },
+            onConfigureSplit = {
+                SplitDialogHelper.showSplitSettingsDialog(this) { updateUIState() }
+            },
+            onRemoveCustomLayout = { layout ->
+                showRemoveCustomLayoutDialog(layout)
+            },
+            onToggleEnabled = { layout, isChecked ->
+                LayoutRegistry.setLayoutEnabled(this, layout.printerId, isChecked)
+            }
+        )
 
         for (layout in allLayouts) {
-            val card = MaterialCardView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    setMargins(0, 0, 0, (6 * density).toInt())
-                }
-                setCardBackgroundColor(Color.parseColor("#211F26"))
-                radius = 12f * density
-                strokeColor = Color.parseColor("#49454F")
-                strokeWidth = (1 * density).toInt()
-                cardElevation = 0f
-            }
-
-            val cardContent = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                val padH = (14 * density).toInt()
-                val padV = (6 * density).toInt()
-                setPadding(padH, padV, padH, padV)
-            }
-
-            val iconPx = (44 * density).toInt()
-            val iconView = ImageView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(iconPx, iconPx)
-                val bitmap = LayoutIconGenerator.generateIconBitmap(layout)
-                setImageBitmap(bitmap)
-            }
-
-            val textContainer = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(
-                    0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    1f
-                ).apply {
-                    setMargins((12 * density).toInt(), 0, (8 * density).toInt(), 0)
-                }
-            }
-
-            val titleView = TextView(this).apply {
-                text = layout.displayName
-                setTextColor(Color.parseColor("#E6E0E9"))
-                textSize = 14f
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
-            }
-
-            val sheetStr = if (layout.landscape) "Landscape" else "Portrait"
-            val subStr = if (layout.subPageLandscape) "Landscape" else "Portrait"
-            val subView = TextView(this).apply {
-                text = if (layout.isSplit) {
-                    "Split 1 page → ${layout.cols * layout.rows} pages (${layout.cols}×${layout.rows}) • Output: $sheetStr"
-                } else {
-                    "${layout.pagesPerSheet} pages/sheet • ${layout.cols}×${layout.rows} • Sheet: $sheetStr • Subpages: $subStr"
-                }
-                setTextColor(Color.parseColor("#CAC4D0"))
-                textSize = 11f
-                setPadding(0, 1, 0, 0)
-            }
-
-            val actionRow = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, 2, 0, 0)
-            }
-
-            val btnPadH = (6 * density).toInt()
-            val btnPadV = (2 * density).toInt()
-
-            val btnOrientation = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
-                val isLandscape = layout.landscape
-                val prefix = if (layout.isSplit) "Output: " else "Sheet: "
-                text = if (isLandscape) "${prefix}Landscape" else "${prefix}Portrait"
-                setTextColor(Color.parseColor("#D0BCFF"))
-                textSize = 11f
-                minHeight = 0
-                minimumHeight = 0
-                insetTop = 0
-                insetBottom = 0
-                setPadding(btnPadH, btnPadV, btnPadH, btnPadV)
-                setOnClickListener {
-                    LayoutRegistry.setLayoutOrientation(this@MainActivity, layout.printerId, !isLandscape)
-                    updateUIState()
-                }
-            }
-            actionRow.addView(btnOrientation)
-
-            if (layout.isSplit) {
-                val btnSplitDivision = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
-                    val count = layout.cols * layout.rows
-                    text = "Split: ${layout.cols}×${layout.rows} ($count pages)"
-                    setTextColor(Color.parseColor("#CCC2DC"))
-                    textSize = 11f
-                    minHeight = 0
-                    minimumHeight = 0
-                    insetTop = 0
-                    insetBottom = 0
-                    setPadding(btnPadH, btnPadV, btnPadH, btnPadV)
-                    setOnClickListener {
-                        showSplitSettingsDialog()
-                    }
-                }
-                actionRow.addView(btnSplitDivision)
-            } else {
-                val btnSubPage = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
-                    val isSubLandscape = layout.subPageLandscape
-                    text = if (isSubLandscape) "Subpages: Landscape" else "Subpages: Portrait"
-                    setTextColor(Color.parseColor("#CCC2DC"))
-                    textSize = 11f
-                    minHeight = 0
-                    minimumHeight = 0
-                    insetTop = 0
-                    insetBottom = 0
-                    setPadding(btnPadH, btnPadV, btnPadH, btnPadV)
-                    setOnClickListener {
-                        LayoutRegistry.setSubPageOrientation(this@MainActivity, layout.printerId, !isSubLandscape)
-                        updateUIState()
-                    }
-                }
-                actionRow.addView(btnSubPage)
-            }
-
-            if (layout.isCustom) {
-                val btnRemove = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
-                    text = "Remove"
-                    setTextColor(Color.parseColor("#F2B8B5"))
-                    textSize = 11f
-                    minHeight = 0
-                    minimumHeight = 0
-                    insetTop = 0
-                    insetBottom = 0
-                    setPadding(btnPadH, btnPadV, btnPadH, btnPadV)
-                    setOnClickListener {
-                        AlertDialog.Builder(this@MainActivity)
-                            .setTitle("Remove Custom Layout")
-                            .setMessage("Delete ${layout.displayName}?\n\nTip: If this printer still appears in Samsung's menu after removing, clear Print Spooler data under System & Reliability.")
-                            .setPositiveButton("Remove & Open Spooler") { _, _ ->
-                                LayoutRegistry.removeCustomLayout(this@MainActivity, layout.printerId)
-                                updateUIState()
-                                openPrintSpoolerInfo()
-                            }
-                            .setNeutralButton("Remove Only") { _, _ ->
-                                LayoutRegistry.removeCustomLayout(this@MainActivity, layout.printerId)
-                                updateUIState()
-                            }
-                            .setNegativeButton("Cancel", null)
-                            .show()
-                    }
-                }
-                actionRow.addView(btnRemove)
-            }
-
-            textContainer.addView(titleView)
-            textContainer.addView(subView)
-            textContainer.addView(actionRow)
-
-            val enableSwitch = MaterialSwitch(this).apply {
-                isChecked = LayoutRegistry.isLayoutEnabled(this@MainActivity, layout.printerId)
-                setOnCheckedChangeListener { _, isChecked ->
-                    LayoutRegistry.setLayoutEnabled(this@MainActivity, layout.printerId, isChecked)
-                }
-            }
-
-            cardContent.addView(iconView)
-            cardContent.addView(textContainer)
-            cardContent.addView(enableSwitch)
-
-            card.addView(cardContent)
-            layoutCardsContainer.addView(card)
+            val isEnabled = LayoutRegistry.isLayoutEnabled(this, layout.printerId)
+            val cardView = LayoutCardViewBinder.createCardView(this, layout, isEnabled, callbacks)
+            layoutCardsContainer.addView(cardView)
         }
     }
 
-    private fun showAddCustomLayoutDialog() {
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(48, 24, 48, 24)
-        }
-
-        val colsInput = EditText(this).apply {
-            hint = "Columns X (e.g. 3)"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            setText("3")
-        }
-
-        val rowsInput = EditText(this).apply {
-            hint = "Rows Y (e.g. 3)"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            setText("3")
-        }
-
-        val sheetSwitch = MaterialSwitch(this).apply {
-            text = "Landscape output sheet"
-            setPadding(0, 16, 0, 0)
-        }
-
-        val subPageSwitch = MaterialSwitch(this).apply {
-            text = "Landscape sub-pages"
-            setPadding(0, 8, 0, 0)
-        }
-
-        fun updateSuitableOrientation() {
-            val cols = colsInput.text.toString().toIntOrNull() ?: 3
-            val rows = rowsInput.text.toString().toIntOrNull() ?: 3
-            val (sheetLandscape, subLandscape) = LayoutRegistry.inferDefaults(cols, rows)
-            sheetSwitch.isChecked = sheetLandscape
-            subPageSwitch.isChecked = subLandscape
-        }
-
-        val textWatcher = object : android.text.TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                updateSuitableOrientation()
-            }
-            override fun afterTextChanged(s: android.text.Editable?) {}
-        }
-
-        colsInput.addTextChangedListener(textWatcher)
-        rowsInput.addTextChangedListener(textWatcher)
-        updateSuitableOrientation()
-
-        container.addView(TextView(this).apply { text = "Columns (X):"; setTextColor(Color.parseColor("#D0BCFF")) })
-        container.addView(colsInput)
-        container.addView(TextView(this).apply { text = "Rows (Y):"; setTextColor(Color.parseColor("#D0BCFF")); setPadding(0, 16, 0, 0) })
-        container.addView(rowsInput)
-        container.addView(sheetSwitch)
-        container.addView(subPageSwitch)
-
+    private fun showRemoveCustomLayoutDialog(layout: PrintLayout) {
         AlertDialog.Builder(this)
-            .setTitle("Add Custom Layout")
-            .setView(container)
-            .setPositiveButton("Add Printer") { _, _ ->
-                val cols = colsInput.text.toString().toIntOrNull() ?: 2
-                val rows = rowsInput.text.toString().toIntOrNull() ?: 2
-                val landscape = sheetSwitch.isChecked
-                val subLandscape = subPageSwitch.isChecked
-
-                val added = LayoutRegistry.addCustomLayout(this, cols, rows, landscape, subLandscape)
-                if (added) {
-                    Toast.makeText(this, "Added ${cols}x${rows} printer layout", Toast.LENGTH_SHORT).show()
-                    updateUIState()
-                } else {
-                    Toast.makeText(this, "Layout already exists or invalid values", Toast.LENGTH_SHORT).show()
-                }
+            .setTitle("Remove Custom Layout")
+            .setMessage("Delete ${layout.displayName}?\n\nTip: If this printer still appears in Samsung's menu after removing, clear Print Spooler data under System & Reliability.")
+            .setPositiveButton("Remove & Open Spooler") { _, _ ->
+                LayoutRegistry.removeCustomLayout(this, layout.printerId)
+                updateUIState()
+                openPrintSpoolerInfo()
             }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showSplitSettingsDialog() {
-        val options = arrayOf(
-            "1 → 2 Pages (Side-by-Side: Left / Right) [2×1]",
-            "1 → 2 Pages (Stacked: Top / Bottom) [1×2]",
-            "1 → 4 Pages (4 Quadrants) [2×2]",
-            "Custom Division..."
-        )
-        val currentCols = LayoutRegistry.getSplitCols(this)
-        val currentRows = LayoutRegistry.getSplitRows(this)
-        val checkedItem = when {
-            currentCols == 2 && currentRows == 1 -> 0
-            currentCols == 1 && currentRows == 2 -> 1
-            currentCols == 2 && currentRows == 2 -> 2
-            else -> 3
-        }
-
-        AlertDialog.Builder(this)
-            .setTitle("Split Pages Division")
-            .setSingleChoiceItems(options, checkedItem) { dialog, which ->
-                when (which) {
-                    0 -> {
-                        LayoutRegistry.setSplitGrid(this, 2, 1)
-                        updateUIState()
-                        dialog.dismiss()
-                    }
-                    1 -> {
-                        LayoutRegistry.setSplitGrid(this, 1, 2)
-                        updateUIState()
-                        dialog.dismiss()
-                    }
-                    2 -> {
-                        LayoutRegistry.setSplitGrid(this, 2, 2)
-                        updateUIState()
-                        dialog.dismiss()
-                    }
-                    3 -> {
-                        dialog.dismiss()
-                        showCustomSplitDialog()
-                    }
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showCustomSplitDialog() {
-        val density = resources.displayMetrics.density
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val pad = (20 * density).toInt()
-            setPadding(pad, (10 * density).toInt(), pad, (10 * density).toInt())
-        }
-
-        val colsInput = EditText(this).apply {
-            hint = "Columns X (e.g. 2)"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            setText(LayoutRegistry.getSplitCols(this@MainActivity).toString())
-        }
-
-        val rowsInput = EditText(this).apply {
-            hint = "Rows Y (e.g. 1)"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            setText(LayoutRegistry.getSplitRows(this@MainActivity).toString())
-        }
-
-        container.addView(TextView(this).apply { text = "Columns (Horizontal slices):"; setTextColor(Color.parseColor("#D0BCFF")) })
-        container.addView(colsInput)
-        container.addView(TextView(this).apply { text = "Rows (Vertical slices):"; setTextColor(Color.parseColor("#D0BCFF")); setPadding(0, (12 * density).toInt(), 0, 0) })
-        container.addView(rowsInput)
-
-        AlertDialog.Builder(this)
-            .setTitle("Custom Page Split")
-            .setView(container)
-            .setPositiveButton("Apply") { _, _ ->
-                val cols = colsInput.text.toString().toIntOrNull() ?: 2
-                val rows = rowsInput.text.toString().toIntOrNull() ?: 1
-                if (cols in 1..10 && rows in 1..10) {
-                    LayoutRegistry.setSplitGrid(this, cols, rows)
-                    updateUIState()
-                    Toast.makeText(this, "Page split set to ${cols}×${rows} (${cols * rows} pages)", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "Columns and rows must be between 1 and 10", Toast.LENGTH_SHORT).show()
-                }
+            .setNeutralButton("Remove Only") { _, _ ->
+                LayoutRegistry.removeCustomLayout(this, layout.printerId)
+                updateUIState()
             }
             .setNegativeButton("Cancel", null)
             .show()

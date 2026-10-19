@@ -18,9 +18,12 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import java.io.File
 import java.io.OutputStream
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
 
 /**
- * Runs off the main thread to process print jobs:
+ * Runs on a managed background executor to process print jobs:
  * - N-up PDF merging
  * - Streams output to Downloads/TwoUpPrint/ via MediaStore (Android 10+) or SAF / direct file I/O.
  */
@@ -42,11 +45,27 @@ class PrintJobHandler(
     private val isPresentationSmart: Boolean = false,
     private val spaceDistributionMode: SpaceDistributionMode = SpaceDistributionMode.CENTER,
     private val targetPaper: TargetPaperSize = TargetPaperSize.A4
-) : Thread("NUpPrintJob") {
+) : Runnable {
 
     companion object {
         private const val CHANNEL_ID = "2up_print_channel"
         private const val NOTIF_ID = 2001
+
+        private val backgroundExecutor: ExecutorService = Executors.newFixedThreadPool(
+            2,
+            ThreadFactory { runnable ->
+                Thread(runnable, "NUpPrintJobWorker").apply {
+                    isDaemon = true
+                }
+            }
+        )
+    }
+
+    /**
+     * Dispatches the print job to the managed background executor pool.
+     */
+    fun start() {
+        backgroundExecutor.execute(this)
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())

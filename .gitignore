@@ -19,3 +19,4 @@ local.properties
 *.py
 *.pdf
 __pycache__/
+.kotlin/

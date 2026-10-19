@@ -247,10 +247,9 @@ object PdfMerger {
         // Determine input slide aspect ratio from page 0
         val firstPage = srcDoc.getPage(0)
         val cropBox = firstPage.cropBox ?: firstPage.mediaBox ?: PDRectangle(paperShort, paperLong)
-        val pageRot = ((firstPage.rotation % 360) + 360) % 360
-        val isRot90or270 = (pageRot == 90 || pageRot == 270)
-        val srcW = if (isRot90or270) cropBox.height else cropBox.width
-        val srcH = if (isRot90or270) cropBox.width else cropBox.height
+        val bounds = PdfPageGeometry.getVisualBounds(cropBox, firstPage.rotation)
+        val srcW = bounds.visualW
+        val srcH = bounds.visualH
         if (srcW <= 0f || srcH <= 0f) {
             return if (layout.landscape) PDRectangle(paperLong, paperShort) else PDRectangle(paperShort, paperLong)
         }
@@ -385,83 +384,25 @@ object PdfMerger {
         val srcPage = srcDoc.getPage(pageIndex)
         val cropBox = srcPage.cropBox ?: srcPage.mediaBox ?: PDRectangle.A4
 
-        val rawW = cropBox.width
-        val rawH = cropBox.height
-        val rawX = cropBox.lowerLeftX
-        val rawY = cropBox.lowerLeftY
-
-        val pageRot = ((srcPage.rotation % 360) + 360) % 360
-        val isRot90or270 = (pageRot == 90 || pageRot == 270)
-
-        val visualW = if (isRot90or270) rawH else rawW
-        val visualH = if (isRot90or270) rawW else rawH
-
-        // Normalize Form XObject so BBox is strictly [0, 0, visualW, visualH]
-        // and Form Matrix incorporates the page's intrinsic rotation (0, 90, 180, 270)
-        // so that the Form XObject is ALWAYS 100% upright and starts at (0, 0).
-        form.bBox = PDRectangle(visualW, visualH)
-        val matrixArray = COSArray()
-        when (pageRot) {
-            90 -> {
-                // 90° clockwise in PDF: [0, -1, 1, 0, -rawY, rawX + rawW]
-                matrixArray.add(COSFloat(0f))
-                matrixArray.add(COSFloat(-1f))
-                matrixArray.add(COSFloat(1f))
-                matrixArray.add(COSFloat(0f))
-                matrixArray.add(COSFloat(-rawY))
-                matrixArray.add(COSFloat(rawX + rawW))
-            }
-            180 -> {
-                // 180° rotation: [-1, 0, 0, -1, rawX + rawW, rawY + rawH]
-                matrixArray.add(COSFloat(-1f))
-                matrixArray.add(COSFloat(0f))
-                matrixArray.add(COSFloat(0f))
-                matrixArray.add(COSFloat(-1f))
-                matrixArray.add(COSFloat(rawX + rawW))
-                matrixArray.add(COSFloat(rawY + rawH))
-            }
-            270 -> {
-                // 270° clockwise (90° CCW): [0, 1, -1, 0, rawY + rawH, -rawX]
-                matrixArray.add(COSFloat(0f))
-                matrixArray.add(COSFloat(1f))
-                matrixArray.add(COSFloat(-1f))
-                matrixArray.add(COSFloat(0f))
-                matrixArray.add(COSFloat(rawY + rawH))
-                matrixArray.add(COSFloat(-rawX))
-            }
-            else -> {
-                // 0° rotation: [1, 0, 0, 1, -rawX, -rawY]
-                matrixArray.add(COSFloat(1f))
-                matrixArray.add(COSFloat(0f))
-                matrixArray.add(COSFloat(0f))
-                matrixArray.add(COSFloat(1f))
-                matrixArray.add(COSFloat(-rawX))
-                matrixArray.add(COSFloat(-rawY))
-            }
-        }
-        form.cosObject.setItem(COSName.MATRIX, matrixArray)
+        val bounds = PdfPageGeometry.applyUprightFormNormalization(form, cropBox, srcPage.rotation)
 
         // Content must ALWAYS remain upright in its grid slots. Never autorotate sideways or invert.
         contentStream.saveGraphicsState()
 
-        val scale = Math.min(slotWidth / visualW, slotHeight / visualH)
+        val placement = PdfPageGeometry.calculateSlotPlacement(
+            visualW = bounds.visualW,
+            visualH = bounds.visualH,
+            slotLeft = slotLeft,
+            slotBottom = slotBottom,
+            slotWidth = slotWidth,
+            slotHeight = slotHeight,
+            col = col,
+            cols = cols,
+            spaceDistributionMode = spaceDistributionMode,
+            hasMargins = hasMargins
+        )
 
-        val destW = visualW * scale
-        val destH = visualH * scale
-
-        val spareW = (slotWidth - destW).coerceAtLeast(0f)
-        val offsetRatio = if (hasMargins && cols > 1) {
-            val normCol = col.toFloat() / (cols - 1).toFloat()
-            val bias = (normCol - 0.5f) * spaceDistributionMode.factor
-            0.5f + bias
-        } else {
-            0.5f
-        }
-
-        val tx = slotLeft + spareW * offsetRatio
-        val ty = slotBottom + (slotHeight - destH) / 2f
-
-        contentStream.transform(Matrix(scale, 0f, 0f, scale, tx, ty))
+        contentStream.transform(Matrix(placement.scale, 0f, 0f, placement.scale, placement.tx, placement.ty))
         contentStream.drawForm(form)
         contentStream.restoreGraphicsState()
     }
