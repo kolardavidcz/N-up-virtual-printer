@@ -209,7 +209,8 @@ class NotewiseConverterTest {
             val fontInfoSub = fontInfoNode!!.value as List<PbNode>
 
             val fontSizeNode = fontInfoSub.find { it.fieldNumber == 1 }
-            assertEquals("RichText Tag 2 must match font size", fontSizeNode!!.value, tag2Node!!.value)
+            assertNotNull("Font size must exist", fontSizeNode)
+            assertEquals("RichText Tag 2 must be style mode 6", 6L, tag2Node!!.value)
 
             val fontIdNode = fontInfoSub.find { it.fieldNumber == 2 }
             val fontFamNode = fontInfoSub.find { it.fieldNumber == 3 }
@@ -324,6 +325,14 @@ class NotewiseConverterTest {
         val p2Height = p2DimSubNodes.find { it.fieldNumber == 4 }?.value as? Long
         assertEquals("Page 2 width should be 3508 (landscape)", 3508L, p2Width)
         assertEquals("Page 2 height should be 2480 (landscape)", 2480L, p2Height)
+
+        // Verify Notewise page ordering field 2:
+        // Page 0 has no field 2 (or default 0), Page 1 has field 2 = 1L
+        val p1PageIndexNode = p1Nodes.find { it.fieldNumber == 2 }
+        org.junit.Assert.assertNull("Page 0 should omit field 2 default varint", p1PageIndexNode)
+        val p2PageIndexNode = p2Nodes.find { it.fieldNumber == 2 }
+        assertNotNull("Page 1 should have field 2 pageIndex", p2PageIndexNode)
+        assertEquals("Page 1 pageIndex must be 1L", 1L, p2PageIndexNode!!.value)
     }
 
     @Test

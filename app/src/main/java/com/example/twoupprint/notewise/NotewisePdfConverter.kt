@@ -400,11 +400,14 @@ object NotewisePdfConverter {
         val mathLineSet = mathRegions.flatten().toSet()
         val textLines = lines.filter { it !in mathLineSet }
 
+        // Order text lines reading-order aware (supporting 2-column slides / documents)
+        val orderedTextLines = orderLinesByReadingOrder(textLines, rawW, rawH)
+
         // 4. Group remaining text lines into coherent paragraphs
         val paragraphs = mutableListOf<MutableParagraph>()
         var current: MutableParagraph? = null
 
-        for (line in textLines) {
+        for (line in orderedTextLines) {
             if (current == null) {
                 val headingLvl = if (line.isH1) 1 else if (line.isH2) 2 else if (line.isH3) 3 else 0
                 current = MutableParagraph(
@@ -442,10 +445,10 @@ object NotewisePdfConverter {
                     current.isBold == line.isBold &&
                     current.isItalic == line.isItalic &&
                     current.colorHex.equals(line.colorHex, ignoreCase = true) &&
-                    fontSizeDiff <= 1.0f &&
-                    verticalGap <= (current.dominantFontSize * 1.5f) &&
-                    verticalGap >= -3.0f &&
-                    abs(line.minX - current.minX) <= 25.0f
+                    fontSizeDiff <= 1.5f &&
+                    verticalGap <= (current.dominantFontSize * 1.6f) &&
+                    verticalGap >= -4.0f &&
+                    abs(line.minX - current.minX) <= 30.0f
 
             if (isHeadingCont || canMergeBody) {
                 current.text += " " + line.text
@@ -478,15 +481,43 @@ object NotewisePdfConverter {
             paragraphs.add(current)
         }
 
-        // 5. Convert to Notewise canvas coordinates and dynamic font sizes without artificial offsets
+        // Determine dominant body font size of the page based on character frequency
+        val charCountsBySize = mutableMapOf<Int, Int>()
+        for (line in textLines) {
+            val rounded = (line.dominantFontSize * 10f).roundToInt()
+            charCountsBySize[rounded] = (charCountsBySize[rounded] ?: 0) + line.text.length
+        }
+        val dominantBodyPt = if (charCountsBySize.isNotEmpty()) {
+            charCountsBySize.maxByOrNull { it.value }!!.key / 10f
+        } else {
+            10.0f
+        }
+
+        // 5. Convert to Notewise canvas coordinates and proportional dynamic font sizes with horizontal safety padding
         val textBlocks = paragraphs.map { p ->
             val leftP = p.minX * scaleX
             val topP = p.minY * scaleY
-            val rightP = maxOf(p.maxX * scaleX, leftP + 1.0f)
-            val bottomP = maxOf(p.maxY * scaleY, topP + 1.0f)
+            val boxW = (p.maxX - p.minX) * scaleX
 
-            // Dynamic font size directly from PDF points (round(dominantSize))
-            val notewiseFontSize = p.dominantFontSize.roundToInt().coerceAtLeast(6)
+            // Proportional font scaling relative to the page's dominant body font size
+            val relScale = if (dominantBodyPt > 0f) p.dominantFontSize / dominantBodyPt else 1.0f
+            val baseNotewiseBody = 10.5f // Standard readable note body size in Notewise
+            var targetFs = (relScale * baseNotewiseBody).roundToInt().coerceIn(7, 32)
+
+            // Width-aware scaling for single-line elements to prevent unwanted newline splits and overlaps
+            val isSingleLineInPdf = (p.maxY - p.minY) <= (p.dominantFontSize * 1.55f)
+            val nonWhitespaceChars = p.text.count { !it.isWhitespace() }
+            if (isSingleLineInPdf && nonWhitespaceChars > 0 && boxW > 10f) {
+                // In Roboto, average character width is ~0.60 * fontSize in canvas coordinates
+                val maxFitFs = ((boxW / nonWhitespaceChars.toFloat()) / 0.62f).roundToInt()
+                if (maxFitFs in 7 until targetFs) {
+                    targetFs = maxFitFs
+                }
+            }
+
+            // Ensure width has safety padding (+35pt) so Flutter's Roboto text renderer does not wrap
+            val rightP = maxOf(leftP + boxW + 35.0f, leftP + 60.0f)
+            val bottomP = maxOf(p.maxY * scaleY + 8.0f, topP + 18.0f)
 
             NotewiseTextBlock(
                 text = p.text,
@@ -494,7 +525,7 @@ object NotewisePdfConverter {
                 top = topP,
                 right = rightP,
                 bottom = bottomP,
-                fontSize = notewiseFontSize,
+                fontSize = targetFs,
                 isBold = p.isBold,
                 isItalic = p.isItalic,
                 colorHex = p.colorHex,
@@ -504,6 +535,42 @@ object NotewisePdfConverter {
         }
 
         return PageContent(textBlocks, mathImages)
+    }
+
+    /**
+     * Orders text lines in natural reading order.
+     * Detects 2-column layouts (typical of landscape lecture slides and 2-up presentations)
+     * and sequences lines column-by-column to avoid interleaving or horizontal concatenation.
+     */
+    private fun orderLinesByReadingOrder(lines: List<RawLine>, rawW: Float, rawH: Float): List<RawLine> {
+        if (lines.size < 6) return lines.sortedWith(compareBy({ it.minY }, { it.minX }))
+
+        // Multi-column detection (especially common in 2-up landscape slides / handouts)
+        val candidateGutterX = rawW * 0.5f
+        val leftLines = lines.filter { it.maxX <= candidateGutterX + 15.0f }
+        val rightLines = lines.filter { it.minX >= candidateGutterX - 15.0f }
+        val spanningLines = lines.filter { it.minX < candidateGutterX - 15.0f && it.maxX > candidateGutterX + 15.0f }
+
+        val is2Col = leftLines.size >= 4 && rightLines.size >= 4 &&
+                spanningLines.size <= 0.20f * (leftLines.size + rightLines.size)
+
+        if (!is2Col) {
+            return lines.sortedWith(compareBy({ it.minY }, { it.minX }))
+        }
+
+        // 2-column layout: separate full-width headers and footers from column bodies
+        val topOfCols = minOf(leftLines.minOf { it.minY }, rightLines.minOf { it.minY })
+        val bottomOfCols = maxOf(leftLines.maxOf { it.maxY }, rightLines.maxOf { it.maxY })
+
+        val headers = spanningLines.filter { it.maxY <= topOfCols + 20.0f }.sortedBy { it.minY }
+        val footers = spanningLines.filter { it.minY >= bottomOfCols - 20.0f }.sortedBy { it.minY }
+        val unassigned = spanningLines.filter { it !in headers && it !in footers }
+
+        // Assign any mid-spanning lines to the column containing their horizontal midpoint
+        val leftCol = (leftLines + unassigned.filter { (it.minX + it.maxX) / 2.0f < candidateGutterX }).sortedBy { it.minY }
+        val rightCol = (rightLines + unassigned.filter { (it.minX + it.maxX) / 2.0f >= candidateGutterX }).sortedBy { it.minY }
+
+        return headers + leftCol + rightCol + footers
     }
 
     private fun renderMathRegions(

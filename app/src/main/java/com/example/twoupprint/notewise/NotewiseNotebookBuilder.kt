@@ -133,13 +133,17 @@ class NotewiseNotebookBuilder(
 
         // Construct full page message matching official Notewise wire schema
         val pageSettings = createPageSettings(canvasW, canvasH)
-        val pageNodes = listOf(
-            PbNode(1, 2, pageId.toByteArray(Charsets.UTF_8)),
-            *elements.toTypedArray(),
-            pageSettings,
-            PbNode(7, 1, encodeDouble(1024.0)),
-            PbNode(11, 2, rootPageId.toByteArray(Charsets.UTF_8))
+        val pageNodes = mutableListOf<PbNode>(
+            PbNode(1, 2, pageId.toByteArray(Charsets.UTF_8))
         )
+        val pageIndex = pageIds.size - 1
+        if (pageIndex > 0) {
+            pageNodes.add(PbNode(2, 0, pageIndex.toLong()))
+        }
+        pageNodes.addAll(elements)
+        pageNodes.add(pageSettings)
+        pageNodes.add(PbNode(7, 1, encodeDouble(1024.0)))
+        pageNodes.add(PbNode(11, 2, rootPageId.toByteArray(Charsets.UTF_8)))
 
         val serializedPage = pageNodes.map { it.serialize() }.reduce { acc, bytes -> acc + bytes }
         val b64Page = encodeBase64Mime76(serializedPage)
@@ -240,7 +244,7 @@ class NotewiseNotebookBuilder(
         )
         val richText = mutableListOf(
             PbNode(1, 2, text.toByteArray(Charsets.UTF_8)),
-            PbNode(2, 0, fontSize.toLong()), // Run font size in Notewise
+            PbNode(2, 0, 6L), // Style mode 6 (invariant across native Notewise documents)
             PbNode(3, 2, textColor)
         )
         if (isBold) {
