@@ -466,7 +466,11 @@ class MainActivity : AppCompatActivity() {
             val sheetStr = if (layout.landscape) "Landscape" else "Portrait"
             val subStr = if (layout.subPageLandscape) "Landscape" else "Portrait"
             val subView = TextView(this).apply {
-                text = "${layout.pagesPerSheet} pages/sheet • ${layout.cols}×${layout.rows} • Sheet: $sheetStr • Subpages: $subStr"
+                text = if (layout.isSplit) {
+                    "Split 1 page → ${layout.cols * layout.rows} pages (${layout.cols}×${layout.rows}) • Output: $sheetStr"
+                } else {
+                    "${layout.pagesPerSheet} pages/sheet • ${layout.cols}×${layout.rows} • Sheet: $sheetStr • Subpages: $subStr"
+                }
                 setTextColor(Color.parseColor("#CAC4D0"))
                 textSize = 11f
                 setPadding(0, 1, 0, 0)
@@ -483,7 +487,8 @@ class MainActivity : AppCompatActivity() {
 
             val btnOrientation = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
                 val isLandscape = layout.landscape
-                text = if (isLandscape) "Sheet: Landscape" else "Sheet: Portrait"
+                val prefix = if (layout.isSplit) "Output: " else "Sheet: "
+                text = if (isLandscape) "${prefix}Landscape" else "${prefix}Portrait"
                 setTextColor(Color.parseColor("#D0BCFF"))
                 textSize = 11f
                 minHeight = 0
@@ -498,22 +503,40 @@ class MainActivity : AppCompatActivity() {
             }
             actionRow.addView(btnOrientation)
 
-            val btnSubPage = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
-                val isSubLandscape = layout.subPageLandscape
-                text = if (isSubLandscape) "Subpages: Landscape" else "Subpages: Portrait"
-                setTextColor(Color.parseColor("#CCC2DC"))
-                textSize = 11f
-                minHeight = 0
-                minimumHeight = 0
-                insetTop = 0
-                insetBottom = 0
-                setPadding(btnPadH, btnPadV, btnPadH, btnPadV)
-                setOnClickListener {
-                    LayoutRegistry.setSubPageOrientation(this@MainActivity, layout.printerId, !isSubLandscape)
-                    updateUIState()
+            if (layout.isSplit) {
+                val btnSplitDivision = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
+                    val count = layout.cols * layout.rows
+                    text = "Split: ${layout.cols}×${layout.rows} ($count pages)"
+                    setTextColor(Color.parseColor("#CCC2DC"))
+                    textSize = 11f
+                    minHeight = 0
+                    minimumHeight = 0
+                    insetTop = 0
+                    insetBottom = 0
+                    setPadding(btnPadH, btnPadV, btnPadH, btnPadV)
+                    setOnClickListener {
+                        showSplitSettingsDialog()
+                    }
                 }
+                actionRow.addView(btnSplitDivision)
+            } else {
+                val btnSubPage = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
+                    val isSubLandscape = layout.subPageLandscape
+                    text = if (isSubLandscape) "Subpages: Landscape" else "Subpages: Portrait"
+                    setTextColor(Color.parseColor("#CCC2DC"))
+                    textSize = 11f
+                    minHeight = 0
+                    minimumHeight = 0
+                    insetTop = 0
+                    insetBottom = 0
+                    setPadding(btnPadH, btnPadV, btnPadH, btnPadV)
+                    setOnClickListener {
+                        LayoutRegistry.setSubPageOrientation(this@MainActivity, layout.printerId, !isSubLandscape)
+                        updateUIState()
+                    }
+                }
+                actionRow.addView(btnSubPage)
             }
-            actionRow.addView(btnSubPage)
 
             if (layout.isCustom) {
                 val btnRemove = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
@@ -635,6 +658,94 @@ class MainActivity : AppCompatActivity() {
                     updateUIState()
                 } else {
                     Toast.makeText(this, "Layout already exists or invalid values", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showSplitSettingsDialog() {
+        val options = arrayOf(
+            "1 → 2 Pages (Side-by-Side: Left / Right) [2×1]",
+            "1 → 2 Pages (Stacked: Top / Bottom) [1×2]",
+            "1 → 4 Pages (4 Quadrants) [2×2]",
+            "Custom Division..."
+        )
+        val currentCols = LayoutRegistry.getSplitCols(this)
+        val currentRows = LayoutRegistry.getSplitRows(this)
+        val checkedItem = when {
+            currentCols == 2 && currentRows == 1 -> 0
+            currentCols == 1 && currentRows == 2 -> 1
+            currentCols == 2 && currentRows == 2 -> 2
+            else -> 3
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Split Pages Division")
+            .setSingleChoiceItems(options, checkedItem) { dialog, which ->
+                when (which) {
+                    0 -> {
+                        LayoutRegistry.setSplitGrid(this, 2, 1)
+                        updateUIState()
+                        dialog.dismiss()
+                    }
+                    1 -> {
+                        LayoutRegistry.setSplitGrid(this, 1, 2)
+                        updateUIState()
+                        dialog.dismiss()
+                    }
+                    2 -> {
+                        LayoutRegistry.setSplitGrid(this, 2, 2)
+                        updateUIState()
+                        dialog.dismiss()
+                    }
+                    3 -> {
+                        dialog.dismiss()
+                        showCustomSplitDialog()
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showCustomSplitDialog() {
+        val density = resources.displayMetrics.density
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val pad = (20 * density).toInt()
+            setPadding(pad, (10 * density).toInt(), pad, (10 * density).toInt())
+        }
+
+        val colsInput = EditText(this).apply {
+            hint = "Columns X (e.g. 2)"
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            setText(LayoutRegistry.getSplitCols(this@MainActivity).toString())
+        }
+
+        val rowsInput = EditText(this).apply {
+            hint = "Rows Y (e.g. 1)"
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            setText(LayoutRegistry.getSplitRows(this@MainActivity).toString())
+        }
+
+        container.addView(TextView(this).apply { text = "Columns (Horizontal slices):"; setTextColor(Color.parseColor("#D0BCFF")) })
+        container.addView(colsInput)
+        container.addView(TextView(this).apply { text = "Rows (Vertical slices):"; setTextColor(Color.parseColor("#D0BCFF")); setPadding(0, (12 * density).toInt(), 0, 0) })
+        container.addView(rowsInput)
+
+        AlertDialog.Builder(this)
+            .setTitle("Custom Page Split")
+            .setView(container)
+            .setPositiveButton("Apply") { _, _ ->
+                val cols = colsInput.text.toString().toIntOrNull() ?: 2
+                val rows = rowsInput.text.toString().toIntOrNull() ?: 1
+                if (cols in 1..10 && rows in 1..10) {
+                    LayoutRegistry.setSplitGrid(this, cols, rows)
+                    updateUIState()
+                    Toast.makeText(this, "Page split set to ${cols}×${rows} (${cols * rows} pages)", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Columns and rows must be between 1 and 10", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)

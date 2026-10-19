@@ -16,10 +16,10 @@ class DecouplingAndLayoutRegistryTest {
     @Test
     fun testBuiltInLayoutsContainsOnlyValidNUpGrids() {
         val layouts = LayoutRegistry.builtInLayouts
-        assertEquals("There should be exactly 5 built-in N-up layouts", 5, layouts.size)
+        assertEquals("There should be 6 built-in layouts (5 N-up + 1 Split)", 6, layouts.size)
 
         val layoutIds = layouts.map { it.printerId }
-        val expectedIds = listOf("nup_2x1", "nup_1x2", "nup_2x2", "nup_2x3", "nup_2x4")
+        val expectedIds = listOf("nup_2x1", "nup_1x2", "nup_2x2", "nup_2x3", "nup_2x4", "split_pages")
         assertEquals(expectedIds, layoutIds)
 
         assertFalse(
@@ -33,6 +33,19 @@ class DecouplingAndLayoutRegistryTest {
             assertTrue("Layout ${layout.printerId} pagesPerSheet must be >= 2", layout.pagesPerSheet >= 2)
             assertFalse("Built-in layout ${layout.printerId} must not be marked as custom", layout.isCustom)
         }
+    }
+
+    @Test
+    fun testSplitPagesRegistryConfiguration() {
+        val splitLayout = LayoutRegistry.builtInLayouts.find { it.printerId == LayoutRegistry.PRINTER_ID_SPLIT_PAGES }
+        assertNotNull("split_pages must exist in builtInLayouts", splitLayout)
+        assertTrue("split_pages isSplit must be true", splitLayout!!.isSplit)
+        assertEquals("Default split cols must be 2", 2, splitLayout.cols)
+        assertEquals("Default split rows must be 1", 1, splitLayout.rows)
+
+        // Test inferSplitDefaultLandscape
+        assertFalse("2x1 split should default to portrait (tall subpages)", LayoutRegistry.inferSplitDefaultLandscape(2, 1))
+        assertTrue("1x2 split should default to landscape (wide subpages)", LayoutRegistry.inferSplitDefaultLandscape(1, 2))
     }
 
     @Test

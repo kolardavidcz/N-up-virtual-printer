@@ -22,7 +22,102 @@ object LayoutIconGenerator {
      * Overload that pulls orientations from the [PrintLayout] data class.
      */
     fun generateIconBitmap(layout: PrintLayout, size: Int = 256): Bitmap {
+        if (layout.isSplit) {
+            return generateSplitIconBitmap(layout.cols, layout.rows, layout.landscape, size)
+        }
         return generateIconBitmap(layout.cols, layout.rows, layout.landscape, layout.subPageLandscape, size)
+    }
+
+    fun generateSplitIconBitmap(
+        cols: Int,
+        rows: Int,
+        sheetLandscape: Boolean,
+        size: Int = 256
+    ): Bitmap {
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.drawColor(Color.TRANSPARENT)
+
+        val margin = 16f
+        val a4Ratio = 1.414f
+
+        val incomingLandscape = (cols >= rows)
+        val sheetRect = computeA4Rect(size.toFloat(), margin, a4Ratio, incomingLandscape)
+
+        val sheetPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 6f
+            color = Color.WHITE
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
+        canvas.drawRoundRect(sheetRect, 14f, 14f, sheetPaint)
+
+        // Dashed split lines
+        val dashPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 4f
+            color = Color.parseColor("#D0BCFF")
+            pathEffect = android.graphics.DashPathEffect(floatArrayOf(10f, 6f), 0f)
+        }
+
+        val tileW = sheetRect.width() / cols.toFloat()
+        for (c in 1 until cols) {
+            val x = sheetRect.left + c * tileW
+            canvas.drawLine(x, sheetRect.top + 6f, x, sheetRect.bottom - 6f, dashPaint)
+        }
+
+        val tileH = sheetRect.height() / rows.toFloat()
+        for (r in 1 until rows) {
+            val y = sheetRect.top + r * tileH
+            canvas.drawLine(sheetRect.left + 6f, y, sheetRect.right - 6f, y, dashPaint)
+        }
+
+        val pageFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = Color.WHITE
+        }
+        val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#777777")
+            strokeCap = Paint.Cap.ROUND
+        }
+
+        val subAspect = 1f / a4Ratio
+        for (r in 0 until rows) {
+            for (c in 0 until cols) {
+                val tileLeft = sheetRect.left + c * tileW
+                val tileTop = sheetRect.top + r * tileH
+                val pad = tileW * 0.15f
+                val slotW = tileW - pad * 2
+                val slotH = tileH - pad * 2
+                val (fittedW, fittedH) = fitAspectInSlot(slotW, slotH, subAspect)
+                val subLeft = tileLeft + (tileW - fittedW) / 2f
+                val subTop = tileTop + (tileH - fittedH) / 2f
+                val subRect = RectF(subLeft, subTop, subLeft + fittedW, subTop + fittedH)
+
+                canvas.drawRoundRect(subRect, 4f, 4f, pageFillPaint)
+
+                val numLines = 3
+                val linePadX = fittedW * 0.18f
+                val lineH = (fittedH * 0.08f).coerceIn(2f, 4f)
+                linePaint.strokeWidth = lineH
+                val availableY = fittedH * 0.6f
+                val lineSpacing = availableY / (numLines + 1)
+                for (i in 1..numLines) {
+                    val lineY = subTop + fittedH * 0.2f + i * lineSpacing
+                    val lineWidthRatio = if (i == numLines) 0.55f else 0.82f
+                    canvas.drawLine(
+                        subLeft + linePadX,
+                        lineY,
+                        subLeft + linePadX + (fittedW - linePadX * 2) * lineWidthRatio,
+                        lineY,
+                        linePaint
+                    )
+                }
+            }
+        }
+
+        return bitmap
     }
 
     fun generateIconBitmap(

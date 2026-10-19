@@ -77,11 +77,21 @@ class TwoUpPrintService : PrintService() {
         // Extract website / page title from print job metadata if available
         val docName = extractCleanDocumentName(printJob)
 
-        val fileName = if (docName != null) {
-            "${docName}_${layout.cols}x${layout.rows}.pdf"
+        val fileName = if (layout.isSplit) {
+            val suffix = "split_${layout.cols}x${layout.rows}"
+            if (docName != null) {
+                "${docName}_$suffix.pdf"
+            } else {
+                val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                "${suffix}_$stamp.pdf"
+            }
         } else {
-            val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-            "${layout.cols}x${layout.rows}_$stamp.pdf"
+            if (docName != null) {
+                "${docName}_${layout.cols}x${layout.rows}.pdf"
+            } else {
+                val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                "${layout.cols}x${layout.rows}_$stamp.pdf"
+            }
         }
 
         // Check if prompt_each_print is enabled

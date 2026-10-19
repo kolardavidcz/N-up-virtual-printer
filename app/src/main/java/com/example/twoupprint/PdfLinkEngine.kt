@@ -418,4 +418,158 @@ object PdfLinkEngine {
         }
         return false
     }
+
+    /**
+     * Extracts existing link annotations and plain-text URLs on [srcPage] that overlap
+     * the sub-region [vxMin, vyMin, vxMax, vyMax], transforms their bounding boxes
+     * to the tile slot [destLeft, destBottom], and attaches them to [outPage].
+     */
+    fun processAndTransferLinksForTile(
+        srcDoc: PDDocument,
+        srcPage: PDPage,
+        pageIndex: Int,
+        outPage: PDPage,
+        vxMin: Float,
+        vyMin: Float,
+        vxMax: Float,
+        vyMax: Float,
+        destLeft: Float,
+        destBottom: Float,
+        scale: Float
+    ) {
+        val cropBox = srcPage.cropBox ?: srcPage.mediaBox ?: return
+        val existingLinkRects = mutableListOf<PDRectangle>()
+
+        val outAnnotations = outPage.annotations ?: mutableListOf<PDAnnotation>().also {
+            outPage.annotations = it
+        }
+
+        val pageRot = ((srcPage.rotation % 360) + 360) % 360
+        val rawW = cropBox.width
+        val rawH = cropBox.height
+        val rawX = cropBox.lowerLeftX
+        val rawY = cropBox.lowerLeftY
+
+        fun mapToVisual(x: Float, y: Float): Pair<Float, Float> {
+            return when (pageRot) {
+                90 -> Pair(y - rawY, rawX + rawW - x)
+                180 -> Pair(rawX + rawW - x, rawY + rawH - y)
+                270 -> Pair(rawY + rawH - y, x - rawX)
+                else -> Pair(x - rawX, y - rawY)
+            }
+        }
+
+        // 1. Existing PDF Link Annotations
+        try {
+            val srcAnnotations = srcPage.annotations
+            if (srcAnnotations != null) {
+                for (annot in srcAnnotations) {
+                    if (annot is PDAnnotationLink) {
+                        val srcRect = annot.rectangle ?: continue
+                        val p1 = mapToVisual(srcRect.lowerLeftX, srcRect.lowerLeftY)
+                        val p2 = mapToVisual(srcRect.upperRightX, srcRect.upperRightY)
+                        val lVxMin = Math.min(p1.first, p2.first)
+                        val lVxMax = Math.max(p1.first, p2.first)
+                        val lVyMin = Math.min(p1.second, p2.second)
+                        val lVyMax = Math.max(p1.second, p2.second)
+
+                        val ox1 = Math.max(lVxMin, vxMin)
+                        val ox2 = Math.min(lVxMax, vxMax)
+                        val oy1 = Math.max(lVyMin, vyMin)
+                        val oy2 = Math.min(lVyMax, vyMax)
+
+                        if (ox2 > ox1 && oy2 > oy1) {
+                            existingLinkRects.add(srcRect)
+                            val targetAction = annot.action
+                            val targetDest = annot.destination
+                            if (targetAction != null || targetDest != null) {
+                                val outRect = PDRectangle().apply {
+                                    lowerLeftX = destLeft + (ox1 - vxMin) * scale
+                                    lowerLeftY = destBottom + (oy1 - vyMin) * scale
+                                    upperRightX = destLeft + (ox2 - vxMin) * scale
+                                    upperRightY = destBottom + (oy2 - vyMin) * scale
+                                }
+                                val newLink = PDAnnotationLink().apply {
+                                    rectangle = outRect
+                                    action = targetAction
+                                    destination = targetDest
+                                    page = outPage
+                                    isPrinted = true
+                                    highlightMode = PDAnnotationLink.HIGHLIGHT_MODE_INVERT
+                                    borderStyle = PDBorderStyleDictionary().apply { width = 0f }
+                                    val border = COSArray().apply {
+                                        add(COSInteger.ZERO)
+                                        add(COSInteger.ZERO)
+                                        add(COSInteger.ZERO)
+                                    }
+                                    cosObject.setItem(COSName.BORDER, border)
+                                    cosObject.setItem(COSName.BS, borderStyle.cosObject)
+                                }
+                                outAnnotations.add(newLink)
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error transferring existing links for tile: ${e.message}")
+        }
+
+        // 2. Plain text URLs
+        try {
+            val plainTextLinks = extractPlainTextUrls(srcDoc, pageIndex, cropBox)
+            for ((rawUrl, srcRect) in plainTextLinks) {
+                if (isOverlappingExisting(srcRect, existingLinkRects)) continue
+                val p1 = mapToVisual(srcRect.lowerLeftX, srcRect.lowerLeftY)
+                val p2 = mapToVisual(srcRect.upperRightX, srcRect.upperRightY)
+                val lVxMin = Math.min(p1.first, p2.first)
+                val lVxMax = Math.max(p1.first, p2.first)
+                val lVyMin = Math.min(p1.second, p2.second)
+                val lVyMax = Math.max(p1.second, p2.second)
+
+                val ox1 = Math.max(lVxMin, vxMin)
+                val ox2 = Math.min(lVxMax, vxMax)
+                val oy1 = Math.max(lVyMin, vyMin)
+                val oy2 = Math.min(lVyMax, vyMax)
+
+                if (ox2 > ox1 && oy2 > oy1) {
+                    val normalizedUrl = if (rawUrl.startsWith("http://", ignoreCase = true) ||
+                        rawUrl.startsWith("https://", ignoreCase = true)
+                    ) {
+                        rawUrl
+                    } else if (rawUrl.contains("@") && !rawUrl.startsWith("mailto:", ignoreCase = true)) {
+                        "mailto:$rawUrl"
+                    } else {
+                        "https://$rawUrl"
+                    }
+
+                    val outRect = PDRectangle().apply {
+                        lowerLeftX = destLeft + (ox1 - vxMin) * scale
+                        lowerLeftY = destBottom + (oy1 - vyMin) * scale
+                        upperRightX = destLeft + (ox2 - vxMin) * scale
+                        upperRightY = destBottom + (oy2 - vyMin) * scale
+                    }
+                    val newLink = PDAnnotationLink().apply {
+                        rectangle = outRect
+                        action = PDActionURI().apply { uri = normalizedUrl }
+                        page = outPage
+                        isPrinted = true
+                        highlightMode = PDAnnotationLink.HIGHLIGHT_MODE_INVERT
+                        borderStyle = PDBorderStyleDictionary().apply { width = 0f }
+                        val border = COSArray().apply {
+                            add(COSInteger.ZERO)
+                            add(COSInteger.ZERO)
+                            add(COSInteger.ZERO)
+                        }
+                        cosObject.setItem(COSName.BORDER, border)
+                        cosObject.setItem(COSName.BS, borderStyle.cosObject)
+                    }
+                    outAnnotations.add(newLink)
+                    existingLinkRects.add(srcRect)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error discovering plain-text URLs for tile: ${e.message}")
+        }
+    }
 }

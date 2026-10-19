@@ -71,14 +71,24 @@ class PrintJobHandler(
 
             val writeOutput: (OutputStream) -> Unit = { output ->
                 tempSource.inputStream().use { input ->
-                    PdfMerger.mergeNUp(
-                        input, output, layout, addTextContrast, enableLinks, bestFit,
-                        marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
-                        autoTrimSlideBorders, isPresentationSmart,
-                        spaceDistributionMode,
-                        targetPaper
-                    ) { current, total ->
-                        updateProgressNotification(current, total, false)
+                    if (layout.isSplit) {
+                        PdfSplitter.splitPages(
+                            input, output, layout, addTextContrast, enableLinks,
+                            marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
+                            targetPaper
+                        ) { current, total ->
+                            updateProgressNotification(current, total, false)
+                        }
+                    } else {
+                        PdfMerger.mergeNUp(
+                            input, output, layout, addTextContrast, enableLinks, bestFit,
+                            marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,
+                            autoTrimSlideBorders, isPresentationSmart,
+                            spaceDistributionMode,
+                            targetPaper
+                        ) { current, total ->
+                            updateProgressNotification(current, total, false)
+                        }
                     }
                 }
             }
@@ -173,7 +183,11 @@ class PrintJobHandler(
     }
 
     private fun updateProgressNotification(current: Int, total: Int, indeterminate: Boolean) {
-        val titleText = "Generating ${layout.cols}×${layout.rows} PDF..."
+        val titleText = if (layout.isSplit) {
+            "Splitting pages (1→${layout.cols * layout.rows})..."
+        } else {
+            "Generating ${layout.cols}×${layout.rows} PDF..."
+        }
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentTitle(titleText)
@@ -187,7 +201,11 @@ class PrintJobHandler(
 
     private fun showCompleteNotification(location: String, fileUri: Uri) {
         val mimeType = "application/pdf"
-        val title = "${layout.cols}×${layout.rows} PDF Saved: $fileName"
+        val title = if (layout.isSplit) {
+            "Split (${layout.cols}×${layout.rows}) PDF Saved: $fileName"
+        } else {
+            "${layout.cols}×${layout.rows} PDF Saved: $fileName"
+        }
         val actionText = "Open PDF"
 
         val viewIntent = Intent(Intent.ACTION_VIEW).apply {

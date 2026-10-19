@@ -22,7 +22,8 @@ data class PrintLayout(
     val landscape: Boolean,
     val subPageLandscape: Boolean = false,
     @DrawableRes val iconResId: Int = R.drawable.ic_layout_2x2,
-    val isCustom: Boolean = false
+    val isCustom: Boolean = false,
+    val isSplit: Boolean = false
 ) {
     val pagesPerSheet: Int get() = cols * rows
 }
@@ -33,6 +34,8 @@ data class PrintLayout(
  */
 object LayoutRegistry {
 
+    const val PRINTER_ID_SPLIT_PAGES = "split_pages"
+
     private const val PREFS_NAME = "twoupprint_prefs"
     private const val KEY_CUSTOM_LAYOUTS = "custom_layouts_json"
     private const val KEY_DISABLED_LAYOUT_IDS = "disabled_layout_ids_set"
@@ -40,21 +43,25 @@ object LayoutRegistry {
     private const val KEY_SPACE_DISTRIBUTION_MODE = "space_distribution_mode"
     private const val KEY_NOTEWISE_EXPORT_ENABLED = "notewise_export_enabled"
     private const val KEY_SMART_BASE_PAPER_SIZE = "smart_base_paper_size"
+    private const val KEY_SPLIT_COLS = "split_cols"
+    private const val KEY_SPLIT_ROWS = "split_rows"
 
     /**
      * Default configurations:
-     *   2×1  →  sub-page Portrait,  final sheet Landscape
-     *   1×2  →  sub-page Landscape, final sheet Portrait
-     *   2×2  →  sub-page Portrait,   final sheet Portrait (Regular PDF optimal grid)
-     *   2×3  →  sub-page Landscape, final sheet Portrait
-     *   2×4  →  sub-page Landscape, final sheet Portrait
+     *   2×1         →  sub-page Portrait,  final sheet Landscape
+     *   1×2         →  sub-page Landscape, final sheet Portrait
+     *   2×2         →  sub-page Portrait,   final sheet Portrait (Regular PDF optimal grid)
+     *   2×3         →  sub-page Landscape, final sheet Portrait
+     *   2×4         →  sub-page Landscape, final sheet Portrait
+     *   split_pages →  split 1 page into 2 (Left/Right) or more based on user settings
      */
     val builtInLayouts = listOf(
         PrintLayout("nup_2x1", "2-Up Side by Side (2×1)", 2, 1, landscape = true,  subPageLandscape = false, R.drawable.ic_layout_2x1),
         PrintLayout("nup_1x2", "2-Up Stacked (1×2)",      1, 2, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_1x2),
         PrintLayout("nup_2x2", "4-Up Grid (2×2)",         2, 2, landscape = false, subPageLandscape = false, R.drawable.ic_layout_2x2),
         PrintLayout("nup_2x3", "6-Up Grid (2×3)",         2, 3, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x3),
-        PrintLayout("nup_2x4", "8-Up Grid (2×4)",         2, 4, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x4)
+        PrintLayout("nup_2x4", "8-Up Grid (2×4)",         2, 4, landscape = false, subPageLandscape = true,  R.drawable.ic_layout_2x4),
+        PrintLayout(PRINTER_ID_SPLIT_PAGES, "Split Pages (1→2 Left/Right)", 2, 1, landscape = false, subPageLandscape = false, R.drawable.ic_layout_split, isCustom = false, isSplit = true)
     )
 
     fun getAllLayouts(context: Context): List<PrintLayout> {
@@ -69,9 +76,30 @@ object LayoutRegistry {
 
         val rawList = builtInLayouts + getCustomLayouts(context)
         return rawList.map { layout ->
-            val effectiveLandscape = getLayoutOrientation(context, layout.printerId, layout.landscape)
-            val effectiveSubLandscape = getSubPageOrientation(context, layout.printerId, layout.subPageLandscape)
-            layout.copy(landscape = effectiveLandscape, subPageLandscape = effectiveSubLandscape)
+            if (layout.printerId == PRINTER_ID_SPLIT_PAGES) {
+                val splitCols = getSplitCols(context)
+                val splitRows = getSplitRows(context)
+                val defaultLandscape = inferSplitDefaultLandscape(splitCols, splitRows)
+                val effectiveLandscape = getLayoutOrientation(context, layout.printerId, defaultLandscape)
+                val count = splitCols * splitRows
+                val desc = when {
+                    splitCols == 2 && splitRows == 1 -> "1→2 Left/Right"
+                    splitCols == 1 && splitRows == 2 -> "1→2 Top/Bottom"
+                    splitCols == 2 && splitRows == 2 -> "1→4 Grid"
+                    else -> "1→$count (${splitCols}×${splitRows})"
+                }
+                layout.copy(
+                    cols = splitCols,
+                    rows = splitRows,
+                    displayName = "Split Pages ($desc)",
+                    landscape = effectiveLandscape,
+                    subPageLandscape = false
+                )
+            } else {
+                val effectiveLandscape = getLayoutOrientation(context, layout.printerId, layout.landscape)
+                val effectiveSubLandscape = getSubPageOrientation(context, layout.printerId, layout.subPageLandscape)
+                layout.copy(landscape = effectiveLandscape, subPageLandscape = effectiveSubLandscape)
+            }
         }
     }
 
@@ -183,6 +211,30 @@ object LayoutRegistry {
     fun setSmartBasePaperSize(context: Context, paperSize: TargetPaperSize) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_SMART_BASE_PAPER_SIZE, paperSize.id).apply()
+    }
+
+    // --- "Split Pages" setting (cols × rows) ---
+
+    fun getSplitCols(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_SPLIT_COLS, 2)
+    }
+
+    fun getSplitRows(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_SPLIT_ROWS, 1)
+    }
+
+    fun setSplitGrid(context: Context, cols: Int, rows: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putInt(KEY_SPLIT_COLS, cols.coerceIn(1, 10))
+            .putInt(KEY_SPLIT_ROWS, rows.coerceIn(1, 10))
+            .apply()
+    }
+
+    fun inferSplitDefaultLandscape(cols: Int, rows: Int): Boolean {
+        return rows > cols // e.g. 1×2 split -> tiles are wide/landscape, so sheet defaults to landscape
     }
 
     // --- "Page & Slot Margins" setting (Top, Bottom, Left, Right) ---

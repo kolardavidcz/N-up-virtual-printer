@@ -1,20 +1,20 @@
 # N-Up Print for Android (Virtual Printer Service)
 
-[![Release](https://img.shields.io/badge/release-v2.4.0-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v2.4.0)
+[![Release](https://img.shields.io/badge/release-v2.5.0-blue.svg)](https://github.com/kolardavidcz/N-up-virtual-printer/releases/tag/v2.5.0)
 [![API](https://img.shields.io/badge/API-26%2B-green.svg)](https://android-arsenal.com/api?level=26)
 [![License](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Samsung%20One%20UI-3DDC84.svg)](https://developer.android.com/about/versions/oreo)
 
-**N-Up Print** is an advanced open-source Android Virtual Printer Service plugin designed to combine multiple pages into a single sheet (2-up, 4-up, 6-up, 8-up, or custom N-up grids) directly from any Android app's native system print dialog (Chrome, Samsung Notes, Gallery, Word, PDF viewers, and more).
+**N-Up Print** is an advanced open-source Android Virtual Printer Service plugin designed to combine multiple pages into a single sheet (2-up, 4-up, 6-up, 8-up, or custom N-up grids) or split multi-page spreads back into individual pages (reverse N-up page splitter) directly from any Android app's native system print dialog (Chrome, Samsung Notes, Gallery, Word, PDF viewers, and more).
 
-Unlike standard print services that rasterize documents into low-resolution images, **N-Up Print** performs pure vector-level PDF merging using Apache PDFBox. Text remains **100% selectable**, fonts remain razor-sharp, and vector graphics preserve full scaling resolution.
+Unlike standard print services that rasterize documents into low-resolution images, **N-Up Print** performs pure vector-level PDF processing using Apache PDFBox. Text remains **100% selectable**, fonts remain razor-sharp, and vector graphics preserve full scaling resolution.
 
 ---
 
 ## 📥 Download APK
 
-- **Latest Release (v2.4.0)**: [Download N-Up Print v2.4.0 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v2.4.0/nup-print-v2.4.0.apk)
-- **Local Mirror**: [`releases/nup-print-v2.4.0.apk`](releases/nup-print-v2.4.0.apk)
+- **Latest Release (v2.5.0)**: [Download N-Up Print v2.5.0 APK](https://github.com/kolardavidcz/N-up-virtual-printer/releases/download/v2.5.0/nup-print-v2.5.0.apk)
+- **Local Mirror**: [`releases/nup-print-v2.5.0.apk`](releases/nup-print-v2.5.0.apk)
 
 ---
 
@@ -28,6 +28,12 @@ Unlike standard print services that rasterize documents into low-resolution imag
 
 ## ✨ Features & Capabilities
 
+- ✂️ **Page Splitter (Reverse N-Up Virtual Printer)**: Splits existing 2-up lecture notes, scanned book spreads, or slide handouts into separate individual vector pages:
+  - **1 → 2 Pages (Side-by-Side: Left / Right)**: Universal default for 2-up presentations and scanned book spreads.
+  - **1 → 2 Pages (Stacked: Top / Bottom)**: Ideal for vertical two-slide handouts.
+  - **1 → 4 Pages (2×2 Quadrants) & Custom X×Y**: Decompose 4-up grid sheets back into individual full pages.
+  - **100% Vector Quality**: Pure clipping and coordinate transformation without bitmap rasterization or resolution degradation.
+  - **Hyperlink Preservation**: Existing PDF links and detected URLs within each tile are transformed to their output page positions.
 - 📓 **Native On-Device Notewise Notebook Export (`.notewise`)**: Directly creates editable Notewise tablet notebooks on-device without external tools or Python:
   - **Dedicated Virtual Printer**: Select **Notewise Notebook (.notewise)** directly in Android's system print spooler from any app.
   - **Companion Export Toggle**: Turn on *Export .notewise notebook alongside PDF* to automatically generate both the N-up merged `.pdf` and the `.notewise` notebook file side by side.
