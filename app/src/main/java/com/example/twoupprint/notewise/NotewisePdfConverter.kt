@@ -538,12 +538,54 @@ object NotewisePdfConverter {
     }
 
     /**
+     * Merges adjacent co-linear text lines that share the same baseline.
+     */
+    private fun mergeCoLinearLines(lines: List<RawLine>): List<RawLine> {
+        val sorted = lines.sortedWith(compareBy({ (it.minY / 2.0f).roundToInt() * 2.0f }, { it.minX }))
+        val merged = mutableListOf<RawLine>()
+        for (line in sorted) {
+            if (merged.isEmpty()) {
+                merged.add(line)
+                continue
+            }
+            val prev = merged.last()
+            val sameBaseline = abs(line.minY - prev.minY) <= 1.8f
+            val adjacentHorizontal = line.minX >= prev.maxX - 5.0f && (line.minX - prev.maxX) <= 35.0f
+            if (sameBaseline && adjacentHorizontal) {
+                val sep = if (prev.text.endsWith(" ") || line.text.startsWith(" ") ||
+                    prev.text.endsWith("-") || prev.text.endsWith("(") ||
+                    line.text.startsWith(")") || line.text.startsWith(",") ||
+                    line.text.startsWith(".")) "" else " "
+                val combinedText = prev.text + sep + line.text
+                val combinedMinX = minOf(prev.minX, line.minX)
+                val combinedMinY = minOf(prev.minY, line.minY)
+                val combinedMaxX = maxOf(prev.maxX, line.maxX)
+                val combinedMaxY = maxOf(prev.maxY, line.maxY)
+                val domFs = maxOf(prev.dominantFontSize, line.dominantFontSize)
+                merged[merged.size - 1] = prev.copy(
+                    text = combinedText,
+                    minX = combinedMinX,
+                    minY = combinedMinY,
+                    maxX = combinedMaxX,
+                    maxY = combinedMaxY,
+                    dominantFontSize = domFs,
+                    isBold = prev.isBold || line.isBold,
+                    isItalic = prev.isItalic || line.isItalic
+                )
+            } else {
+                merged.add(line)
+            }
+        }
+        return merged
+    }
+
+    /**
      * Orders text lines in natural reading order.
      * Detects 2-column layouts (typical of landscape lecture slides and 2-up presentations)
      * and sequences lines column-by-column to avoid interleaving or horizontal concatenation.
      */
     private fun orderLinesByReadingOrder(lines: List<RawLine>, rawW: Float, rawH: Float): List<RawLine> {
-        if (lines.size < 6) return lines.sortedWith(compareBy({ it.minY }, { it.minX }))
+        if (lines.size < 6) return mergeCoLinearLines(lines)
 
         // Multi-column detection (especially common in 2-up landscape slides / handouts)
         val candidateGutterX = rawW * 0.5f
@@ -555,22 +597,22 @@ object NotewisePdfConverter {
                 spanningLines.size <= 0.20f * (leftLines.size + rightLines.size)
 
         if (!is2Col) {
-            return lines.sortedWith(compareBy({ it.minY }, { it.minX }))
+            return mergeCoLinearLines(lines)
         }
 
         // 2-column layout: separate full-width headers and footers from column bodies
         val topOfCols = minOf(leftLines.minOf { it.minY }, rightLines.minOf { it.minY })
         val bottomOfCols = maxOf(leftLines.maxOf { it.maxY }, rightLines.maxOf { it.maxY })
 
-        val headers = spanningLines.filter { it.maxY <= topOfCols + 20.0f }.sortedBy { it.minY }
-        val footers = spanningLines.filter { it.minY >= bottomOfCols - 20.0f }.sortedBy { it.minY }
+        val headers = spanningLines.filter { it.maxY <= topOfCols + 20.0f }
+        val footers = spanningLines.filter { it.minY >= bottomOfCols - 20.0f }
         val unassigned = spanningLines.filter { it !in headers && it !in footers }
 
         // Assign any mid-spanning lines to the column containing their horizontal midpoint
-        val leftCol = (leftLines + unassigned.filter { (it.minX + it.maxX) / 2.0f < candidateGutterX }).sortedBy { it.minY }
-        val rightCol = (rightLines + unassigned.filter { (it.minX + it.maxX) / 2.0f >= candidateGutterX }).sortedBy { it.minY }
+        val leftCol = leftLines + unassigned.filter { (it.minX + it.maxX) / 2.0f < candidateGutterX }
+        val rightCol = rightLines + unassigned.filter { (it.minX + it.maxX) / 2.0f >= candidateGutterX }
 
-        return headers + leftCol + rightCol + footers
+        return mergeCoLinearLines(headers) + mergeCoLinearLines(leftCol) + mergeCoLinearLines(rightCol) + mergeCoLinearLines(footers)
     }
 
     private fun renderMathRegions(

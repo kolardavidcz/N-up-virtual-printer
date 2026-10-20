@@ -142,7 +142,8 @@ class NotewiseNotebookBuilder(
         }
         pageNodes.addAll(elements)
         pageNodes.add(pageSettings)
-        pageNodes.add(PbNode(7, 1, encodeDouble(1024.0)))
+        val pageOffset = (pageIndex + 1) * 1024.0
+        pageNodes.add(PbNode(7, 1, encodeDouble(pageOffset)))
         pageNodes.add(PbNode(11, 2, rootPageId.toByteArray(Charsets.UTF_8)))
 
         val serializedPage = pageNodes.map { it.serialize() }.reduce { acc, bytes -> acc + bytes }
