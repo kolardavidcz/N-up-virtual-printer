@@ -74,6 +74,7 @@ class PrintJobHandler(
     private val mainHandler = Handler(Looper.getMainLooper())
     private val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private var lastProgressUpdateTimeMs: Long = 0L
 
     override fun run() {
         createNotificationChannel()
@@ -119,12 +120,29 @@ class PrintJobHandler(
             val resultUri: Uri
             val displayLocation: String
 
-            if (destinationUri != null) {
-                // User provided a specific destination via SAF
-                outStream = context.contentResolver.openOutputStream(destinationUri)
+            val targetUri = destinationUri ?: run {
+                val savedDirUriStr = PrintPreferences.getSaveDirectoryUri(context)
+                if (savedDirUriStr != null) {
+                    try {
+                        val dirUri = Uri.parse(savedDirUriStr)
+                        androidx.documentfile.provider.DocumentFile
+                            .fromTreeUri(context, dirUri)
+                            ?.createFile("application/pdf", fileName)
+                            ?.uri
+                    } catch (_: Exception) {
+                        null
+                    }
+                } else {
+                    null
+                }
+            }
+
+            if (targetUri != null) {
+                // User provided a specific destination via SAF or saved directory setting
+                outStream = context.contentResolver.openOutputStream(targetUri)
                     ?: throw IllegalStateException("Could not open destination stream")
-                resultUri = destinationUri
-                displayLocation = "Selected Location"
+                resultUri = targetUri
+                displayLocation = "Saved to configured location"
 
                 outStream.use { writeOutput(it) }
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -205,6 +223,12 @@ class PrintJobHandler(
     }
 
     private fun updateProgressNotification(current: Int, total: Int, indeterminate: Boolean) {
+        val now = System.currentTimeMillis()
+        if (!indeterminate && current < total && (now - lastProgressUpdateTimeMs < 250)) {
+            return // Throttle progress notification IPC to at most 4 updates/sec
+        }
+        lastProgressUpdateTimeMs = now
+
         val titleText = if (layout.isSplit) {
             "Splitting pages (1→${layout.cols * layout.rows})..."
         } else {

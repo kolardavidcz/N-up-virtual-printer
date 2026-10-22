@@ -27,10 +27,11 @@ This guide is written 100% for AI coding agents and developers working on the **
 
 ### Core Components
 - **`app/src/main/java/com/example/twoupprint/`**:
-  - `TwoUpPrintService.kt`: Extends Android `PrintService`. Handles incoming print jobs (`onPrintJobQueued`), launches background `PrintJobHandler` processing, and manages status notifications.
-  - `TwoUpDiscoverySession.kt`: Extends `PrinterDiscoverySession`. Advertises virtual printer presets (2x1, 1x2, 2x2, 2x3, 2x4, notewise) to the Android/Samsung Print Spooler. Sets media sizes (`sizeSmart` in Portrait $8268 \times 11693$ mils so default spooler orientation initializes in Portrait).
+  - `TwoUpPrintService.kt`: Extends Android `PrintService`. Handles incoming print jobs (`onPrintJobQueued`), pre-warms PDFBox and icon caches asynchronously in `onCreate`, delegates SAF file creation off the UI thread to background `PrintJobHandler`, and manages status notifications.
+  - `TwoUpDiscoverySession.kt`: Extends `PrinterDiscoverySession`. Advertises virtual printer presets (2x1, 1x2, 2x2, 2x3, 2x4, split_pages) to the Android/Samsung Print Spooler. Sets media sizes (`sizeSmart` in Portrait $8268 \times 11693$ mils so default spooler orientation initializes in Portrait). Caches `PrinterInfo` and avoids cascading `addPrinters` re-adds on tracking/validation to keep the print dialog instantaneous.
+  - `LayoutIconGenerator.kt`: Dynamically renders vector grid icons for virtual printers with a thread-safe `ConcurrentHashMap` icon cache (`128px` resolution), serving icon requests in $<1\text{ms}$ with zero Binder IPC buffer pressure.
   - `PdfMerger.kt`: Pure vector-level PDF transformation engine using Apache PDFBox. Computes scale, translation, rotation, and slot placement for N-up layouts.
-  - `PdfContentTrimmer.kt`: Scans PDF page content streams to detect true content bounding boxes, trimming empty letterboxes (e.g. 16:9 slides centered on A4 sheets).
+  - `PdfContentTrimmer.kt`: Scans PDF page content streams to detect true content bounding boxes, trimming empty letterboxes with per-run `boundsCache` to avoid repeated PDF stream parsing.
   - `PdfLinkEngine.kt`: Extracts and recalculates bounding boxes for annotations / hyperlinks and regex URL patterns to keep links clickable after N-up scaling.
   - `PrintJobHandler.kt`: Background processing thread handling N-up PDF rendering, direct .notewise virtual printer export, and companion .notewise notebook generation.
   - `MainActivity.kt`: Material 3 Settings UI with dynamic layout cards, orientation toggles, per-side margins, high contrast switches, Notewise companion export toggle, phantom printer cleanup, and custom grid dialogs.

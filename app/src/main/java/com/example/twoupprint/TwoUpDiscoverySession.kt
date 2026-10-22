@@ -14,15 +14,30 @@ import android.printservice.PrinterDiscoverySession
  * Registers virtual printers for all enabled [PrintLayout] configurations,
  * dynamically rendering preview icons and forcing the configured subpages default orientation
  * (single media size capability, similar to A4-only restriction).
+ *
+ * Employs in-memory printer caching and avoids cascading re-add cycles that freeze the system print dialog.
  */
 class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscoverySession() {
 
-    private fun buildAllPrinters(): List<PrinterInfo> =
-        LayoutRegistry.getEnabledLayouts(service).map { mode -> buildPrinterInfo(mode) }
+    private var cachedPrintersMap: Map<PrinterId, PrinterInfo>? = null
 
-    private fun buildPrinterInfo(mode: PrintLayout): PrinterInfo {
-        val id: PrinterId = service.generatePrinterId(mode.printerId)
+    @Synchronized
+    private fun getOrBuildPrinters(): Map<PrinterId, PrinterInfo> {
+        cachedPrintersMap?.let { return it }
 
+        val enabledLayouts = LayoutRegistry.getEnabledLayouts(service)
+        // Pre-warm the icon cache for all enabled layouts so icon requests return in <1ms
+        LayoutIconGenerator.prewarmIcons(enabledLayouts)
+
+        val map = enabledLayouts.associate { mode ->
+            val id = service.generatePrinterId(mode.printerId)
+            id to buildPrinterInfo(mode, id)
+        }
+        cachedPrintersMap = map
+        return map
+    }
+
+    private fun buildPrinterInfo(mode: PrintLayout, id: PrinterId = service.generatePrinterId(mode.printerId)): PrinterInfo {
         val smartBase = LayoutRegistry.getSmartBasePaperSize(service)
 
         // 1. "Smart" paper size (Default):
@@ -83,34 +98,39 @@ class TwoUpDiscoverySession(private val service: PrintService) : PrinterDiscover
         cancellationSignal: CancellationSignal,
         callback: CustomPrinterIconCallback
     ) {
-        val localId = printerId.localId
-        val layout = LayoutRegistry.findLayoutById(service, localId)
-        val bitmap = LayoutIconGenerator.generateIconBitmap(layout)
-        val icon = Icon.createWithBitmap(bitmap)
-        callback.onCustomPrinterIconLoaded(icon)
+        if (cancellationSignal.isCanceled) return
+        val icon = LayoutIconGenerator.getCachedIcon(service, printerId.localId)
+        if (!cancellationSignal.isCanceled && icon != null) {
+            callback.onCustomPrinterIconLoaded(icon)
+        }
     }
 
     override fun onStartPrinterDiscovery(priorityList: MutableList<PrinterId>) {
-        addPrinters(buildAllPrinters())
+        val allPrinters = getOrBuildPrinters().values.toList()
+        addPrinters(allPrinters)
     }
 
     override fun onStopPrinterDiscovery() { }
 
     override fun onValidatePrinters(printerIds: MutableList<PrinterId>) {
-        val knownIds = LayoutRegistry.getEnabledLayouts(service).map { service.generatePrinterId(it.printerId) }.toSet()
-        if (printerIds.any { it in knownIds }) {
-            addPrinters(buildAllPrinters())
+        val map = getOrBuildPrinters()
+        val matching = printerIds.mapNotNull { map[it] }
+        if (matching.isNotEmpty()) {
+            addPrinters(matching)
         }
     }
 
     override fun onStartPrinterStateTracking(printerId: PrinterId) {
-        val knownIds = LayoutRegistry.getEnabledLayouts(service).map { service.generatePrinterId(it.printerId) }.toSet()
-        if (printerId in knownIds) {
-            addPrinters(buildAllPrinters())
+        val map = getOrBuildPrinters()
+        val printer = map[printerId]
+        if (printer != null) {
+            addPrinters(listOf(printer))
         }
     }
 
     override fun onStopPrinterStateTracking(printerId: PrinterId) { }
 
-    override fun onDestroy() { }
+    override fun onDestroy() {
+        cachedPrintersMap = null
+    }
 }

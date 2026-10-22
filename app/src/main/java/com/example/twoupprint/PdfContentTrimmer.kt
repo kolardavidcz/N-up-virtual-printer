@@ -89,8 +89,10 @@ class PdfContentTrimmer {
         val pageCount = doc.numberOfPages
         if (pageCount == 0) return null
 
+        val boundsCache = mutableMapOf<Int, ContentBounds>()
+
         // 1. Detect document-wide slide ratio by inspecting initial pages
-        val detectedRatio = detectDocumentSlideRatio(doc, forceSlideMode)
+        val detectedRatio = detectDocumentSlideRatio(doc, forceSlideMode, boundsCache)
         if (detectedRatio == null) {
             // Normal document (not a letterboxed presentation), leave untouched
             return null
@@ -100,7 +102,7 @@ class PdfContentTrimmer {
         for (i in 0 until pageCount) {
             val page = doc.getPage(i)
             val trimmedBox = calculateTrimmedBoxForRatio(page, detectedRatio)
-            val content = detectContentBounds(doc, page, i)
+            val content = detectContentBounds(doc, page, i, boundsCache)
             if (content.hasContent) {
                 val safeMinY = min(trimmedBox.lowerLeftY, content.minY)
                 val safeMaxY = max(trimmedBox.upperRightY, content.maxY)
@@ -118,7 +120,11 @@ class PdfContentTrimmer {
     /**
      * Detects if the document has a consistent slide aspect ratio across its pages.
      */
-    fun detectDocumentSlideRatio(doc: PDDocument, forceSlideMode: Boolean = false): Float? {
+    fun detectDocumentSlideRatio(
+        doc: PDDocument,
+        forceSlideMode: Boolean = false,
+        boundsCache: MutableMap<Int, ContentBounds>? = null
+    ): Float? {
         val pageCount = doc.numberOfPages
         if (pageCount == 0) return null
 
@@ -128,7 +134,7 @@ class PdfContentTrimmer {
         // it is unequivocally a regular document (e.g. multi-page text notes, articles). NEVER crop!
         for (i in 0 until sampleSize) {
             val page = doc.getPage(i)
-            val content = detectContentBounds(doc, page, i)
+            val content = detectContentBounds(doc, page, i, boundsCache)
             if (content.hasContent) {
                 val origBox = page.cropBox ?: page.mediaBox ?: PDRectangle.A4
                 val emptyBottom = content.minY - origBox.lowerLeftY
@@ -150,7 +156,7 @@ class PdfContentTrimmer {
 
         for (i in 0 until sampleSize) {
             val page = doc.getPage(i)
-            val ratio = detectPageSlideRatio(doc, page, i)
+            val ratio = detectPageSlideRatio(doc, page, i, boundsCache)
             if (ratio != null) {
                 if (candidateRatio == null) {
                     candidateRatio = ratio
@@ -173,7 +179,12 @@ class PdfContentTrimmer {
      * Analyzes a single page and detects if it contains a letterboxed presentation slide.
      * Returns the detected ratio (e.g. 1.7778 for 16:9), or null if regular document.
      */
-    fun detectPageSlideRatio(doc: PDDocument, page: PDPage, pageIndex: Int): Float? {
+    fun detectPageSlideRatio(
+        doc: PDDocument,
+        page: PDPage,
+        pageIndex: Int,
+        boundsCache: MutableMap<Int, ContentBounds>? = null
+    ): Float? {
         val origBox = page.cropBox ?: page.mediaBox ?: return null
         val rot = ((page.rotation % 360) + 360) % 360
         val isRot90or270 = (rot == 90 || rot == 270)
@@ -188,7 +199,7 @@ class PdfContentTrimmer {
             return null
         }
 
-        val content = detectContentBounds(doc, page, pageIndex)
+        val content = detectContentBounds(doc, page, pageIndex, boundsCache)
         if (!content.hasContent) return null
 
         // Case A: Portrait Canvas (e.g. A4 Portrait 595 x 842 pt)
@@ -327,8 +338,16 @@ class PdfContentTrimmer {
 
     /**
      * Discovers content bounds combining text glyphs and content stream vector elements.
+     * Results are cached per page index when [boundsCache] is supplied to prevent duplicate passes.
      */
-    fun detectContentBounds(doc: PDDocument, page: PDPage, pageIndex: Int): ContentBounds {
+    fun detectContentBounds(
+        doc: PDDocument,
+        page: PDPage,
+        pageIndex: Int,
+        boundsCache: MutableMap<Int, ContentBounds>? = null
+    ): ContentBounds {
+        boundsCache?.get(pageIndex)?.let { return it }
+
         val cropBox = page.cropBox ?: page.mediaBox ?: PDRectangle.A4
         val pageW = cropBox.width
         val pageH = cropBox.height
@@ -342,19 +361,24 @@ class PdfContentTrimmer {
             ContentBounds(0f, 0f, 0f, 0f, false)
         }
 
-        if (!textBounds.hasContent && !streamBounds.hasContent) {
-            return ContentBounds(0f, 0f, 0f, 0f, false)
+        val result = if (!textBounds.hasContent && !streamBounds.hasContent) {
+            ContentBounds(0f, 0f, 0f, 0f, false)
+        } else if (!textBounds.hasContent) {
+            streamBounds
+        } else if (!streamBounds.hasContent) {
+            textBounds
+        } else {
+            ContentBounds(
+                minX = min(textBounds.minX, streamBounds.minX),
+                minY = min(textBounds.minY, streamBounds.minY),
+                maxX = max(textBounds.maxX, streamBounds.maxX),
+                maxY = max(textBounds.maxY, streamBounds.maxY),
+                hasContent = true
+            )
         }
-        if (!textBounds.hasContent) return streamBounds
-        if (!streamBounds.hasContent) return textBounds
 
-        return ContentBounds(
-            minX = min(textBounds.minX, streamBounds.minX),
-            minY = min(textBounds.minY, streamBounds.minY),
-            maxX = max(textBounds.maxX, streamBounds.maxX),
-            maxY = max(textBounds.maxY, streamBounds.maxY),
-            hasContent = true
-        )
+        boundsCache?.put(pageIndex, result)
+        return result
     }
 
     private fun scanTextBounds(doc: PDDocument, pageIndex: Int, cropBox: PDRectangle): ContentBounds {

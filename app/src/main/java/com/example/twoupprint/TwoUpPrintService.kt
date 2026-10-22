@@ -14,6 +14,19 @@ import java.util.Locale
 
 class TwoUpPrintService : PrintService() {
 
+    override fun onCreate() {
+        super.onCreate()
+        // Pre-warm PDFBox resource loader and layout preview icons on background worker
+        PrintJobHandler.getExecutor().execute {
+            try {
+                PdfMerger.init(applicationContext)
+                LayoutIconGenerator.prewarmIcons(LayoutRegistry.getEnabledLayouts(applicationContext))
+            } catch (t: Throwable) {
+                android.util.Log.w("TwoUpPrintService", "Background warm-up note: ${t.message}")
+            }
+        }
+    }
+
     override fun onCreatePrinterDiscoverySession(): PrinterDiscoverySession {
         return TwoUpDiscoverySession(this)
     }
@@ -119,27 +132,10 @@ class TwoUpPrintService : PrintService() {
             return
         }
 
-        // Check if the user has set a preferred save directory in the app settings
-        val savedDirUriStr = PrintPreferences.getSaveDirectoryUri(applicationContext)
-
-        var destinationUri: Uri? = null
-        if (savedDirUriStr != null) {
-            try {
-                val dirUri = Uri.parse(savedDirUriStr)
-                val docUri = androidx.documentfile.provider.DocumentFile
-                    .fromTreeUri(applicationContext, dirUri)
-                    ?.createFile("application/pdf", fileName)
-                    ?.uri
-
-                destinationUri = docUri
-            } catch (_: Exception) {
-                // Fall through to default Downloads save
-            }
-        }
-
-        // Start processing — saves to chosen directory or Downloads/TwoUpPrint/ fallback
+        // Start processing immediately — destination resolution (custom SAF or Downloads)
+        // runs safely on the background executor inside PrintJobHandler, never blocking the main thread.
         PrintJobHandler(
-            applicationContext, printJob, documentData, destinationUri,
+            applicationContext, printJob, documentData, destinationUri = null,
             layout, fileName, addTextContrast, enableLinks,
             bestFit,
             marginTopMm, marginBottomMm, marginLeftMm, marginRightMm,

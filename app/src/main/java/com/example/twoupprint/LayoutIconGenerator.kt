@@ -1,10 +1,13 @@
 package com.example.twoupprint
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.graphics.drawable.Icon
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Generates crisp, clean grid diagram preview icons for virtual printers.
@@ -15,13 +18,87 @@ import android.graphics.RectF
  *     [subPageLandscape] orientation, centered within its grid slot.
  *
  * Rendered in solid white lines and page slots on a 100% transparent background.
+ * Cached in-memory to prevent redundant allocations and Binder IPC stalls.
  */
 object LayoutIconGenerator {
+
+    private const val DEFAULT_ICON_SIZE = 128
+    private val iconCache = ConcurrentHashMap<String, Icon>()
+
+    /**
+     * Retrieves or generates a cached [Icon] for the given [PrintLayout].
+     * Avoids re-drawing bitmaps and allocating memory on every discovery tick.
+     */
+    fun getCachedIcon(layout: PrintLayout, size: Int = DEFAULT_ICON_SIZE): Icon? {
+        val cacheKey = getCacheKey(layout, size)
+        val cached = iconCache[cacheKey]
+        if (cached != null) return cached
+
+        val bitmap = try {
+            generateIconBitmap(layout, size)
+        } catch (_: Throwable) {
+            null
+        } ?: return null
+
+        val icon = try {
+            Icon.createWithBitmap(bitmap)
+        } catch (_: Throwable) {
+            null
+        } ?: return null
+
+        iconCache[cacheKey] = icon
+        return icon
+    }
+
+    /**
+     * Generates cache key for a layout and requested dimension.
+     */
+    fun getCacheKey(layout: PrintLayout, size: Int = DEFAULT_ICON_SIZE): String {
+        return "${layout.printerId}_${layout.cols}x${layout.rows}_${layout.landscape}_${layout.subPageLandscape}_${layout.isSplit}_$size"
+    }
+
+    /**
+     * Resolves layout by [printerId] and retrieves its cached [Icon].
+     */
+    fun getCachedIcon(context: Context, printerId: String?, size: Int = DEFAULT_ICON_SIZE): Icon? {
+        val layout = LayoutRegistry.findLayoutById(context, printerId)
+        return getCachedIcon(layout, size)
+    }
+
+    /**
+     * Allows inserting an icon directly into cache (used for testing or custom bindings).
+     */
+    fun putCachedIcon(layout: PrintLayout, icon: Icon, size: Int = DEFAULT_ICON_SIZE) {
+        iconCache[getCacheKey(layout, size)] = icon
+    }
+
+    /**
+     * Pre-warms the in-memory icon cache for a collection of layouts.
+     */
+    fun prewarmIcons(layouts: Collection<PrintLayout>, size: Int = DEFAULT_ICON_SIZE) {
+        for (layout in layouts) {
+            getCachedIcon(layout, size)
+        }
+    }
+
+    /**
+     * Returns true if an icon for the given layout and size is present in cache.
+     */
+    fun isIconCached(layout: PrintLayout, size: Int = DEFAULT_ICON_SIZE): Boolean {
+        return iconCache.containsKey(getCacheKey(layout, size))
+    }
+
+    /**
+     * Clears cached icons (useful for tests or memory trim).
+     */
+    fun clearCache() {
+        iconCache.clear()
+    }
 
     /**
      * Overload that pulls orientations from the [PrintLayout] data class.
      */
-    fun generateIconBitmap(layout: PrintLayout, size: Int = 256): Bitmap {
+    fun generateIconBitmap(layout: PrintLayout, size: Int = DEFAULT_ICON_SIZE): Bitmap {
         if (layout.isSplit) {
             return generateSplitIconBitmap(layout.cols, layout.rows, layout.landscape, size)
         }
